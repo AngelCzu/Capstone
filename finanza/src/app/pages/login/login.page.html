@@ -1,33 +1,38 @@
+<ion-content class="login-page" fullscreen>
+  <div class="wrapper">
+    <!-- Icono -->
+    <div class="logo-shield">
+      <ion-icon name="shield-outline"></ion-icon>
+      <span class="logo-dollar">$</span>
+    </div>
 
+    <h1 class="title">Login</h1>
 
-<ion-content class="ion-padding" fullscreen>
-  <div class="login-container">
-    <h1 class="login-title">Bienvenido</h1>
-    <p class="login-subtitle">Accede para continuar</p>
     <form class="login-form" autocomplete="off">
-      <ion-item lines="none" class="login-item">
+      <ion-item lines="none" class="field">
         <ion-input
-          placeholder="Correo electrónico"
+          placeholder="Email address"
           type="email"
-          fill="outline"
           class="login-input"
-          clearInput
-        ></ion-input>
+          clear-input="true">
+        </ion-input>
       </ion-item>
-      <ion-item lines="none" class="login-item">
+
+      <ion-item lines="none" class="field">
         <ion-input
-          placeholder="Contraseña"
+          placeholder="Password"
           type="password"
-          fill="outline"
           class="login-input"
-          clearInput
-        ></ion-input>
+          clear-input="true">
+        </ion-input>
+        <a slot="end" class="forgot-inline" href="#">Forgot password?</a>
       </ion-item>
-      <ion-button expand="block" class="login-button">Ingresar</ion-button>
-      <div class="login-footer">
-        <a href="#" class="forgot-link">¿Olvidaste tu contraseña?</a>
+
+      <ion-button expand="block" class="cta">Log in</ion-button>
+
+      <div class="signup">
+        Don’t have an account? <a href="#" class="signup-link">Sign up</a>
       </div>
     </form>
   </div>
 </ion-content>
-
