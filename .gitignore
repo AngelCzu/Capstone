@@ -1,0 +1,16 @@
+
+
+# Ignora la carpeta node_modules
+node_modules
+
+# Ignora todos los archivos de texto
+*.txt
+
+# Ignora los archivos relacionados a entornos virtuales de Python
+venv
+
+#ignora la caroeta angular
+.angular
+
+# Ignora archivos de configuración SASS
+.sass-cache

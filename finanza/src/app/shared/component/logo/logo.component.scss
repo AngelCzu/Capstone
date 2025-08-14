@@ -1,0 +1,23 @@
+/* Icono tipo escudo con $ */
+.logo-shield {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin: 8px auto 10px;
+}
+.logo-shield ion-icon {
+  width: 100%;
+  height: 100%;
+  color: #1e6a59; /* verde oscuro del contorno */
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,0.08));
+}
+.logo-dollar {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  transform: translate(-50%, -50%);
+  font-weight: 800;
+  font-size: 48px;
+  color: #b6e0b2; /* verde claro interior */
+  line-height: 1;
+}
