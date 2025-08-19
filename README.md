@@ -31,5 +31,17 @@ deactivate
 
 ```bash
 npm install
+
+```
+en caso de ser necesario instalar el paquete de Firebase se ejecuta el siguiente comando:
+
+```bash
+ npm i firebase @angular/fire@20
 ```
 
+## Run
+
+```bash
+ionic serve
+
+```
