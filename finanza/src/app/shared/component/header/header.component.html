@@ -2,7 +2,7 @@
     <ion-toolbar class="topbar">
 
       <ion-buttons slot="start">
-        <ion-back-button *ngIf="backButton" defaultHref="backButton"></ion-back-button>
+        <ion-back-button *ngIf="backButton" [defaultHref]="backButton"></ion-back-button>
       </ion-buttons>
 
     <ion-buttons *ngIf="profile" slot="start">

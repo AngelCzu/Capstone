@@ -61,6 +61,8 @@ export class LoginPage implements OnInit {
 
       }).finally(() => {
         loading.dismiss();
+        this.utilsSvc.routerLink('/main/home');
+        this.form.reset();
       });
     } 
   }

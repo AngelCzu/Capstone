@@ -1,0 +1,18 @@
+/* Header */
+.topbar {
+    --background: #0f2733;
+    --color: #e7efe9;
+}
+.topbar-title { letter-spacing: 3px; font-weight: 700;}
+
+.bell { position: relative; }
+.badge {
+    position: absolute;
+    top: 2px; right: 2px;
+    transform: translate(25%,-25%);
+    background: #b6382a;
+    color: #fff;
+    border-radius: 12px;
+    padding: 2px 6px;
+    font-size: 10px;
+}
