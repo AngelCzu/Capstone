@@ -2,13 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
+import { SharedModule } from 'src/app/shared/shared-module';
 
 @Component({
   selector: 'app-index',
   standalone: true,
   templateUrl: './index.page.html',
   styleUrls: ['./index.page.scss'],
-  imports: [IonicModule, CommonModule, FormsModule],
+  imports: [IonicModule, CommonModule, FormsModule, SharedModule],
 })
 export class IndexPage implements OnInit {
   // Donut / dashboard state

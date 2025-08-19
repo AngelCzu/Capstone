@@ -1,5 +1,23 @@
 <ion-header>
-  <ion-toolbar>
-    <ion-title>{{title}}</ion-title>
+    <ion-toolbar class="topbar">
+
+      <ion-buttons slot="start">
+        <ion-back-button *ngIf="backButton" defaultHref="backButton"></ion-back-button>
+      </ion-buttons>
+
+    <ion-buttons *ngIf="profile" slot="start">
+      <ion-button fill="clear">
+        <ion-icon name="person-circle-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <ion-title class="topbar-title">{{title}}</ion-title>
+
+    <ion-buttons *ngIf="badge" slot="end">
+      <ion-button class="bell" fill="clear">
+        <ion-icon name="notifications-outline"></ion-icon>
+        <ion-badge  class="badge">{{badge}}</ion-badge>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>

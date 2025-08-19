@@ -10,6 +10,10 @@ export class HeaderComponent  implements OnInit {
 
 
   @Input() title!: string;
+  @Input() badge!: string;
+  @Input() backButton!: string;
+  @Input() notifications!: string;
+  @Input() profile!: string;
 
   constructor() { }
 

@@ -7,11 +7,26 @@ import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
 
+
+
+// Firebase imports
+import { AngularFireModule } from '@angular/fire/compat';
+import { environment } from 'src/environments/environment';
+
+
+
 @NgModule({
   declarations: [AppComponent],
-  imports: [BrowserModule, IonicModule.forRoot({mode: 'md'/*esto es para dejarlo del mismo diseño para todos los celulares */})
-    , AppRoutingModule],
+  imports: [
+    BrowserModule,
+    IonicModule.forRoot({ mode: 'md'/*esto es para dejarlo del mismo diseño para todos los celulares */ }),
+    AppRoutingModule,
+
+    // Firebase module initialization
+    AngularFireModule.initializeApp(environment.firebaseConfig) // Initialize Firebase with the config
+  ],
   providers: [{ provide: RouteReuseStrategy, useClass: IonicRouteStrategy }],
   bootstrap: [AppComponent],
 })
-export class AppModule {}
+
+export class AppModule { }

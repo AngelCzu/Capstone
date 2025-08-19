@@ -1,13 +1,77 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>sign-up</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content class="login-page" fullscreen>
+  <app-header backButton="/login" title="Registro"></app-header>
+  <div class="wrapper">
+    <app-logo></app-logo>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">sign-up</ion-title>
-    </ion-toolbar>
-  </ion-header>
+
+
+
+    <form class="login-form" [formGroup]="form" (ngSubmit)="submit()" (keypress.enter)="submit()">
+
+      <!-- ============ Nombre ============ -->
+      <app-custom-input 
+          class="field"
+          icon="person-outline"
+          autocomplete="name"
+          [control]="form.controls.name"
+          type="name"
+          label="Nombre"
+          
+      ></app-custom-input>
+
+      <div class="validators" *ngIf="form.controls.name.errors && form.controls.name.touched">
+        <div  *ngIf="form.controls.name.errors?.['required']">El nombre es requerido</div>
+        <div  *ngIf="form.controls.name.errors?.['minlength']">El nombre debe tener al menos 4 caracteres</div>
+      </div>
+
+
+
+      <!-- ============ Correo ============ -->
+
+      <app-custom-input 
+          class="field"
+          icon="mail-outline"
+          autocomplete="email"
+          [control]="form.controls.email"
+          type="email"
+          label="Correo"
+          
+      ></app-custom-input>
+
+      <div class="validators" *ngIf="form.controls.email.errors && form.controls.email.touched">
+        <div  *ngIf="form.controls.email.errors?.['required']">El correo es requerido</div>
+        <div  *ngIf="form.controls.email.errors?.['email']">El correo no es válido</div>
+      </div>
+      
+
+
+
+
+
+      <!-- ============ Contraseña ============ -->
+      <app-custom-input
+        icon="lock-closed-outline"
+        [control]="form.controls.password"
+        type="password"
+        label="Contraseña"
+      ></app-custom-input>
+    
+      <div class="validators" *ngIf="form.controls.password.errors && form.controls.password.touched">
+        <div  *ngIf="form.controls.password.errors?.['required']">
+          La contraseña es requerida
+        </div>
+      </div>
+
+      <p class="ion-text-end" [routerLink]="['/login']">¿Ya tienes una cuenta?</p>
+
+      <ion-button class="ion-margin-top" expand="block" mode="ios" class="submit" type="submit" [disabled]="form.invalid">
+        Registrarse
+        <ion-icon slot="end" name="person-add-outline"></ion-icon>
+      </ion-button>
+
+      
+
+
+    </form>
+  </div>
 </ion-content>
