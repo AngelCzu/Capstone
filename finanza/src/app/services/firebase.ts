@@ -1,9 +1,10 @@
 import { inject, Injectable } from '@angular/core';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { User } from '../models/user.model';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
-import { getFirestore, setDoc, doc } from '@angular/fire/firestore';
+import { getFirestore, setDoc, doc, getDoc} from '@angular/fire/firestore';
+import { Utils } from './utils';
 
 
 
@@ -15,10 +16,15 @@ import { getFirestore, setDoc, doc } from '@angular/fire/firestore';
 export class Firebase {
   auth = inject(AngularFireAuth);
   firestore = inject(AngularFirestore);
-
+  utilsSvc = inject(Utils);
 
 
   // ================================ Autenticación ================================
+
+  getAuth() {
+    return getAuth();
+  }
+
 
 
   //======= Iniciar sesión con correo y contraseña =======
@@ -37,9 +43,33 @@ export class Firebase {
     return updateProfile(getAuth().currentUser, { displayName });
   } 
 
+  sendRecoverEmail(email: string) {
+    return sendPasswordResetEmail(getAuth(), email);  }
 
-  // ======= Base de Datos Firebase =======
+
+
+  //======= Cerrar sesión =======
+  signOut() { 
+    getAuth().signOut();
+    localStorage.removeItem('user'); // Limpiar el almacenamiento local
+    this.utilsSvc.routerLink('/login'); // Redirigir al usuario a la página de inicio de sesión
+  }
+
+
+
+
+
+
+
+  // ================================= Base de Datos Firebase ========================
+
+  //======= Guardar documento =======
   setDocument(path: string, data: any) {
     return setDoc(doc(getFirestore(), path), data);
+  }
+
+  //======= Obtener documento =======
+   async getDocument(path: string) {
+    return (await getDoc(doc(getFirestore(), path))).data();  
   }
 }

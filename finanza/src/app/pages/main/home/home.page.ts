@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
+import { Firebase } from 'src/app/services/firebase';
+import { Utils } from 'src/app/services/utils';
 import { SharedModule } from 'src/app/shared/shared-module';
 
 @Component({
@@ -11,6 +13,19 @@ import { SharedModule } from 'src/app/shared/shared-module';
   imports: [SharedModule, FormsModule] // <-- Agrega esto
 })
 export class HomePage implements OnInit {
+
+  // Inyectar servicios 
+  firebaseSvc = inject(Firebase);
+  utilsSvc = inject(Utils);
+
+  //======= Cerrar sesión =======
+  signOut() { 
+    this.firebaseSvc.signOut();
+  }
+
+
+
+  
 // Donut / dashboard state
   amount = 2500;                 // $2.500 al centro
   percent = 82;                  // % del anillo en verde

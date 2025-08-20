@@ -40,8 +40,11 @@ export class LoginPage implements OnInit {
 
       // Iniciar sesión
       this.firebaseSvc.signIn(this.form.value as User).then(res => {
-        console.log(res);
 
+
+
+        // Obtener información de usuario en la base de datos
+        this.getUserInfo(res.user.uid);
 
       }).catch(error => {
 
@@ -61,12 +64,58 @@ export class LoginPage implements OnInit {
 
       }).finally(() => {
         loading.dismiss();
-        this.utilsSvc.routerLink('/main/home');
+
+        // Limpiar el formulario
         this.form.reset();
       });
     } 
   }
 
+ async getUserInfo(uid: string) {
+    if (this.form.valid) {
 
+      // Mostrar el loading
+      const loading = await this.utilsSvc.loading();
+      await loading.present();
+
+      // Obtener información de usuario en la base de datos
+      let path = `users/${uid}`;
+
+      this.firebaseSvc.getDocument(path).then((user: User) => {
+
+        // guardar en storage local
+        this.utilsSvc.saveLocalStorage('user', user);
+
+        // Redirigir al usuario a la página principal
+        this.utilsSvc.routerLink('/main/home');
+
+        // Mostrar mensaje de éxito
+        this.utilsSvc.presentToast({
+          message: `Inicio de sesión exitoso ${user.name}`,
+          duration: 1500,
+          color: 'primary',
+          position: 'middle',
+          icon: 'person-circle-outline'
+        });
+        
+
+      }).catch(error => {
+
+        // Mostrar el error
+
+
+        this.utilsSvc.presentToast({
+          message: error.message,
+          duration: 2500,
+          color: 'primary',
+          position: 'middle',
+          icon: 'alert-circle-outline'
+        });
+
+      }).finally(() => {
+        loading.dismiss();
+      });
+    } 
+  }
 
 }
