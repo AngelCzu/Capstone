@@ -9,7 +9,7 @@
 - npm 10.9.2 
 
 
-## Run
+## entorno virtual 
 
 ```bash
 python -m venv venv
