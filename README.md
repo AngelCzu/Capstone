@@ -7,9 +7,10 @@
 - Node 22.14.0
 - Ionic 7.2.1
 - npm 10.9.2 
+- Firebase 14.12.1
 
 
-## entorno virtual 
+## Entorno Virtual 
 
 ```bash
 python -m venv venv
