@@ -11,11 +11,12 @@ import { SharedModule } from 'src/app/shared/shared-module';
   selector: 'app-login',
   templateUrl: './login.page.html',
   styleUrls: ['./login.page.scss'],
-  imports: [ FormsModule, SharedModule] // <-- Agrega esto
+  imports: [FormsModule, SharedModule] // <-- Agrega esto
 })
 export class LoginPage implements OnInit {
 
   form = new FormGroup({
+    uid: new FormControl(''),
     email: new FormControl('', [Validators.required, Validators.email]),
     password: new FormControl('', [Validators.required])
   });
@@ -68,10 +69,10 @@ export class LoginPage implements OnInit {
         // Limpiar el formulario
         this.form.reset();
       });
-    } 
+    }
   }
 
- async getUserInfo(uid: string) {
+  async getUserInfo(uid: string) {
     if (this.form.valid) {
 
       // Mostrar el loading
@@ -89,6 +90,9 @@ export class LoginPage implements OnInit {
         // Redirigir al usuario a la página principal
         this.utilsSvc.routerLink('/main/home');
 
+
+
+
         // Mostrar mensaje de éxito
         this.utilsSvc.presentToast({
           message: `Inicio de sesión exitoso ${user.name}`,
@@ -97,7 +101,7 @@ export class LoginPage implements OnInit {
           position: 'middle',
           icon: 'person-circle-outline'
         });
-        
+
 
       }).catch(error => {
 
@@ -115,7 +119,109 @@ export class LoginPage implements OnInit {
       }).finally(() => {
         loading.dismiss();
       });
-    } 
+    }
   }
 
+
+
+
+
+
+// Iniciar sesión con Google
+async onClick() {
+  try {
+    const res = await this.firebaseSvc.signInGoogle();
+    const uid = res.user.uid;
+
+    // (Opcional) actualizar displayName en auth si quieres
+    await this.firebaseSvc.updateUser(res.user.displayName || '');
+
+    const path = `users/${uid}`;
+
+    // 1) Intentar obtener el doc del usuario
+    let user = await this.firebaseSvc.getDocument(path);
+
+    // 2) Si no existe, crearlo con los datos de Google (no uses this.form aquí)
+    if (!user) {
+      user = {
+        uid,
+        email: res.user.email || '',
+        name: res.user.displayName || '',
+        photoURL: res.user.photoURL || '',
+        // agrega aquí otros campos por defecto que uses en tu app
+        createdAt: new Date().toISOString(),
+      };
+      await this.firebaseSvc.setDocument(path, user);
+    }
+
+    // 3) Guardar en localStorage y navegar
+    this.utilsSvc.saveLocalStorage('user', user);
+    this.utilsSvc.routerLink('/main/home');
+
+    // 4) Mensaje de éxito
+    this.utilsSvc.presentToast({
+      message: `Inicio de sesión exitoso ${user['name'] || ''}`,
+      duration: 1500,
+      color: 'primary',
+      position: 'middle',
+      icon: 'person-circle-outline'
+    });
+
+    // 5) Si quieres verificar inmediatamente:
+    const prueba = this.utilsSvc.getLocalStorage('user');
+    console.log('Usuario local storage:', prueba);
+
+  } catch (error: any) {
+    console.error(error);
+    this.utilsSvc.presentToast({
+      message: error.message || 'Error al iniciar sesión',
+      duration: 2500,
+      color: 'primary',
+      position: 'middle',
+      icon: 'alert-circle-outline'
+    });
+  }
+}
+
+
+
+  async setUserInfo(uid: string) {
+    if (this.form.valid) {
+
+      // Mostrar el loading
+      const loading = await this.utilsSvc.loading();
+      await loading.present();
+
+      // Insertar información de usuario en la base de datos
+      let path = `users/${uid}`;
+      delete this.form.value.password; // Eliminar la contraseña del objeto antes de guardarlo
+
+      this.firebaseSvc.setDocument(path, this.form.value).then(async res => {
+
+        // guardar en storage local
+        this.utilsSvc.saveLocalStorage('user', this.form.value);
+
+        // Redirigir al usuario a la página de inicio
+        this.utilsSvc.routerLink('/main/home');
+        this.form.reset();
+        
+
+      }).catch(error => {
+
+        // Mostrar el error
+        console.error(error);
+
+        this.utilsSvc.presentToast({
+          message: error.message,
+          duration: 2500,
+          color: 'primary',
+          position: 'middle',
+          icon: 'alert-circle-outline'
+        });
+
+      }).finally(() => {
+        loading.dismiss();
+      });
+    } 
+  }
 }

@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup,  } from 'firebase/auth';
 import { User } from '../models/user.model';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { getFirestore, setDoc, doc, getDoc} from '@angular/fire/firestore';
@@ -43,9 +43,16 @@ export class Firebase {
     return updateProfile(getAuth().currentUser, { displayName });
   } 
 
+
+  //======= Enviar correo de recuperación de contraseña =======
   sendRecoverEmail(email: string) {
     return sendPasswordResetEmail(getAuth(), email);  }
 
+
+  //======= Iniciar sesión Google =======  
+  signInGoogle() {
+    return signInWithPopup(getAuth(), new GoogleAuthProvider());
+  }
 
 
   //======= Cerrar sesión =======

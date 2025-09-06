@@ -45,6 +45,12 @@
 
       <p class="ion-text-end" [routerLink]="['/forgot-password']">¿Olvidaste tu contraseña?</p>
 
+      <ion-button (click)="onClick()" class="ion-margin-top" expand="block" mode="ios" >
+        Ingresar con Google
+        <ion-icon slot="start" name="logo-google"></ion-icon>
+        
+      </ion-button>
+
       <ion-button class="ion-margin-top" expand="block" mode="ios" class="submit" type="submit" [disabled]="form.invalid">
         Ingresar
         <ion-icon slot="end" name="log-in-outline"></ion-icon>

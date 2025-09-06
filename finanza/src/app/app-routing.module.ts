@@ -18,10 +18,6 @@ const routes: Routes = [
     loadChildren: () => import('./pages/login/login.module').then( m => m.LoginPageModule), canActivate:[noAuthGuard]
   },
   {
-    path: 'index',
-    loadChildren: () => import('./pages/index/index.module').then( m => m.IndexPageModule),canActivate:[authGuard]
-  },
-  {
     path: 'sign-up',
     loadChildren: () => import('./pages/sign-up/sign-up.module').then( m => m.SignUpPageModule), canActivate:[noAuthGuard]
   },
