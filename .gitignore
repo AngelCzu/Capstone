@@ -17,4 +17,4 @@ backend/.venv
 .sass-cache
 
 # Ignora archivos de configuración de servicio de cuenta
-finanza/backend/key/
+finanza/backend/key/*.json
