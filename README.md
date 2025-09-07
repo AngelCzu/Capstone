@@ -80,3 +80,13 @@ Correr backend
 python backend/app.py
 
 ```
+
+## Test
+
+Para testear si funciona el backend correr siguiente codigo en nueva terminal 
+
+```bash
+
+Invoke-RestMethod -Uri http://localhost:8080/api/v1/health
+
+```

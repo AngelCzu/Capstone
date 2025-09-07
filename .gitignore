@@ -18,3 +18,6 @@ backend/.venv
 
 # Ignora archivos de configuración de servicio de cuenta
 finanza/backend/key/*.json
+
+# Pero no ignores el archivo .gitkeep dentro de esa carpeta
+!finanza/backend/key/.gitkeep
