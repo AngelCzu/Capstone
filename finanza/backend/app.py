@@ -9,7 +9,7 @@ from firebase_admin import credentials, auth
 from google.cloud import firestore
 from google.oauth2 import service_account  # <-- NUEVO
 
-# --- Cargar .env ---
+# --- Cargar .env --- si existe
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"), override=True)
 
