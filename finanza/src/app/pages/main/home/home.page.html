@@ -3,6 +3,25 @@
 <ion-content class="dashboard-page" fullscreen>
   <h1 class="app-title">APP</h1>
 
+  <ion-header>
+  <ion-toolbar><ion-title>Gastos</ion-title></ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <app-storage-bar
+    [expenses]="expenses"
+    [totalIncome]="totalIncome"
+    [heightPx]="28"
+    [rounded]="14"
+    [showLegend]="true">
+  </app-storage-bar>
+
+  <ion-button expand="block" (click)="simularIngresoExtra()">
+    Simular ingreso extra (+10)
+  </ion-button>
+</ion-content>
+
+
   <!-- Tarjeta: Donut -->
   <div class="cream-card donut-card">
     <div class="donut" [style.--p]="donutDeg"></div>

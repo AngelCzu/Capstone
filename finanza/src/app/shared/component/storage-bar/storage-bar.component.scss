@@ -1,0 +1,67 @@
+:host { display:block; color:#e9e9ea; }
+.storage-widget { width:100%; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
+
+.header .title { font-weight:600; }
+.header .subtitle { opacity:.8; font-size:.9rem; margin-top:2px; }
+
+.bar-wrapper { position: relative; margin-top: 10px; }
+.bar {
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  background: #1f1f23;
+  outline: 1px solid rgba(255,255,255,.08);
+  border-radius: inherit;
+  height: 100%;
+}
+
+.seg {
+  min-width: 3px;
+  appearance: none; border:0; padding:0;
+  height:100%; cursor:pointer;
+  flex: 0 0 auto;                 /* respeta width % */
+  transition: filter .15s ease, opacity .15s ease, outline-color .15s ease;
+  min-width: 2px;                 /* segmentos muy pequeños siguen siendo clickeables */
+  outline: 0 solid transparent;
+}
+
+.seg.active {
+  filter: brightness(1.15);
+  outline-width: 2px;
+  outline-color: rgba(255,255,255,.6);
+  outline-offset: -2px;
+}
+.seg.dim { opacity: .35; }
+
+/* Línea guía vertical */
+.indicator {
+  position: absolute; top: 0; width: 2px; transform: translateX(-1px);
+  background: rgba(255,255,255,.85);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.25);
+  pointer-events: none;
+}
+
+/* Callout */
+.callout { position:absolute; pointer-events:none; }
+.bubble {
+  background:#2b2b31; border:1px solid rgba(255,255,255,.08);
+  padding:8px 10px; border-radius:10px; white-space:nowrap;
+  box-shadow: 0 6px 24px rgba(0,0,0,.35);
+}
+.bubble .label { font-size:.85rem; opacity:.9; }
+.bubble .value { font-weight:700; margin-top:2px; }
+.arrow {
+  width:0; height:0; margin:6px auto 0;
+  border-left:8px solid transparent; border-right:8px solid transparent;
+  border-top:8px solid #2b2b31;
+  filter: drop-shadow(0 -1px 0 rgba(255,255,255,.08));
+}
+
+/* Leyenda sincronizada */
+.legend { list-style:none; padding:10px 0 0; margin:0; display:grid; gap:6px; }
+.legend li { display:flex; align-items:center; gap:10px; cursor:pointer; }
+.legend li.active .name { font-weight: 600; }
+.legend li.dim { opacity: .5; }
+.legend .dot { width:10px; height:10px; border-radius:50%; outline:1px solid rgba(255,255,255,.15); }
+.legend .name { flex:1; opacity:.92; }
+.legend .amount { opacity:.75; font-variant-numeric: tabular-nums; }

@@ -6,6 +6,7 @@ import { LogoComponent } from './component/logo/logo.component';
 import { IonicModule } from '@ionic/angular';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { StorageBarComponent } from './component/storage-bar/storage-bar.component';
 
 
 
@@ -13,7 +14,8 @@ import { RouterLink } from '@angular/router';
   declarations: [
     HeaderComponent,
     CustomInputComponent,
-    LogoComponent
+    LogoComponent,
+    StorageBarComponent
   ],
   exports: [
     HeaderComponent,
@@ -22,7 +24,8 @@ import { RouterLink } from '@angular/router';
     CommonModule,
     IonicModule,
     ReactiveFormsModule,
-    RouterLink
+    RouterLink,
+    StorageBarComponent
      
   ],
   imports: [
@@ -30,7 +33,8 @@ import { RouterLink } from '@angular/router';
     IonicModule,
     ReactiveFormsModule,
     FormsModule,
-    RouterLink
+    RouterLink,
+    
   ]
 })
 export class SharedModule { }

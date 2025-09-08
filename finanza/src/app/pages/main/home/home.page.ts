@@ -14,6 +14,25 @@ import { SharedModule } from 'src/app/shared/shared-module';
 })
 export class HomePage implements OnInit {
 
+  // supuesto: lo llenas desde tu servicio real
+  totalIncome = 146.6; // GB ~ ingresos (ejemplo)
+  expenses = [
+    { label: 'Aplicaciones y datos', color: '#f4c20d', value: 98.68 },
+    { label: 'Fotos',                color: '#ff8c00', value: 2.72  },
+    { label: 'Audio',                color: '#ff4d4d', value: 0.033 },
+    { label: 'Video',                color: '#ad44ff', value: 4.55  },
+    { label: 'Documentos',           color: '#3bd16f', value: 6.02  },
+    { label: 'Archivos del sistema', color: '#6272ff', value: 25.35 },
+    { label: 'Sistema',              color: '#9aa0a6', value: 9.19  },
+  ];
+
+  // ejemplo de cambio dinámico: llegan más ingresos
+  simularIngresoExtra() {
+    this.totalIncome += 10; // la barra se reescala automáticamente
+  }
+
+
+
   // Inyectar servicios 
   firebaseSvc = inject(Firebase);
   utilsSvc = inject(Utils);
