@@ -1,4 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-header',
@@ -15,8 +16,12 @@ export class HeaderComponent  implements OnInit {
   @Input() notifications!: string;
   @Input() profile!: string;
 
-  constructor() { }
+  constructor(private router: Router) { }
 
   ngOnInit() {}
+
+    goToProfile() {
+      this.router.navigate(['/main/profile']);
+    }
 
 }

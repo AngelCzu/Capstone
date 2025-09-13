@@ -19,7 +19,8 @@
       <img [src]="avatarUrl" alt="avatar" class="avatar"/>
       <label class="avatar-edit">
         <ion-icon name="camera-outline"></ion-icon>
-        <input type="file" accept="image/*" (change)="onAvatarChange($event)"/>
+        <input type="file" accept="image/*" (change)="onAvatarChange
+        ($event)"/>
       </label>
     </div>
 
@@ -31,74 +32,77 @@
       <ion-label>Verificado</ion-label>
     </ion-chip>
   </div>
-
-  <!-- Saldo -->
-  <div class="cream-card balance">
-    <div class="balance-label">Saldo total</div>
-    <div class="balance-amount">${{ user.balance | number:'1.0-0' }}</div>
-  </div>
-
-  <!-- Métricas -->
-  <div class="grid-2">
-    <div class="cream-card kpi">
-      <div class="kpi-title">Ingresos (mes)</div>
-      <div class="kpi-value">${{ user.incomeMonth | number:'1.0-0' }}</div>
+<!--
+    
+    <div class="cream-card balance">
+      <div class="balance-label">Saldo total</div>
+      <div class="balance-amount">${{ user.balance | number:'1.0-0' }}</div>
     </div>
-    <div class="cream-card kpi">
-      <div class="kpi-title">Gastos (mes)</div>
-      <div class="kpi-value red">${{ user.expenseMonth | number:'1.0-0' }}</div>
+
+    
+    <div class="grid-2">
+      <div class="cream-card kpi">
+        <div class="kpi-title">Ingresos (mes)</div>
+        <div class="kpi-value">${{ user.incomeMonth | number:'1.0-0' }}</div>
+      </div>
+      <div class="cream-card kpi">
+        <div class="kpi-title">Gastos (mes)</div>
+        <div class="kpi-value red">${{ user.expenseMonth | number:'1.0-0' }}</div>
+      </div>
     </div>
-  </div>
 
-  <!-- Acciones rápidas -->
-  <div class="cream-card quick">
-    <div class="quick-title">Acciones rápidas</div>
-    <div class="quick-grid">
-      <button class="quick-btn">
-        <ion-icon name="add-circle-outline"></ion-icon>
-        <span>Agregar ingreso</span>
-      </button>
-      <button class="quick-btn">
-        <ion-icon name="remove-circle-outline"></ion-icon>
-        <span>Agregar gasto</span>
-      </button>
-      <button class="quick-btn">
-        <ion-icon name="card-outline"></ion-icon>
-        <span>Métodos de pago</span>
-      </button>
-      <button class="quick-btn">
-        <ion-icon name="download-outline"></ion-icon>
-        <span>Exportar</span>
-      </button>
+    
+    <div class="cream-card quick">
+      <div class="quick-title">Acciones rápidas</div>
+      <div class="quick-grid">
+        <button class="quick-btn">
+          <ion-icon name="add-circle-outline"></ion-icon>
+          <span>Agregar ingreso</span>
+        </button>
+        <button class="quick-btn">
+          <ion-icon name="remove-circle-outline"></ion-icon>
+          <span>Agregar gasto</span>
+        </button>
+        <button class="quick-btn">
+          <ion-icon name="card-outline"></ion-icon>
+          <span>Métodos de pago</span>
+        </button>
+        <button class="quick-btn">
+          <ion-icon name="download-outline"></ion-icon>
+          <span>Exportar</span>
+        </button>
+      </div>
     </div>
-  </div>
 
-  <!-- Ajustes -->
-  <ion-list class="settings" inset="true">
-    <ion-item lines="none">
-      <ion-icon name="notifications-outline" slot="start"></ion-icon>
-      <ion-label>Notificaciones</ion-label>
-      <ion-toggle [(ngModel)]="notifications"></ion-toggle>
-    </ion-item>
+    
+    <ion-list class="settings" inset="true">
+      <ion-item lines="none">
+        <ion-icon name="notifications-outline" slot="start"></ion-icon>
+        <ion-label>Notificaciones</ion-label>
+        <ion-toggle [(ngModel)]="notifications"></ion-toggle>
+      </ion-item>
 
-    <ion-item lines="none">
-      <ion-icon name="finger-print-outline" slot="start"></ion-icon>
-      <ion-label>Biometría</ion-label>
-      <ion-toggle [(ngModel)]="biometrics"></ion-toggle>
-    </ion-item>
+      <ion-item lines="none">
+        <ion-icon name="finger-print-outline" slot="start"></ion-icon>
+        <ion-label>Biometría</ion-label>
+        <ion-toggle [(ngModel)]="biometrics"></ion-toggle>
+      </ion-item>
 
-    <ion-item lines="none" button detail>
-      <ion-icon name="person-outline" slot="start"></ion-icon>
-      <ion-label>Editar datos</ion-label>
-    </ion-item>
+      <ion-item lines="none" button detail>
+        <ion-icon name="person-outline" slot="start"></ion-icon>
+        <ion-label>Editar datos</ion-label>
+      </ion-item>
 
-    <ion-item lines="none" button detail>
-      <ion-icon name="lock-closed-outline" slot="start"></ion-icon>
-      <ion-label>Cambiar contraseña</ion-label>
-    </ion-item>
-  </ion-list>
+      <ion-item lines="none" button detail>
+        <ion-icon name="lock-closed-outline" slot="start"></ion-icon>
+        <ion-label>Cambiar contraseña</ion-label>
+      </ion-item>
+    </ion-list>
 
-  <ion-button expand="block" class="logout" (click)="logout()">
-    Cerrar sesión
-  </ion-button>
+    <ion-button expand="block" class="logout" (click)="logout()">
+      Cerrar sesión
+    </ion-button>
+    -->
 </ion-content>
+
+<!-- ion-tab-bar eliminado para evitar error de Angular. El navbar debe estar en el archivo principal de tabs, no aquí. -->
