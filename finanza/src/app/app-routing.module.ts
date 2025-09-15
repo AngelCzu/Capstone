@@ -27,7 +27,7 @@ const routes: Routes = [
   },
   {
     path: 'profile',
-    loadChildren: () => import('./pages/profile/profile.module').then( m => m.ProfilePageModule), canActivate:[noAuthGuard]
+    loadChildren: () => import('./pages/main/profile/profile.module').then( m => m.ProfilePageModule), canActivate:[noAuthGuard]
   },
   {
     path: 'main',

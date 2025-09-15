@@ -1,31 +1,20 @@
 import { inject } from '@angular/core';
-import { CanActivateFn } from '@angular/router';
+import { CanActivateFn, Router } from '@angular/router';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { firstValueFrom } from 'rxjs';
 
-import { Firebase } from '../services/firebase';
-import { Utils } from '../services/utils';
+export const authGuard: CanActivateFn = async () => {
+  const auth = getAuth();
+  const router = inject(Router);
 
-
-
-export const authGuard: CanActivateFn = (route, state) => {
-
-  // Inyectar servicios 
-  const firebaseSvc = inject(Firebase);
-  const utilsSvc = inject(Utils);
-  
-  let user = utilsSvc.getLocalStorage('user');  
-
-  return new Promise((resolve) => {
-
-      firebaseSvc.getAuth().onAuthStateChanged((auth) => {
-      if (auth) {
-        if(user) resolve(true); // El usuario está autenticado
-      }else {
-        utilsSvc.routerLink('/login'); // Redirigir al usuario a la página de inicio de sesión
-        resolve(false); // El usuario no está autenticado
+  return new Promise<boolean>((resolve) => {
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        resolve(true); // Usuario autenticado → puede pasar
+      } else {
+        router.navigateByUrl('/login', { replaceUrl: true }); //  Bloquea y redirige
+        resolve(false);
       }
-  })
-  
-
+    });
   });
-
-}
+};

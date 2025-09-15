@@ -41,6 +41,8 @@ CORS(app, resources={
     r"/api/*": {"origins": ["http://localhost", "http://localhost:8100", "capacitor://localhost"]}
 })
 
+
+
 # --- Auth helper ---
 def require_auth(fn):
     @wraps(fn)
@@ -69,32 +71,77 @@ def health():
 
 
 
+#Crea el perfil del usuario
+@api.post("/users/me")
+@require_auth
+def create_user_profile():
+    body = request.get_json() or {}
+    # Campos permitidos
+    allowed = {k: v for k, v in body.items() if k in {"name", "lastName", "email", "photo"}}
 
+    # Perfil base
+    data = {
+        "uid": request.uid,
+        "name": allowed.get("name", ""),
+        "lastName": allowed.get("lastName", ""),
+        "email": allowed.get("email", ""),
+        "photo": allowed.get("photo", ""),
+        "premium": False,
+        "createdAt": firestore.SERVER_TIMESTAMP,
+        "updatedAt": firestore.SERVER_TIMESTAMP
+    }
+
+    ref = db.collection("users").document(request.uid)
+    ref.set(data, merge=True)
+    return {"ok": True}, 201
+
+
+#Obtiene el perfil del usuario
 @api.get("/users/me")
 @require_auth
 def get_me():
-    ref = db.collection("users").document(request.uid).collection("profile").document("profile")
+    # Documento raíz del usuario
+    ref = db.collection("users").document(request.uid)
     snap = ref.get()
-    data = snap.to_dict() or {}
-    if not data:
+
+    if not snap.exists:
+        # Si no existe, inicializamos con email y valores por defecto
         try:
-            email = auth.get_user(request.uid).email or ""
+            user_record = auth.get_user(request.uid)
+            email = user_record.email or ""
         except Exception:
             email = ""
-        data = {"nombre": "", "email": email, "tipoUsuario": "persona", "moneda": "CLP"}
-        ref.set(data, merge=True)
-    return data, 200
+
+        data = {
+            "name": "",
+            "lastName": "",
+            "email": email,
+            "photo": "",
+            "premium": False
+        }
+        ref.set(data)
+        return data, 200
+
+    return snap.to_dict(), 200
 
 
-
+#Actualiza el perfil del usuario
 @api.patch("/users/me")
 @require_auth
 def patch_me():
     body = request.get_json() or {}
-    allowed = {k: v for k, v in body.items() if k in {"nombre","email","tipoUsuario","moneda"}}
+    # Permitimos actualizar solo estos campos
+    allowed = {
+        k: v for k, v in body.items()
+        if k in {"name", "lastName", "email", "photo", "premium"}
+    }
+
     if not allowed:
         return {"error": "Nada para actualizar"}, 400
-    db.collection("users").document(request.uid).collection("profile").document("profile").set(allowed, merge=True)
+
+    # Guardar en el documento raíz
+    db.collection("users").document(request.uid).set(allowed, merge=True)
+
     return {"ok": True}
 
 

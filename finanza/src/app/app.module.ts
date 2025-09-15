@@ -13,8 +13,8 @@ import { AppRoutingModule } from './app-routing.module';
 import { AngularFireModule } from '@angular/fire/compat';
 import { environment } from 'src/environments/environment';
 
-
-
+import { HttpClientModule, provideHttpClient, withInterceptors } from '@angular/common/http';
+import { authTokenInterceptor } from 'src/app/services/auth-token.interceptor';
 @NgModule({
   declarations: [AppComponent],
   imports: [
@@ -23,9 +23,15 @@ import { environment } from 'src/environments/environment';
     AppRoutingModule,
 
     // Firebase module initialization
-    AngularFireModule.initializeApp(environment.firebaseConfig) // Initialize Firebase with the config
+    AngularFireModule.initializeApp(environment.firebaseConfig), // Initialize Firebase with the config
+
+
+    // HttpClientModule to make HTTP requests
+    HttpClientModule
+    
   ],
-  providers: [{ provide: RouteReuseStrategy, useClass: IonicRouteStrategy }],
+  providers: [{ provide: RouteReuseStrategy, useClass: IonicRouteStrategy}, provideHttpClient(withInterceptors([authTokenInterceptor]))
+  ],
   bootstrap: [AppComponent],
 })
 

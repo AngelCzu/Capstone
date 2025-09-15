@@ -2,6 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SharedModule } from 'src/app/shared/shared-module';
 import { Firebase } from 'src/app/services/firebase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { UserApi } from 'src/app/services/user.api';
+import { UserProfile } from '../../../models/user.model';
+
 
 @Component({
   selector: 'app-profile',
@@ -11,44 +15,59 @@ import { Firebase } from 'src/app/services/firebase';
 })
 export class ProfilePage implements OnInit {
 
-  avatarUrl: string = 'assets/icon/favicon.png';
-  user: any = {
-    name: '',
-    email: '',
-    balance: 0,
-    incomeMonth: 0,
-    expenseMonth: 0
+  user: UserProfile = {
+    name: '', lastName: '', email: '', premium: false, photo: '',
+    
   };
+
+  avatarUrl: string = '';
+ 
   notifications: boolean = true;
   biometrics: boolean = false;
 
-  constructor(private firebase: Firebase) { }
+  constructor(
+    private firebase: Firebase,
+    private api: UserApi) { }
 
   ngOnInit() {
-    const currentUser = this.firebase.getAuth().currentUser;
-    if (currentUser) {
-      this.user.name = currentUser.displayName || '';
-      this.user.email = currentUser.email || '';
-      this.avatarUrl = currentUser.photoURL || 'assets/icon/favicon.png';
-      // Si tienes más datos en Firestore, aquí puedes obtenerlos y asignarlos
+     this.api.getMe().subscribe(user => {
+      this.user = user;
+      this.avatarUrl = user.photo || '';
+    });
+  }
+
+
+  getInitials(): string {
+      const first = this.user.name?.charAt(0) ?? '';
+      const last = this.user.lastName?.charAt(0) ?? '';
+      return (first + last).toUpperCase();
     }
+
+
+  async onAvatarChange(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    // 🔹 Subir a Firebase Storage
+    const storage = getStorage();
+    const fileRef = ref(storage, `avatars/${this.user.email}_${Date.now()}.jpg`);
+    await uploadBytes(fileRef, file);
+    const url = await getDownloadURL(fileRef);
+
+    this.avatarUrl = url;
+    this.user.photo = url;
+
+    // 🔹 Guardar en Firestore vía Flask
+    this.api.patchMe({ photo: url }).subscribe();
   }
 
-  onAvatarChange(event: any): void {
-    // Aquí puedes agregar la lógica para cambiar el avatar
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.avatarUrl = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  }
 
-  logout(): void {
-    // Aquí puedes agregar la lógica de logout
-    console.log('Cerrar sesión');
+  saveProfile() {
+    const patch = {
+      nombre: this.user.name,
+      apellido: this.user.lastName,
+      email: this.user.email,
+    };
+    this.api.patchMe(patch).subscribe();
   }
-
 }
