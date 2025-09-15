@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SharedModule } from 'src/app/shared/shared-module';
-import { Firebase } from 'src/app/services/firebase';
+
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { UserApi } from 'src/app/services/user.api';
 import { UserProfile } from '../../../models/user.model';
+import { Utils } from 'src/app/services/utils';
 
 
 @Component({
@@ -14,9 +15,13 @@ import { UserProfile } from '../../../models/user.model';
   imports: [SharedModule, FormsModule] // <-- Agrega esto
 })
 export class ProfilePage implements OnInit {
+  utilsSvc = inject(Utils);
+
+  
+
 
   user: UserProfile = {
-    name: '', lastName: '', email: '', premium: false, photo: '',
+    name: '', lastName: '', email: '', premium: false, photoURL: '',
     
   };
 
@@ -26,17 +31,17 @@ export class ProfilePage implements OnInit {
   biometrics: boolean = false;
 
   constructor(
-    private firebase: Firebase,
+    
     private api: UserApi) { }
 
   ngOnInit() {
      this.api.getMe().subscribe(user => {
       this.user = user;
-      this.avatarUrl = user.photo || '';
+      this.avatarUrl = user.photoURL || '';
     });
   }
 
-
+  // Método para obtener las iniciales del usuario
   getInitials(): string {
       const first = this.user.name?.charAt(0) ?? '';
       const last = this.user.lastName?.charAt(0) ?? '';
@@ -44,30 +49,56 @@ export class ProfilePage implements OnInit {
     }
 
 
+  // Manejar el cambio de avatar
   async onAvatarChange(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
 
-    // 🔹 Subir a Firebase Storage
+
+    // Subir a Firebase Storage
     const storage = getStorage();
     const fileRef = ref(storage, `avatars/${this.user.email}_${Date.now()}.jpg`);
     await uploadBytes(fileRef, file);
     const url = await getDownloadURL(fileRef);
 
     this.avatarUrl = url;
-    this.user.photo = url;
+    this.user.photoURL = url;
 
-    // 🔹 Guardar en Firestore vía Flask
-    this.api.patchMe({ photo: url }).subscribe();
+    // Guardar en Firestore vía Flask
+    this.api.updateProfile({ photoURL: url }).subscribe();
   }
 
 
-  saveProfile() {
-    const patch = {
-      nombre: this.user.name,
-      apellido: this.user.lastName,
-      email: this.user.email,
-    };
-    this.api.patchMe(patch).subscribe();
+   // Guardar cambios en backend
+  async saveProfile() {
+    if (!this.user) return;
+
+    // Mostrar el loading
+    const loading = await this.utilsSvc.loading();
+    await loading.present();
+
+    // Actualizar perfil
+    this.api.updateProfile({
+      name: this.user.name,
+      lastName: this.user.lastName,
+      photoURL: this.user.photoURL,
+    }).subscribe({
+      next: (res) => {
+        
+
+        // Refrescar datos del usuario
+        this.api.getMe().subscribe(user => {
+        this.user = user;
+        this.avatarUrl = user.photoURL || '';
+      }); 
+      
+      // refrescamos con lo que devolvió backend
+        loading.dismiss()
+      },
+      error: (err) => {
+        console.error('Error actualizando perfil:', err);
+        loading.dismiss()
+      },
+    });
   }
 }

@@ -130,10 +130,11 @@ def get_me():
 @require_auth
 def patch_me():
     body = request.get_json() or {}
+    
     # Permitimos actualizar solo estos campos
     allowed = {
         k: v for k, v in body.items()
-        if k in {"name", "lastName", "email", "photo", "premium"}
+        if k in {"name", "lastName", "email", "photo"}
     }
 
     if not allowed:

@@ -27,7 +27,7 @@ export class SignUpPage implements OnInit {
     name: new FormControl('', [Validators.required, Validators.minLength(4)]),
     lastName: new FormControl('', [Validators.required, Validators.minLength(3)]),
     premium: new FormControl(false),
-    photo: new FormControl('')
+    photoURL: new FormControl('')
 
   });
 
@@ -65,8 +65,8 @@ export class SignUpPage implements OnInit {
         this.form.controls['premium'].setValue(premium);
 
         // por defecto la foto es vacía
-        let photo = '';
-        this.form.controls['photo'].setValue(photo);
+        let photoURL = '';
+        this.form.controls['photo'].setValue(photoURL);
 
 
         // actualizar usuario en firebase

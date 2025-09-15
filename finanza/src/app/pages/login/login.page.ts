@@ -1,6 +1,7 @@
 
 import { Component, inject, OnInit } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, Validators } from '@angular/forms';
+import { last } from 'rxjs';
 import { User } from 'src/app/models/user.model';
 import { Firebase } from 'src/app/services/firebase';
 import { Utils } from 'src/app/services/utils';
@@ -147,6 +148,7 @@ async onClick() {
         uid,
         email: res.user.email || '',
         name: res.user.displayName || '',
+        lastname: res.user.displayName || '',
         photoURL: res.user.photoURL || '',
         // agrega aquí otros campos por defecto que uses en tu app
         createdAt: new Date().toISOString(),
@@ -154,8 +156,7 @@ async onClick() {
       await this.firebaseSvc.setDocument(path, user);
     }
 
-    // 3) Guardar en localStorage y navegar
-    this.utilsSvc.saveLocalStorage('user', user);
+    // 3) Navegar
     this.utilsSvc.routerLink('/main/home');
 
     // 4) Mensaje de éxito
@@ -167,9 +168,6 @@ async onClick() {
       icon: 'person-circle-outline'
     });
 
-    // 5) Si quieres verificar inmediatamente:
-    const prueba = this.utilsSvc.getLocalStorage('user');
-    console.log('Usuario local storage:', prueba);
 
   } catch (error: any) {
     console.error(error);
