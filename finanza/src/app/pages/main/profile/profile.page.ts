@@ -1,7 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { SharedModule } from 'src/app/shared/shared-module';
-
+import { FormControl, FormGroup, FormsModule, Validators } from '@angular/forms';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { UserApi } from 'src/app/services/user.api';
 import { UserProfile } from '../../../models/user.model';
@@ -30,14 +29,48 @@ export class ProfilePage implements OnInit {
   notifications: boolean = true;
   biometrics: boolean = false;
 
+  form = new FormGroup({
+    uid: new FormControl(''),
+    email: new FormControl('', [Validators.required, Validators.email]),
+    name: new FormControl('', [Validators.required, Validators.minLength(4)]),
+    lastName: new FormControl('', [Validators.required, Validators.minLength(3)]),
+    photoURL: new FormControl('')
+
+  });
+
   constructor(
     
     private api: UserApi) { }
 
   ngOnInit() {
-     this.api.getMe().subscribe(user => {
-      this.user = user;
-      this.avatarUrl = user.photoURL || '';
+   this.loadProfile();
+  }
+
+
+  loadProfile() {
+    this.utilsSvc.loading().then(loading => {
+      loading.present();
+
+      this.api.getMe().subscribe({
+        next: (user) => {
+          this.user = user;
+          this.avatarUrl = user.photoURL || '';
+          loading.dismiss(); // cerrar loading SOLO cuando llega la data
+        },
+        error: (err) => {
+          console.error('Error cargando perfil', err);
+          loading.dismiss(); // cerrar loading también en caso de error
+
+          // Mostrar mensaje de error
+        this.utilsSvc.presentToast({
+          message: `Error al cargar perfil: ${err.message}`,
+          duration: 1500,
+          color: 'danger',
+          position: 'middle',
+          icon: 'warning-outline'
+        });
+        }
+      });
     });
   }
 
@@ -87,16 +120,29 @@ export class ProfilePage implements OnInit {
         
 
         // Refrescar datos del usuario
-        this.api.getMe().subscribe(user => {
-        this.user = user;
-        this.avatarUrl = user.photoURL || '';
-      }); 
+        this.loadProfile();
       
-      // refrescamos con lo que devolvió backend
+      // Cerrar loading
         loading.dismiss()
+
+        // Mostrar mensaje de éxito
+        this.utilsSvc.presentToast({
+          message: `Actualización exitosa`,
+          duration: 1500,
+          color: 'success',
+          position: 'bottom',
+          icon: 'checkmark-circle-outline'
+        });
       },
       error: (err) => {
-        console.error('Error actualizando perfil:', err);
+        // Mostrar mensaje de éxito
+        this.utilsSvc.presentToast({
+          message: `${err.message}`,
+          duration: 1500,
+          color: 'danger',
+          position: 'bottom',
+          icon: 'warning-outline'
+        });
         loading.dismiss()
       },
     });
