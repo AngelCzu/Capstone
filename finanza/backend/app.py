@@ -81,7 +81,7 @@ def health():
 def create_user_profile():
     body = request.get_json() or {}
     # Campos permitidos
-    allowed = {k: v for k, v in body.items() if k in {"name", "lastName", "email", "photo"}}
+    allowed = {k: v for k, v in body.items() if k in {"name", "lastName", "email", "photoURL"}}
 
     # Perfil base
     data = {
@@ -89,7 +89,7 @@ def create_user_profile():
         "name": allowed.get("name", ""),
         "lastName": allowed.get("lastName", ""),
         "email": allowed.get("email", ""),
-        "photo": allowed.get("photo", ""),
+        "photoURL": allowed.get("photoURL", ""),
         "premium": False,
         "createdAt": firestore.SERVER_TIMESTAMP,
         "updatedAt": firestore.SERVER_TIMESTAMP
@@ -120,7 +120,7 @@ def get_me():
             "name": "",
             "lastName": "",
             "email": email,
-            "photo": "",
+            "photoURL": "",
             "premium": False
         }
         ref.set(data)
@@ -138,7 +138,7 @@ def patch_me():
     # Permitimos actualizar solo estos campos
     allowed = {
         k: v for k, v in body.items()
-        if k in {"name", "lastName", "email", "photo"}
+        if k in {"name", "lastName", "email", "photoURL"}
     }
 
     if not allowed:
@@ -151,13 +151,13 @@ def patch_me():
 
 
 # Subir foto de perfil
-@api.post("/users/me/photo")
+@api.post("/users/me/photoURL")
 @require_auth
 def upload_photo():
-    if "photo" not in request.files:
+    if "photoURL" not in request.files:
         return jsonify({"error": "No se envió archivo"}), 400
 
-    file = request.files["photo"]
+    file = request.files["photoURL"]
 
     # Solo permitimos imágenes
     if not file.mimetype.startswith("image/"):
@@ -177,7 +177,7 @@ def upload_photo():
 
     # Actualizamos Firestore
     db.collection("users").document(request.uid).set(
-        {"photo": photo_url, "updatedAt": firestore.SERVER_TIMESTAMP},
+        {"photoURL": photo_url, "updatedAt": firestore.SERVER_TIMESTAMP},
         merge=True
     )
 

@@ -85,8 +85,6 @@ export class LoginPage implements OnInit {
 
       this.firebaseSvc.getDocument(path).then((user: User) => {
 
-        // guardar en storage local
-        this.utilsSvc.saveLocalStorage('user', user);
 
         // Redirigir al usuario a la página principal
         this.utilsSvc.routerLink('/main/home');
@@ -131,41 +129,66 @@ export class LoginPage implements OnInit {
 // Iniciar sesión con Google
 async onClick() {
   try {
+
+    // Mostrar el loading
+    const loading = await this.utilsSvc.loading();
+    await loading.present();
+
+    // 1) Iniciar sesión con Google
     const res = await this.firebaseSvc.signInGoogle();
+
+    loading.dismiss();
+
+    // Obtener el UID del usuario
     const uid = res.user.uid;
 
-    // (Opcional) actualizar displayName en auth si quieres
-    await this.firebaseSvc.updateUser(res.user.displayName || '');
+    
 
     const path = `users/${uid}`;
 
-    // 1) Intentar obtener el doc del usuario
+    // 2) Intentar obtener el doc del usuario
     let user = await this.firebaseSvc.getDocument(path);
 
-    // 2) Si no existe, crearlo con los datos de Google (no uses this.form aquí)
+    // 3) Si no existe, crearlo con los datos de Google (no uses this.form aquí)
     if (!user) {
+
+      // Si quieres separar nombre y apellido:
+      let firstName = "";
+      let lastName = "";
+
+      if (res.user.displayName) {
+        const parts = res.user.displayName.split(" ");
+        firstName = parts[0];
+        lastName = parts.slice(1).join(" "); // por si hay más de un apellido
+      }
+
+      // Crear el usuario
       user = {
         uid,
         email: res.user.email || '',
-        name: res.user.displayName || '',
-        lastname: res.user.displayName || '',
+        name: firstName || '',
+        lastName: lastName || '',
         photoURL: res.user.photoURL || '',
         premium: false,
         // agrega aquí otros campos por defecto que uses en tu app
         createdAt: new Date().toISOString(),
       };
+
+      // Guardar en Firestore
       await this.firebaseSvc.setDocument(path, user);
+
+      
     }
 
-    // 3) Navegar
+    // 4) Navegar
     this.utilsSvc.routerLink('/main/home');
 
-    // 4) Mensaje de éxito
+    // 5) Mensaje de éxito
     this.utilsSvc.presentToast({
       message: `Inicio de sesión exitoso ${user['name'] || ''}`,
       duration: 1500,
-      color: 'primary',
-      position: 'middle',
+      color: 'success',
+      position: 'bottom',
       icon: 'person-circle-outline'
     });
 
@@ -179,7 +202,7 @@ async onClick() {
       position: 'middle',
       icon: 'alert-circle-outline'
     });
-  }
+  } 
 }
 
 

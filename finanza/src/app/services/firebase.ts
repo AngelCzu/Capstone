@@ -60,7 +60,6 @@ export class Firebase {
   //======= Cerrar sesión =======
   signOut() { 
     getAuth().signOut();
-    localStorage.removeItem('user'); // Limpiar el almacenamiento local
     this.utilsSvc.routerLink('/login'); // Redirigir al usuario a la página de inicio de sesión
   }
 

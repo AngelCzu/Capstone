@@ -1,13 +1,17 @@
 <app-header backButton="/login" title="Perfil"></app-header>
 
+
 <ion-content class="profile-page" fullscreen>
+  <ion-button (click)="signOut()" expand="block" fill="clear" shape="round">
+  <ion-icon name="log-out-outline"></ion-icon>signOut
+</ion-button>
   <!-- Tarjeta credencial -->
   <div class="cream-card hero">
     <div class="card-content">
       <!-- Imagen lado izquierdo -->
       <div class="avatar-section">
         <ng-container *ngIf="avatarUrl; else initials">
-          <img [src]="avatarUrl" alt="avatar" class="avatar"/>
+          <img [src]="avatarUrl || 'assets/img/avatar-placeholder.png'" alt="avatar" class="avatar"/>
         </ng-container>
         <ng-template #initials>
           <div class="avatar initials">{{ getInitials() }}</div>

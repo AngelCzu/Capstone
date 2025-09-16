@@ -11,6 +11,8 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    min-height: 150px;
+    padding: 1.5rem; // más aire interno
   }
 
   .card-content {

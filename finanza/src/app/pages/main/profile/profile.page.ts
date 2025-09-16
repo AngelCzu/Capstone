@@ -3,6 +3,7 @@ import { FormGroup, FormControl, Validators, FormsModule } from '@angular/forms'
 import { Utils } from 'src/app/services/utils';
 import { UserApi } from 'src/app/services/user.api';
 import { SharedModule } from 'src/app/shared/shared-module';
+import { Firebase } from 'src/app/services/firebase';
 
 @Component({
   selector: 'app-profile',
@@ -13,6 +14,7 @@ import { SharedModule } from 'src/app/shared/shared-module';
 export class ProfilePage implements OnInit {
   private userApi = inject(UserApi);
   utilsSvc = inject(Utils);
+  firebaseSvc = inject(Firebase);
 
   form = new FormGroup({
     uid: new FormControl(''),
@@ -32,12 +34,15 @@ export class ProfilePage implements OnInit {
   async loadProfile() {
     const loading = await this.utilsSvc.loading();
     await loading.present();
+    
 
     this.userApi.getMe().subscribe({
       next: (user) => {
         this.form.patchValue(user);
         this.avatarUrl = user.photoURL || '';
         loading.dismiss();
+        console.log(user);
+        
       },
       error: async (err) => {
         loading.dismiss();
@@ -137,4 +142,8 @@ export class ProfilePage implements OnInit {
     });
   }
 
+
+  signOut() {
+    this.firebaseSvc.signOut();
+  }
 }
