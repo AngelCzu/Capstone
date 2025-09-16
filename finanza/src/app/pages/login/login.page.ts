@@ -150,6 +150,7 @@ async onClick() {
         name: res.user.displayName || '',
         lastname: res.user.displayName || '',
         photoURL: res.user.photoURL || '',
+        premium: false,
         // agrega aquí otros campos por defecto que uses en tu app
         createdAt: new Date().toISOString(),
       };
