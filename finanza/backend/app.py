@@ -5,9 +5,10 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 
 import firebase_admin
-from firebase_admin import credentials, auth
+from firebase_admin import credentials, auth, storage
 from google.cloud import firestore
 from google.oauth2 import service_account  # <-- NUEVO
+import uuid
 
 # --- Cargar .env --- si existe
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -28,10 +29,13 @@ if not os.path.exists(cred_path):
 
 # 1) Firebase Admin
 cred = credentials.Certificate(cred_path)
-firebase_admin.initialize_app(cred)
+creds_sa = service_account.Credentials.from_service_account_file(cred_path)
+
+firebase_admin.initialize_app(cred, {
+    "storageBucket": f"{creds_sa.project_id}.appspot.com"
+})
 
 # 2) Firestore con credenciales explícitas + project
-creds_sa = service_account.Credentials.from_service_account_file(cred_path)
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path  # fuerza ABSOLUTA (independiente del CWD)
 db = firestore.Client(credentials=creds_sa, project=creds_sa.project_id)
 
@@ -146,22 +150,38 @@ def patch_me():
     return {"ok": True}
 
 
-
-@api.get("/config")
+# Subir foto de perfil
+@api.post("/users/me/photo")
 @require_auth
-def get_config():
-    ref = db.collection("users").document(request.uid).collection("config").document("config")
-    return (ref.get().to_dict() or {"filtrosPorDefecto": {}}), 200
+def upload_photo():
+    if "photo" not in request.files:
+        return jsonify({"error": "No se envió archivo"}), 400
 
+    file = request.files["photo"]
 
+    # Solo permitimos imágenes
+    if not file.mimetype.startswith("image/"):
+        return jsonify({"error": "Archivo inválido, debe ser imagen"}), 400
 
-@api.put("/config")
-@require_auth
-def put_config():
-    body = request.get_json() or {}
-    cfg = {"filtrosPorDefecto": body.get("filtrosPorDefecto", {})}
-    db.collection("users").document(request.uid).collection("config").document("config").set(cfg, merge=True)
-    return {"ok": True}
+    # Nombre único en carpeta avatars/
+    filename = f"avatars/{request.uid}_{uuid.uuid4().hex}.jpg"
+
+    # Subir a Firebase Storage
+    bucket = storage.bucket()
+    blob = bucket.blob(filename)
+    blob.upload_from_file(file, content_type=file.mimetype)
+
+    # Hacemos pública la URL (o puedes usar signed_url si prefieres temporal)
+    blob.make_public()
+    photo_url = blob.public_url
+
+    # Actualizamos Firestore
+    db.collection("users").document(request.uid).set(
+        {"photo": photo_url, "updatedAt": firestore.SERVER_TIMESTAMP},
+        merge=True
+    )
+
+    return {"photoURL": photo_url}, 200
 
 app.register_blueprint(api)
 

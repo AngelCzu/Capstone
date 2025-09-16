@@ -19,4 +19,11 @@ export class UserApi {
   updateProfile(data: Partial<User>): Observable<User> {
     return this.http.patch<User>(this.baseUrl, data);
   }
+
+  
+  // Subir foto de perfil
+  uploadProfilePhoto(data: FormData) {
+  return this.http.post<{ photoURL: string }>('/api/v1/users/me/photo', data);
+}
+
 }

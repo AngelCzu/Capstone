@@ -1,48 +1,74 @@
 <app-header backButton="/login" title="Perfil"></app-header>
 
 <ion-content class="profile-page" fullscreen>
+  <!-- Tarjeta credencial -->
   <div class="cream-card hero">
-    <div class="avatar-wrap">
-      <ng-container *ngIf="avatarUrl; else initials">
-        <img [src]="avatarUrl" alt="avatar" class="avatar"/>
-      </ng-container>
-      <ng-template #initials>
-        <div class="avatar initials">{{ getInitials() }}</div>
-      </ng-template>
+    <div class="card-content">
+      <!-- Imagen lado izquierdo -->
+      <div class="avatar-section">
+        <ng-container *ngIf="avatarUrl; else initials">
+          <img [src]="avatarUrl" alt="avatar" class="avatar"/>
+        </ng-container>
+        <ng-template #initials>
+          <div class="avatar initials">{{ getInitials() }}</div>
+        </ng-template>
 
-      <label class="avatar-edit">
-        <ion-icon name="camera-outline"></ion-icon>
-        <input type="file" accept="image/*" (change)="onAvatarChange($event)" hidden />
-      </label>
+        <!-- Botón para cambiar foto -->
+        <label class="avatar-edit">
+          <ion-icon name="camera-outline"></ion-icon>
+          <input type="file" accept="image/*" (change)="onAvatarChange($event)" hidden />
+        </label>
+      </div>
+
+      <!-- Datos lado derecho -->
+      <div class="info-section">
+        <h2>{{ form.value.name }} {{ form.value.lastName }}</h2>
+        <p>{{ form.value.email }}</p>
+      </div>
     </div>
 
-    <h2 class="name">{{ user.name }} {{ user.lastName }}</h2>
-    <p class="email">{{ user.email }}</p>
-
-    <ion-chip *ngIf="user.premium" color="warning">
-      <ion-icon name="star"></ion-icon>
-      <ion-label>Premium</ion-label>
-    </ion-chip>
-    <ion-chip *ngIf="!user.premium" color="medium">
-      <ion-icon name="close-circle"></ion-icon>
-      <ion-label>Gratis</ion-label>
-    </ion-chip>
+    <!-- Timbre de estado -->
+    <div class="status-badge" [ngClass]="form.value.premium ? 'premium' : 'free'">
+      <ion-icon [name]="form.value.premium ? 'checkmark-circle' : 'close-circle'"></ion-icon>
+      <span>{{ form.value.premium ? 'Usuario Premium' : 'Usuario Gratis' }}</span>
+    </div>
   </div>
 
-  <ion-list>
+  <!-- Formulario -->
+  <form [formGroup]="form" (ngSubmit)="saveProfile()" class="form-wrapper">
+    <!-- Nombre -->
     <ion-item>
       <ion-label position="floating">Nombre</ion-label>
-      <ion-input [(ngModel)]="user.name"></ion-input>
+      <ion-input formControlName="name"></ion-input>
     </ion-item>
+    <div class="validators" *ngIf="form.controls.name.errors && form.controls.name.touched">
+      <div *ngIf="form.controls.name.errors?.['required']">El nombre es requerido</div>
+      <div *ngIf="form.controls.name.errors?.['minlength']">Debe tener al menos 4 caracteres</div>
+    </div>
+
+    <!-- Apellido -->
     <ion-item>
       <ion-label position="floating">Apellido</ion-label>
-      <ion-input [(ngModel)]="user.lastName"></ion-input>
+      <ion-input formControlName="lastName"></ion-input>
     </ion-item>
+    <div class="validators" *ngIf="form.controls.lastName.errors && form.controls.lastName.touched">
+      <div *ngIf="form.controls.lastName.errors?.['required']">El apellido es requerido</div>
+      <div *ngIf="form.controls.lastName.errors?.['minlength']">Debe tener al menos 3 caracteres</div>
+    </div>
+
+    <!-- Correo -->
     <ion-item>
       <ion-label position="floating">Correo</ion-label>
-      <ion-input [(ngModel)]="user.email"></ion-input>
+      <ion-input formControlName="email"></ion-input>
     </ion-item>
-  </ion-list>
+    <div class="validators" *ngIf="form.controls.email.errors && form.controls.email.touched">
+      <div *ngIf="form.controls.email.errors?.['required']">El correo es requerido</div>
+      <div *ngIf="form.controls.email.errors?.['email']">Correo no válido</div>
+    </div>
 
-  <ion-button expand="block" (click)="saveProfile()">Guardar cambios</ion-button>
+    <!-- Botón Guardar -->
+    <ion-button expand="block" type="submit" [disabled]="form.invalid">
+      Guardar cambios
+    </ion-button>
+  </form>
 </ion-content>
