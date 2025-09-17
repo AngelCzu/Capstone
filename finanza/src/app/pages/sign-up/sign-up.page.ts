@@ -10,6 +10,8 @@ import { SharedModule } from 'src/app/shared/shared-module';
 import { HttpClient } from '@angular/common/http';
 import { getAuth } from 'firebase/auth';
 
+import { firstValueFrom } from 'rxjs';
+
 
 @Component({
   selector: 'app-sign-up',
@@ -66,17 +68,15 @@ export class SignUpPage implements OnInit {
 
         // por defecto la foto es vacía
         let photoURL = '';
-        this.form.controls['photo'].setValue(photoURL);
+        this.form.controls['photoURL'].setValue(photoURL);
 
-
+        
+        
         // actualizar usuario en firebase
-        this.setUserInfo(idToken);
+        this.setUserInfo();
 
 
       }).catch(error => {
-
-        // Mostrar el error
-        console.error(error);
 
         this.utilsSvc.presentToast({
           message: error.message,
@@ -92,46 +92,53 @@ export class SignUpPage implements OnInit {
     }
   }
 
-  async setUserInfo(idToken: string) {
-    // Mostrar el loading
-    const loading = await this.utilsSvc.loading();
-    await loading.present();
+  async setUserInfo(): Promise<void> {
+  // Mostrar el loading
+  const loading = await this.utilsSvc.loading();
+  await loading.present();
 
-    try {
-
-      if (this.form.valid) {
-
-
-
-        // Llamada al backend Flask (usando proxy /api)
-        this.http
-          .post('/api/v1/users/me', this.form.value, {
-            headers: { Authorization: `Bearer ${idToken}` },
-          }).subscribe({
-            next: (res) => console.log("Usuario guardado en Firestore vía Flask", res),
-            error: (err) => console.error("Error guardando usuario", err)
-          });
-
-        // Redirigir al usuario a la página de inicio
-        this.utilsSvc.routerLink('/main/home');
-        this.form.reset();
-
-      }
-    } catch (error) {
-      // Mostrar el error
-      console.error(error);
-
-      this.utilsSvc.presentToast({
-        message: error.message,
-        duration: 2500,
-        color: 'primary',
-        position: 'middle',
-        icon: 'alert-circle-outline'
-      });
-    } finally {
-      loading.dismiss();
-
+  try {
+    if (!this.form.valid) {
+      throw new Error('Formulario inválido.');
     }
 
+    // Llamada al backend (el interceptor agregará Authorization con el token fresco)
+    const res = await firstValueFrom(
+      this.http.post('/api/v1/users/me', this.form.value)
+    );
+
+
+    // Feedback + navegación
+    await this.utilsSvc.presentToast({
+      message: 'Perfil creado correctamente.',
+      duration: 2000,
+      color: 'success',
+      position: 'middle',
+      icon: 'checkmark-circle-outline'
+    });
+
+    this.form.reset();
+    this.utilsSvc.routerLink('/main/home');
+
+  } catch (err: any) {
+    console.error('Error guardando usuario', err);
+
+    const message =
+      err?.status === 401
+        ? 'No autorizado: tu sesión expiró o el token no es válido.'
+        : (err?.error?.message ?? 'No se pudo guardar el usuario.');
+
+    await this.utilsSvc.presentToast({
+      message: message,
+      duration: 3000,
+      color: 'danger',
+      position: 'middle',
+      icon: 'alert-circle-outline'
+    });
+
+  } finally {
+    await loading.dismiss();
   }
+}
+
 }

@@ -52,16 +52,19 @@ def require_auth(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         authz = request.headers.get("Authorization", "")
+
         if not authz.startswith("Bearer "):
             return jsonify({"error": "Unauthorized"}), 401
         token = authz.split(" ", 1)[1]
         try:
             decoded = auth.verify_id_token(token)
-        except Exception:
+        except Exception as e:
+            print("Error verificando token:", e)
             return jsonify({"error": "Invalid token"}), 401
         request.uid = decoded["uid"]
         return fn(*args, **kwargs)
     return wrapper
+
 
 # --- Rutas ---
 api = Blueprint("api", __name__, url_prefix="/api/v1")

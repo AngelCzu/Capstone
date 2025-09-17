@@ -1,22 +1,23 @@
 import { HttpInterceptorFn } from '@angular/common/http';
-import { getAuth } from 'firebase/auth';
 import { from } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
+import { getAuth } from 'firebase/auth';
 
 export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = getAuth();
-  const user = auth.currentUser;
 
-  if (!user) {
-    return next(req); // sin usuario → sigue normal
+  if (!auth.currentUser) {
+    return next(req);
   }
 
-  return from(user.getIdToken()).pipe(
+  return from(auth.currentUser.getIdToken()).pipe(
     switchMap((token) => {
-      const authReq = req.clone({
-        setHeaders: { Authorization: `Bearer ${token}` },
+      const cloned = req.clone({
+        setHeaders: {
+          Authorization: `Bearer ${token}`
+        }
       });
-      return next(authReq);
+      return next(cloned);
     })
   );
 };

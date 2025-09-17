@@ -41,7 +41,6 @@ export class ProfilePage implements OnInit {
         this.form.patchValue(user);
         this.avatarUrl = user.photoURL || '';
         loading.dismiss();
-        console.log(user);
         
       },
       error: async (err) => {
