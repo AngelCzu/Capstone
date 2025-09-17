@@ -1,0 +1,41 @@
+/* Fondo oscuro general */
+.custom-tab-bar {
+  --background: #163a32;
+  border: none;
+  padding: 5px 0;
+  height: 70px;
+}
+
+/* Botones de tabs */
+.custom-tab-bar ion-tab-button {
+  --color: #9e9e9e;  /* gris claro */
+  --ripple-color: transparent;
+  flex-direction: column;
+  font-size: 12px;
+  position: relative;
+    color: #fff !important;
+}
+
+/* Ícono y texto del tab */
+.custom-tab-bar ion-icon {
+    font-size: 22px;
+    margin-bottom: 3px;
+    color: #fff !important;
+}
+
+/* Activo → ícono y texto blancos */
+.custom-tab-bar ion-tab-button.tab-selected {
+    --color: #ffffff;
+    background: #2d2d2d;
+}
+
+/* Barra de highlight estilo neón arriba del tab activo */
+.custom-tab-bar ion-tab-button.tab-selected::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 4px;
+  background: linear-gradient(90deg, #a855f7, #9333ea); /* violeta neón */
+  border-radius: 0 0 8px 8px;
+}

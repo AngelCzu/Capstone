@@ -26,4 +26,6 @@ export class UserApi {
   return this.http.post<{ photoURL: string }>('/api/v1/users/me/photo', data);
 }
 
+
+
 }

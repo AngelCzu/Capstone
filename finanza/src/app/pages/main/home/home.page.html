@@ -1,25 +1,7 @@
 <app-header profile="profile" title="Inicio" badge="5"></app-header>
 
 <ion-content class="dashboard-page" fullscreen>
-  <h1 class="app-title">APP</h1>
 
-  <ion-header>
-  <ion-toolbar><ion-title>Gastos</ion-title></ion-toolbar>
-</ion-header>
-
-<ion-content class="ion-padding">
-  <app-storage-bar
-    [expenses]="expenses"
-    [totalIncome]="totalIncome"
-    [heightPx]="28"
-    [rounded]="14"
-    [showLegend]="true">
-  </app-storage-bar>
-
-  <ion-button expand="block" (click)="simularIngresoExtra()">
-    Simular ingreso extra (+10)
-  </ion-button>
-</ion-content>
 
 
   <!-- Tarjeta: Donut -->
@@ -46,43 +28,9 @@
 </ion-segment>
 
   </div>
+
+
 </ion-content>
-<!-- Tu comentario aquí 
-<ion-footer class="bottom-nav">
-  <div class="bar">
-    <ion-button (click)="signOut()" fill="clear"><ion-icon name="log-out"></ion-icon></ion-button>
-    <ion-button fill="clear"><ion-icon name="add-outline"></ion-icon></ion-button>
-    <ion-button fill="clear"><ion-icon name="search-outline"></ion-icon></ion-button>
-    <ion-button fill="clear"><ion-icon name="trophy-outline"></ion-icon></ion-button>
-  </div>
-</ion-footer> -->
-<ion-tabs>
-  <ion-tab-bar slot="bottom" class="custom-tab-bar">
 
-    <ion-tab-button tab="home" [routerLink]="['/main/home']">
-      <ion-icon name="home-outline"></ion-icon>
-      <ion-label>Home</ion-label>
-    </ion-tab-button>
 
-    <ion-tab-button tab="agregar" [routerLink]="['/agregar']">
-      <ion-icon name="add-outline"></ion-icon>
-      <ion-label>Agregar</ion-label>
-    </ion-tab-button>
-
-    <ion-tab-button tab="analisis" [routerLink]="['/analisis']">
-      <ion-icon name="stats-chart-outline"></ion-icon>
-      <ion-label>Análisis</ion-label>
-    </ion-tab-button>
-
-    <ion-tab-button tab="premium" [routerLink]="['/premium']">
-      <ion-icon name="diamond-outline"></ion-icon>
-      <ion-label>Premium</ion-label>
-    </ion-tab-button>
-<!--
-    <ion-tab-button tab="profile" [routerLink]="['/main/profile']">
-      <ion-icon name="person-outline"></ion-icon>
-      <ion-label>Profile</ion-label>
-    </ion-tab-button> -->
-
-  </ion-tab-bar>
-</ion-tabs>
+<app-navbar></app-navbar>

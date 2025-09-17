@@ -7,6 +7,7 @@ import { IonicModule } from '@ionic/angular';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { StorageBarComponent } from './component/storage-bar/storage-bar.component';
+import { NavbarComponent } from './component/navbar/navbar.component';
 
 
 
@@ -15,7 +16,8 @@ import { StorageBarComponent } from './component/storage-bar/storage-bar.compone
     HeaderComponent,
     CustomInputComponent,
     LogoComponent,
-    StorageBarComponent
+    StorageBarComponent,
+    NavbarComponent,
   ],
   exports: [
     HeaderComponent,
@@ -25,7 +27,8 @@ import { StorageBarComponent } from './component/storage-bar/storage-bar.compone
     IonicModule,
     ReactiveFormsModule,
     RouterLink,
-    StorageBarComponent
+    StorageBarComponent,
+    NavbarComponent
      
   ],
   imports: [
@@ -34,6 +37,7 @@ import { StorageBarComponent } from './component/storage-bar/storage-bar.compone
     ReactiveFormsModule,
     FormsModule,
     RouterLink,
+    
     
   ]
 })
