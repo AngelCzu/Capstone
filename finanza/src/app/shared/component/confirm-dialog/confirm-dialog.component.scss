@@ -1,0 +1,50 @@
+ion-modal {
+  --width: 90%;
+  --max-width: 400px;
+  --height: auto;
+  --border-radius: 20px;
+  --background: transparent; /* fondo global del modal */
+  --box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.confirm-content {
+  --background: transparent;
+}
+
+.confirm-card {
+  background: var(--ion-color-light);
+  border-radius: 20px;
+  padding: 20px;
+  text-align: center;
+}
+
+.warning-icon {
+  font-size: 4rem;
+  color: var(--ion-color-warning);
+  margin-bottom: 15px;
+}
+
+h2 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--ion-color-dark);
+}
+
+p {
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 25px;
+  color: var(--ion-color-medium);
+  white-space: pre-line;
+}
+
+.buttons {
+  display: flex;
+  gap: 12px;
+
+  ion-button {
+    flex: 1;
+    border-radius: 12px;
+  }
+}

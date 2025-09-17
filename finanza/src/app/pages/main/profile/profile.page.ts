@@ -5,6 +5,11 @@ import { UserApi } from 'src/app/services/user.api';
 import { SharedModule } from 'src/app/shared/shared-module';
 import { Firebase } from 'src/app/services/firebase';
 
+import { getAuth, updateEmail, EmailAuthProvider, reauthenticateWithCredential, signOut } from 'firebase/auth';
+import { firstValueFrom } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+
+
 @Component({
   selector: 'app-profile',
   templateUrl: './profile.page.html',
@@ -12,9 +17,11 @@ import { Firebase } from 'src/app/services/firebase';
   imports: [SharedModule, FormsModule] // <-- Agrega esto
 })
 export class ProfilePage implements OnInit {
+  
   private userApi = inject(UserApi);
   utilsSvc = inject(Utils);
   firebaseSvc = inject(Firebase);
+  private http: HttpClient;
 
   form = new FormGroup({
     uid: new FormControl(''),
@@ -56,35 +63,77 @@ export class ProfilePage implements OnInit {
     });
   }
 
-  async saveProfile() {
-    if (this.form.invalid) return;
+  async saveProfile(): Promise<void> {
+  const loading = await this.utilsSvc.loading();
+  await loading.present();
 
-    const loading = await this.utilsSvc.loading();
-    await loading.present();
+  try {
+    if (!this.form.valid) throw new Error('Formulario inválido.');
 
-    this.userApi.updateProfile(this.form.value).subscribe({
-      next: async () => {
-        loading.dismiss();
-        this.utilsSvc.presentToast({
-          message: 'Perfil actualizado',
-          duration: 1500,
-          color: 'success',
-          position: 'bottom',
-          icon: 'checkmark-circle-outline'
-        });
-      },
-      error: async (err) => {
-        loading.dismiss();
-        this.utilsSvc.presentToast({
-          message: `Error al actualizar perfil: ${err.message}`,
-          duration: 1500,
-          color: 'danger',
-          position: 'bottom',
-          icon: 'warning-outline'
-        });
-      },
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) throw new Error('No hay usuario autenticado.');
+
+    const nuevoEmail = this.form.controls['email'].value;
+
+    // 1) Si cambió el email, actualizar en Firebase Auth (podría pedir re-login)
+    if (nuevoEmail && nuevoEmail !== user.email) {
+      try {
+        await updateEmail(user, nuevoEmail);
+      } catch (err: any) {
+        // Si necesita re-autenticación, pedimos la contraseña actual
+        if (err?.code === 'auth/requires-recent-login') {
+          // Solicita contraseña al usuario mediante tu utilsSvc o un prompt de Ionic
+          const password = await this.utilsSvc.presentPasswordPrompt({
+            header: 'Confirmar identidad',
+            message: 'Ingresa tu contraseña para confirmar el cambio de correo'
+          });
+          if (!password) throw new Error('Operación cancelada');
+
+          // Reautenticar
+          const credential = EmailAuthProvider.credential(user.email!, password);
+          await reauthenticateWithCredential(user, credential);
+
+          // Intentamos nuevamente el cambio de email
+          await updateEmail(user, nuevoEmail);
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    // 2) Actualizar en tu backend (Firestore vía Flask)
+    const payload = {
+      name: this.form.controls['name'].value,
+      lastName: this.form.controls['lastName'].value,
+      email: nuevoEmail,
+      photoURL: this.form.controls['photoURL']?.value || ''
+    };
+
+    const res = await firstValueFrom(this.http.patch('/api/v1/users/me', payload));
+    console.log('Perfil actualizado backend:', res);
+
+    await this.utilsSvc.presentToast({
+      message: 'Perfil actualizado correctamente.',
+      duration: 2000,
+      color: 'success',
+      position: 'middle',
+      icon: 'checkmark-circle-outline'
     });
+
+  } catch (error: any) {
+    console.error('Error actualizando perfil:', error);
+    await this.utilsSvc.presentToast({
+      message: error?.message || 'Error al actualizar perfil',
+      duration: 3000,
+      color: 'danger',
+      position: 'middle',
+      icon: 'alert-circle-outline'
+    });
+  } finally {
+    await loading.dismiss();
   }
+}
 
   getInitials() {
     const { name, lastName } = this.form.value;
@@ -141,6 +190,43 @@ export class ProfilePage implements OnInit {
     });
   }
 
+
+
+  async signOutConfirm(): Promise<void> {
+  const ok = await this.utilsSvc.presentCustomConfirm({
+    title: 'Cerrar sesión',
+    message: '¿Estás seguro que quieres cerrar sesión? \n\n Deberás iniciar sesión nuevamente.',
+    confirmText: 'Cerrar sesión',
+    cancelText: 'Cancelar'
+  });
+
+  if (!ok) return;
+
+  try {
+    // 1) Llamada al backend para revocar refresh tokens (endpoint protegido)
+    await firstValueFrom(this.http.post('/api/v1/users/me/revoke', {}));
+
+    // 2) Hacer signOut local (SDK Firebase)
+    const auth = getAuth();
+    await signOut(auth);
+
+    // 3) Navegar a login
+    this.utilsSvc.routerLink('/login');
+
+    await this.utilsSvc.presentToast({
+      message: 'Sesión cerrada. Debes iniciar sesión para volver a usar la app.',
+      duration: 2000,
+      color: 'primary'
+    });
+  } catch (err: any) {
+    console.error('Error cerrando sesión:', err);
+    await this.utilsSvc.presentToast({
+      message: 'No se pudo cerrar sesión correctamente.',
+      duration: 2500,
+      color: 'danger'
+    });
+  }
+}
 
   signOut() {
     this.firebaseSvc.signOut();

@@ -26,7 +26,7 @@ import { authTokenInterceptor } from 'src/app/services/auth-token.interceptor';
     AngularFireModule.initializeApp(environment.firebaseConfig), // Initialize Firebase with the config
 
 
-    // HttpClientModule to make HTTP requests
+    // HttpClientModule hace HTTP requests
     HttpClientModule
     
   ],

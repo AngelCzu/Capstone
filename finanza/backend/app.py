@@ -52,12 +52,19 @@ def require_auth(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         authz = request.headers.get("Authorization", "")
-
+        print("Authorization recibido:", authz)
         if not authz.startswith("Bearer "):
             return jsonify({"error": "Unauthorized"}), 401
         token = authz.split(" ", 1)[1]
         try:
-            decoded = auth.verify_id_token(token)
+            # IMPORTANTE: check_revoked=True hace que verify_id_token falle si se revocó el refresh token
+            decoded = auth.verify_id_token(token, check_revoked=True)
+        except auth.InvalidIdTokenError as e:
+            print("Invalid token:", e)
+            return jsonify({"error": "Invalid token"}), 401
+        except auth.RevokedIdTokenError as e:   # token fue revocado
+            print("Token revocado:", e)
+            return jsonify({"error": "Token revoked"}), 401
         except Exception as e:
             print("Error verificando token:", e)
             return jsonify({"error": "Invalid token"}), 401
@@ -66,10 +73,26 @@ def require_auth(fn):
     return wrapper
 
 
+
+
 # --- Rutas ---
 api = Blueprint("api", __name__, url_prefix="/api/v1")
 
-
+# Revocar refresh tokens del usuario actual
+import time
+@api.post("/users/me/revoke")
+@require_auth
+def revoke_user_tokens():
+    try:
+        auth.revoke_refresh_tokens(request.uid)
+        # Opcional: obtener el ts de revocación (segundos)
+        user_record = auth.get_user(request.uid)
+        revoked_at = int(time.time())  # referencia del momento de revocación
+        print(f"Revoked refresh tokens for uid={request.uid} at {revoked_at}")
+        return {"ok": True, "revokedAt": revoked_at}, 200
+    except Exception as e:
+        print("Error revoking tokens:", e)
+        return {"error": str(e)}, 500
 
 
 @api.get("/health")
