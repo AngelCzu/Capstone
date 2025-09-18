@@ -71,7 +71,7 @@ export class ProfilePage implements OnInit {
 
 async saveProfile(): Promise<void> {
   const loading = await this.utilsSvc.loading();
-  await loading.present();
+
 
   try {
     if (!this.form.valid) throw new Error('Formulario inválido.');
@@ -82,40 +82,41 @@ async saveProfile(): Promise<void> {
 
     const nuevoEmail = this.form.controls['email'].value;
 
-    // 1) Si cambió el email → pedir verificación al nuevo correo
+    // 1) Si cambió el email → pedimos verificación
     if (nuevoEmail && nuevoEmail !== user.email) {
-      try {
-        // Si Firebase pide reautenticación
-        const password = await this.utilsSvc.presentPasswordPrompt({
-          header: 'Confirmar identidad',
-          message: 'Ingresa tu contraseña para confirmar el cambio de correo'
-        });
-        if (!password) throw new Error('Operación cancelada');
+      const password = await this.utilsSvc.presentPasswordPrompt({
+        header: 'Confirmar identidad',
+        message: 'Ingresa tu contraseña para confirmar el cambio de correo'
+      });
+      if (!password) throw new Error('Operación cancelada');
 
-        const credential = EmailAuthProvider.credential(user.email!, password);
-        await reauthenticateWithCredential(user, credential);
+      const credential = EmailAuthProvider.credential(user.email!, password);
+      await reauthenticateWithCredential(user, credential);
 
-        // Enviar correo de verificación al nuevo email
-        await verifyBeforeUpdateEmail(user, nuevoEmail);
+      // Envía enlace de verificación al nuevo correo
+      await verifyBeforeUpdateEmail(user, nuevoEmail);
 
-        this.utilsSvc.presentToast({
-          message: 'Se envió un enlace de verificación al nuevo correo. Debes confirmarlo para completar el cambio.',
-          duration: 4000,
-          color: 'warning',
-          position: 'middle',
-          icon: 'mail-outline'
-        });
-      } catch (err) {
-        throw err;
-      }
+      this.utilsSvc.presentToast({
+        message: 'Se envió un enlace de verificación al nuevo correo. Confírmalo para completar el cambio.',
+        duration: 4000,
+        color: 'warning',
+        position: 'middle',
+        icon: 'mail-outline'
+      });
+
+      // 🚨 Paso crítico: cerrar sesión inmediatamente
+      await this.firebaseSvc.signOut();
+      localStorage.clear();
+      sessionStorage.clear();
+      this.utilsSvc.routerLink('/login');
+      return; // 🔒 No actualizamos Firestore todavía
     }
 
-    // 2) Actualizar en Firestore (vía tu backend Flask)
+    // 2) Si no cambió el email, actualizamos Firestore normalmente
     const payload = {
       name: this.form.controls['name'].value,
       lastName: this.form.controls['lastName'].value,
-      // Guardamos el nuevo email aunque aún esté pendiente de verificación
-      email: nuevoEmail || user.email,
+      email: user.email, // siempre usamos el email actual verificado
       photoURL: this.form.controls['photoURL']?.value || ''
     };
 
@@ -123,8 +124,8 @@ async saveProfile(): Promise<void> {
     console.log('Perfil actualizado backend:', res);
 
     await this.utilsSvc.presentToast({
-      message: 'Perfil actualizado correctamente. Revisa tu correo para confirmar el cambio de email.',
-      duration: 3000,
+      message: 'Perfil actualizado correctamente.',
+      duration: 2000,
       color: 'success',
       position: 'middle',
       icon: 'checkmark-circle-outline'
@@ -143,7 +144,6 @@ async saveProfile(): Promise<void> {
     await loading.dismiss();
   }
 }
-
 
 
   getInitials() {
