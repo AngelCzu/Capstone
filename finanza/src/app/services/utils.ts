@@ -4,7 +4,8 @@ import { LoadingController, ToastController, ToastOptions, } from '@ionic/angula
 import { AlertController } from '@ionic/angular';
 
 import { ModalController } from '@ionic/angular';
-import { ConfirmDialogComponent } from '../shared/component/confirm-dialog/confirm-dialog.component';
+import { ConfirmSheetComponent } from '../shared/component/confirm-sheet/confirm-sheet.component';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -99,7 +100,7 @@ async presentCustomConfirm(opts: {
   cancelText?: string;
 }): Promise<boolean> {
  const modal = await this.modalCtrl.create({
-  component: ConfirmDialogComponent,
+  component: ConfirmSheetComponent,
   cssClass: 'confirm-modal',
   componentProps: {
     title: opts.title || 'Confirmar',

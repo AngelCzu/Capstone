@@ -8,7 +8,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { StorageBarComponent } from './component/storage-bar/storage-bar.component';
 import { NavbarComponent } from './component/navbar/navbar.component';
-import { ConfirmDialogComponent } from './component/confirm-dialog/confirm-dialog.component';
+import { ConfirmSheetComponent } from './component/confirm-sheet/confirm-sheet.component';
 
 
 
@@ -19,7 +19,8 @@ import { ConfirmDialogComponent } from './component/confirm-dialog/confirm-dialo
     LogoComponent,
     StorageBarComponent,
     NavbarComponent,
-    ConfirmDialogComponent,
+    ConfirmSheetComponent,
+    
   ],
   exports: [
     HeaderComponent,
@@ -31,7 +32,7 @@ import { ConfirmDialogComponent } from './component/confirm-dialog/confirm-dialo
     RouterLink,
     StorageBarComponent,
     NavbarComponent,
-    ConfirmDialogComponent
+    ConfirmSheetComponent
      
   ],
   imports: [
@@ -40,6 +41,7 @@ import { ConfirmDialogComponent } from './component/confirm-dialog/confirm-dialo
     ReactiveFormsModule,
     FormsModule,
     RouterLink,
+    
     
     
   ]

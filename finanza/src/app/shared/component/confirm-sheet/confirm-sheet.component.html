@@ -1,0 +1,22 @@
+<ion-content class="ion-padding">
+  <ion-modal-handle></ion-modal-handle>
+
+  <div class="confirm-body">
+    <ion-icon [name]="icon" class="warning-icon"></ion-icon>
+
+    <h2>{{ title }}</h2>
+    <p [innerHTML]="message"></p>
+
+    <div class="buttons">
+      <ion-button expand="block" fill="outline" color="medium" (click)="cancel()">
+        <ion-icon slot="start" name="close-outline"></ion-icon>
+        {{ cancelText }}
+      </ion-button>
+
+      <ion-button expand="block" [color]="color" (click)="confirm()">
+        <ion-icon slot="start" name="checkmark-outline"></ion-icon>
+        {{ confirmText }}
+      </ion-button>
+    </div>
+  </div>
+</ion-content>

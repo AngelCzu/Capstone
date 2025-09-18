@@ -1,19 +1,19 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { IonicModule } from '@ionic/angular';
 
-import { ConfirmDialogComponent } from './confirm-dialog.component';
+import { ConfirmSheetComponent } from './confirm-sheet.component';
 
-describe('ConfirmDialogComponent', () => {
-  let component: ConfirmDialogComponent;
-  let fixture: ComponentFixture<ConfirmDialogComponent>;
+describe('ConfirmSheetComponent', () => {
+  let component: ConfirmSheetComponent;
+  let fixture: ComponentFixture<ConfirmSheetComponent>;
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ ConfirmDialogComponent ],
+      declarations: [ ConfirmSheetComponent ],
       imports: [IonicModule.forRoot()]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ConfirmDialogComponent);
+    fixture = TestBed.createComponent(ConfirmSheetComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   }));
