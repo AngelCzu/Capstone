@@ -10,6 +10,11 @@ ion-modal::part(handle) {
   height: 5px;
   width: 50px;
   margin: 10px auto;
+
+}
+
+.inner-scroll {
+  background-color: red;
 }
 
 .confirm-body {
@@ -45,4 +50,5 @@ ion-modal::part(handle) {
       border-radius: 12px;
     }
   }
+  
 }
