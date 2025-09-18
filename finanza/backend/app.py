@@ -52,7 +52,7 @@ def require_auth(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         authz = request.headers.get("Authorization", "")
-        print("Authorization recibido:", authz)
+
         if not authz.startswith("Bearer "):
             return jsonify({"error": "Unauthorized"}), 401
         token = authz.split(" ", 1)[1]
@@ -83,15 +83,17 @@ import time
 @api.post("/users/me/revoke")
 @require_auth
 def revoke_user_tokens():
+    
     try:
+        
         auth.revoke_refresh_tokens(request.uid)
         # Opcional: obtener el ts de revocación (segundos)
         user_record = auth.get_user(request.uid)
         revoked_at = int(time.time())  # referencia del momento de revocación
-        print(f"Revoked refresh tokens for uid={request.uid} at {revoked_at}")
+
         return {"ok": True, "revokedAt": revoked_at}, 200
     except Exception as e:
-        print("Error revoking tokens:", e)
+
         return {"error": str(e)}, 500
 
 

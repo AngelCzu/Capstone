@@ -5,9 +5,12 @@ import { UserApi } from 'src/app/services/user.api';
 import { SharedModule } from 'src/app/shared/shared-module';
 import { Firebase } from 'src/app/services/firebase';
 
-import { getAuth, updateEmail, EmailAuthProvider, reauthenticateWithCredential, signOut } from 'firebase/auth';
+import { getAuth, updateEmail, EmailAuthProvider, reauthenticateWithCredential, signOut, verifyBeforeUpdateEmail } from 'firebase/auth';
 import { firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+
+import { sendEmailVerification } from 'firebase/auth';
+
 
 
 @Component({
@@ -21,7 +24,8 @@ export class ProfilePage implements OnInit {
   private userApi = inject(UserApi);
   utilsSvc = inject(Utils);
   firebaseSvc = inject(Firebase);
-  private http: HttpClient;
+  http = inject(HttpClient);
+  
 
   form = new FormGroup({
     uid: new FormControl(''),
@@ -63,7 +67,9 @@ export class ProfilePage implements OnInit {
     });
   }
 
-  async saveProfile(): Promise<void> {
+
+
+async saveProfile(): Promise<void> {
   const loading = await this.utilsSvc.loading();
   await loading.present();
 
@@ -76,37 +82,40 @@ export class ProfilePage implements OnInit {
 
     const nuevoEmail = this.form.controls['email'].value;
 
-    // 1) Si cambió el email, actualizar en Firebase Auth (podría pedir re-login)
+    // 1) Si cambió el email → pedir verificación al nuevo correo
     if (nuevoEmail && nuevoEmail !== user.email) {
       try {
-        await updateEmail(user, nuevoEmail);
-      } catch (err: any) {
-        // Si necesita re-autenticación, pedimos la contraseña actual
-        if (err?.code === 'auth/requires-recent-login') {
-          // Solicita contraseña al usuario mediante tu utilsSvc o un prompt de Ionic
-          const password = await this.utilsSvc.presentPasswordPrompt({
-            header: 'Confirmar identidad',
-            message: 'Ingresa tu contraseña para confirmar el cambio de correo'
-          });
-          if (!password) throw new Error('Operación cancelada');
+        // Si Firebase pide reautenticación
+        const password = await this.utilsSvc.presentPasswordPrompt({
+          header: 'Confirmar identidad',
+          message: 'Ingresa tu contraseña para confirmar el cambio de correo'
+        });
+        if (!password) throw new Error('Operación cancelada');
 
-          // Reautenticar
-          const credential = EmailAuthProvider.credential(user.email!, password);
-          await reauthenticateWithCredential(user, credential);
+        const credential = EmailAuthProvider.credential(user.email!, password);
+        await reauthenticateWithCredential(user, credential);
 
-          // Intentamos nuevamente el cambio de email
-          await updateEmail(user, nuevoEmail);
-        } else {
-          throw err;
-        }
+        // Enviar correo de verificación al nuevo email
+        await verifyBeforeUpdateEmail(user, nuevoEmail);
+
+        this.utilsSvc.presentToast({
+          message: 'Se envió un enlace de verificación al nuevo correo. Debes confirmarlo para completar el cambio.',
+          duration: 4000,
+          color: 'warning',
+          position: 'middle',
+          icon: 'mail-outline'
+        });
+      } catch (err) {
+        throw err;
       }
     }
 
-    // 2) Actualizar en tu backend (Firestore vía Flask)
+    // 2) Actualizar en Firestore (vía tu backend Flask)
     const payload = {
       name: this.form.controls['name'].value,
       lastName: this.form.controls['lastName'].value,
-      email: nuevoEmail,
+      // Guardamos el nuevo email aunque aún esté pendiente de verificación
+      email: nuevoEmail || user.email,
       photoURL: this.form.controls['photoURL']?.value || ''
     };
 
@@ -114,8 +123,8 @@ export class ProfilePage implements OnInit {
     console.log('Perfil actualizado backend:', res);
 
     await this.utilsSvc.presentToast({
-      message: 'Perfil actualizado correctamente.',
-      duration: 2000,
+      message: 'Perfil actualizado correctamente. Revisa tu correo para confirmar el cambio de email.',
+      duration: 3000,
       color: 'success',
       position: 'middle',
       icon: 'checkmark-circle-outline'
@@ -134,6 +143,8 @@ export class ProfilePage implements OnInit {
     await loading.dismiss();
   }
 }
+
+
 
   getInitials() {
     const { name, lastName } = this.form.value;
@@ -193,38 +204,40 @@ export class ProfilePage implements OnInit {
 
 
   async signOutConfirm(): Promise<void> {
-  const ok = await this.utilsSvc.presentCustomConfirm({
-    title: 'Cerrar sesión',
-    message: '¿Estás seguro que quieres cerrar sesión? \n\n Deberás iniciar sesión nuevamente.',
-    confirmText: 'Cerrar sesión',
-    cancelText: 'Cancelar'
-  });
+  const confirmed = await this.utilsSvc.presentConfirmSheet({
+  title: 'Cerrar Sesión',
+  message: '¿Seguro que deseas cerrar sesión?',
+  confirmText: 'Cerrar Sesión',
+  cancelText: 'Cancelar',
+  color: 'danger',
+  icon: 'alert-circle-outline'
+});
 
-  if (!ok) return;
+  if (!confirmed) return;
 
+   const loading = await this.utilsSvc.loading();
+   loading.present();
   try {
-    // 1) Llamada al backend para revocar refresh tokens (endpoint protegido)
+    // Revocar en el backend
     await firstValueFrom(this.http.post('/api/v1/users/me/revoke', {}));
 
-    // 2) Hacer signOut local (SDK Firebase)
-    const auth = getAuth();
-    await signOut(auth);
+    // Cerrar sesión en Firebase
+    await this.firebaseSvc.signOut();
 
-    // 3) Navegar a login
+    // Limpiar storage local
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Redirigir
     this.utilsSvc.routerLink('/login');
-
-    await this.utilsSvc.presentToast({
-      message: 'Sesión cerrada. Debes iniciar sesión para volver a usar la app.',
-      duration: 2000,
-      color: 'primary'
-    });
-  } catch (err: any) {
-    console.error('Error cerrando sesión:', err);
-    await this.utilsSvc.presentToast({
-      message: 'No se pudo cerrar sesión correctamente.',
-      duration: 2500,
+  } catch (error) {
+    this.utilsSvc.presentToast({
+      message: 'Error cerrando sesión',
       color: 'danger'
     });
+    loading.dismiss();  
+  } finally {
+    loading.dismiss();  
   }
 }
 

@@ -93,28 +93,27 @@ export class Utils {
   //================ Presentar confirmación ===============================
 
 
-async presentCustomConfirm(opts: {
-  title?: string;
-  message: string;
-  confirmText?: string;
-  cancelText?: string;
+async presentConfirmSheet(opts: {
+  title: string,
+  message: string,
+  confirmText?: string,
+  cancelText?: string,
+  color?: string,
+  icon?: string
 }): Promise<boolean> {
- const modal = await this.modalCtrl.create({
+  const modal = await this.modalCtrl.create({
   component: ConfirmSheetComponent,
-  cssClass: 'confirm-modal',
-  componentProps: {
-    title: opts.title || 'Confirmar',
-    message: opts.message,
-    confirmText: opts.confirmText || 'Aceptar',
-    cancelText: opts.cancelText || 'Cancelar'
-  },
-  backdropDismiss: true,        // permite cerrarlo tocando fuera
-  initialBreakpoint: 0.4,       // altura inicial (40% pantalla)
-  breakpoints: [0, 0.4, 0.8, 1] // posiciones a las que se puede arrastrar
+  componentProps: opts,
+  breakpoints: [0, 0.45],
+  initialBreakpoint: 0.45,
+  handle: true,
+  backdropDismiss: true, // 👉 permite cerrar al presionar fuera
+  cssClass: 'confirm-sheet-modal' // 👉 para aplicar estilos globales
 });
 
+
   await modal.present();
-  const { data } = await modal.onDidDismiss<boolean>();
+  const { data } = await modal.onDidDismiss();
   return data ?? false;
 }
 
