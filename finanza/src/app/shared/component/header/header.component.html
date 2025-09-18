@@ -1,15 +1,19 @@
 <ion-header>
     <ion-toolbar class="topbar">
-
       <ion-buttons slot="start">
         <ion-back-button *ngIf="backButton" [defaultHref]="backButton"></ion-back-button>
       </ion-buttons>
-
     <ion-buttons *ngIf="profile" slot="start">
+      <ion-button fill="clear" (click)="goToMenu()">
+        <ion-icon name="menu"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <!-- <ion-buttons *ngIf="profile" slot="start">
         <ion-button fill="clear" (click)="goToProfile()">
           <ion-icon name="person-circle-outline"></ion-icon>
         </ion-button>
-    </ion-buttons>
+    </ion-buttons> -->
 
     <ion-title class="topbar-title">{{title}}</ion-title>
 
@@ -21,11 +25,11 @@
     </ion-buttons>
 
 
-    <ion-buttons *ngIf="profile" slot="end">
+    <!-- <ion-buttons *ngIf="profile" slot="end">
       <ion-button fill="clear">
         <ion-icon name="settings-outline"></ion-icon>
       </ion-button>
-    </ion-buttons>
+    </ion-buttons> -->
 
     
   </ion-toolbar>

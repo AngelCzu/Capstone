@@ -15,6 +15,7 @@ export class HeaderComponent  implements OnInit {
   @Input() backButton!: string;
   @Input() notifications!: string;
   @Input() profile!: string;
+  @Input() Menu!: string;
 
   constructor(private router: Router) { }
 
@@ -22,6 +23,10 @@ export class HeaderComponent  implements OnInit {
 
     goToProfile() {
       this.router.navigate(['/main/profile']);
+    }
+
+    goToMenu() {
+      this.router.navigate(['/main/menu']);
     }
 
 }
