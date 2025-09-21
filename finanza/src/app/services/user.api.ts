@@ -26,6 +26,17 @@ export class UserApi {
   return this.http.post<{ photoURL: string }>('/api/v1/users/me/photo', data);
 }
 
+requestEmailChange(newEmail: string) {
+  return this.http.post<any>(`${this.baseUrl}/users/me/email-change/request`, { newEmail })
+    .toPromise();
+}
+
+confirmEmailChange(pin: string) {
+  return this.http.post<any>(`${this.baseUrl}/users/me/email-change/confirm`, { pin })
+    .toPromise();
+}
+
+
 
 
 }

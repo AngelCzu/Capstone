@@ -5,11 +5,9 @@ import { UserApi } from 'src/app/services/user.api';
 import { SharedModule } from 'src/app/shared/shared-module';
 import { Firebase } from 'src/app/services/firebase';
 
-import { getAuth, updateEmail, EmailAuthProvider, reauthenticateWithCredential, signOut, verifyBeforeUpdateEmail } from 'firebase/auth';
 import { firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
-import { sendEmailVerification } from 'firebase/auth';
 
 
 
@@ -30,16 +28,20 @@ export class ProfilePage implements OnInit {
   form = new FormGroup({
     uid: new FormControl(''),
     email: new FormControl('', [Validators.required, Validators.email]),
-    name: new FormControl('', [Validators.required, Validators.minLength(4)]),
-    lastName: new FormControl('', [Validators.required, Validators.minLength(3)]),
+    name: new FormControl('', [Validators.required, Validators.minLength(4),Validators.pattern('^[a-zA-ZÀ-ÿ\\s]+$')]),
+    lastName: new FormControl('', [Validators.required, Validators.minLength(3),Validators.pattern('^[a-zA-ZÀ-ÿ\\s]+$')]),
     premium: new FormControl(false),
     photoURL: new FormControl(''),
   });
 
+  initialEmail: string;
+
+  
   avatarUrl: string = '';
 
   ngOnInit() {
     this.loadProfile();
+    
   }
 
   async loadProfile() {
@@ -52,6 +54,10 @@ export class ProfilePage implements OnInit {
         this.form.patchValue(user);
         this.avatarUrl = user.photoURL || '';
         loading.dismiss();
+        this.initialEmail = user.email;
+
+        
+        
         
       },
       error: async (err) => {
@@ -67,83 +73,44 @@ export class ProfilePage implements OnInit {
     });
   }
 
-
-
-async saveProfile(): Promise<void> {
-  const loading = await this.utilsSvc.loading();
-
-
+async onSubmit() {
+  const loading = await this.utilsSvc.loading(); 
+  await loading.present();
   try {
-    if (!this.form.valid) throw new Error('Formulario inválido.');
+    const email = this.form.controls.email.value!;
+    const name = this.form.controls.name.value!;
+    const lastName = this.form.controls.lastName.value!;
+    const photoURL = this.form.controls.photoURL.value || '';
 
-    const auth = getAuth();
-    const user = auth.currentUser;
-    if (!user) throw new Error('No hay usuario autenticado.');
-
-    const nuevoEmail = this.form.controls['email'].value;
-
-    // 1) Si cambió el email → pedimos verificación
-    if (nuevoEmail && nuevoEmail !== user.email) {
-      const password = await this.utilsSvc.presentPasswordPrompt({
-        header: 'Confirmar identidad',
-        message: 'Ingresa tu contraseña para confirmar el cambio de correo'
-      });
-      if (!password) throw new Error('Operación cancelada');
-
-      const credential = EmailAuthProvider.credential(user.email!, password);
-      await reauthenticateWithCredential(user, credential);
-
-      // Envía enlace de verificación al nuevo correo
-      await verifyBeforeUpdateEmail(user, nuevoEmail);
-
-      this.utilsSvc.presentToast({
-        message: 'Se envió un enlace de verificación al nuevo correo. Confírmalo para completar el cambio.',
-        duration: 4000,
-        color: 'warning',
-        position: 'middle',
-        icon: 'mail-outline'
+    // 1) Si cambió el correo → pedir PIN
+    if (email && email !== this.initialEmail) {
+      await firstValueFrom(this.http.post('/api/v1/users/me/email-change/request', { newEmail: email }));
+      loading.dismiss();
+      // 👇 Usamos utilsSvc en vez de crear modal aquí
+      const pin = await this.utilsSvc.presentPinSheet({
+        email,
+        title: 'Cambio de correo',
+        message: 'Introduce el código de 6 dígitos que enviamos a tu nuevo correo /n',
+        ttlSec: 300, // 5 minutos para que caduque el PIN
+        
       });
 
-      // 🚨 Paso crítico: cerrar sesión inmediatamente
-      await this.firebaseSvc.signOut();
-      localStorage.clear();
-      sessionStorage.clear();
-      this.utilsSvc.routerLink('/login');
-      return; // 🔒 No actualizamos Firestore todavía
+      
+    }else {
+      // 2) Si NO cambió el email → actualizar perfil normal
+      await firstValueFrom(this.http.patch('/api/v1/users/me', { name, lastName, photoURL }));
+      await this.utilsSvc.presentToast({ message: 'Perfil actualizado', color: 'success' });
     }
 
-    // 2) Si no cambió el email, actualizamos Firestore normalmente
-    const payload = {
-      name: this.form.controls['name'].value,
-      lastName: this.form.controls['lastName'].value,
-      email: user.email, // siempre usamos el email actual verificado
-      photoURL: this.form.controls['photoURL']?.value || ''
-    };
+    
 
-    const res = await firstValueFrom(this.http.patch('/api/v1/users/me', payload));
-    console.log('Perfil actualizado backend:', res);
-
-    await this.utilsSvc.presentToast({
-      message: 'Perfil actualizado correctamente.',
-      duration: 2000,
-      color: 'success',
-      position: 'middle',
-      icon: 'checkmark-circle-outline'
-    });
-
-  } catch (error: any) {
-    console.error('Error actualizando perfil:', error);
-    await this.utilsSvc.presentToast({
-      message: error?.message || 'Error al actualizar perfil',
-      duration: 3000,
-      color: 'danger',
-      position: 'middle',
-      icon: 'alert-circle-outline'
-    });
+  } catch (err: any) {
+    await this.utilsSvc.presentToast({ message: err?.message || 'Error', color: 'danger' });
   } finally {
-    await loading.dismiss();
+    loading.dismiss();
   }
 }
+
 
 
   getInitials() {
@@ -222,14 +189,15 @@ async saveProfile(): Promise<void> {
     await firstValueFrom(this.http.post('/api/v1/users/me/revoke', {}));
 
     // Cerrar sesión en Firebase
-    await this.firebaseSvc.signOut();
+    await this.firebaseSvc.signOutAndWait();
 
     // Limpiar storage local
     localStorage.clear();
     sessionStorage.clear();
 
-    // Redirigir
+    // Redirigir directamente al login
     this.utilsSvc.routerLink('/login');
+
   } catch (error) {
     this.utilsSvc.presentToast({
       message: 'Error cerrando sesión',
@@ -237,11 +205,12 @@ async saveProfile(): Promise<void> {
     });
     loading.dismiss();  
   } finally {
-    loading.dismiss();  
+   // Cierra el loading antes del redirect
+    await loading.dismiss();
+
+    
   }
 }
 
-  signOut() {
-    this.firebaseSvc.signOut();
-  }
+
 }

@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
-import { getAuth, UserCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup,  } from 'firebase/auth';
+import { getAuth, UserCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut,  } from 'firebase/auth';
 import { User } from '../models/user.model';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { getFirestore, setDoc, doc, getDoc} from '@angular/fire/firestore';
@@ -58,9 +58,18 @@ export class Firebase {
 
 
   //======= Cerrar sesión =======
-  signOut() { 
-    getAuth().signOut();
-    this.utilsSvc.routerLink('/login'); // Redirigir al usuario a la página de inicio de sesión
+ async signOutAndWait(): Promise<void> {
+    const waitForNull = new Promise<void>((resolve) => {
+      const unsub = onAuthStateChanged(getAuth(), (user) => {
+        if (!user) {
+          unsub();
+          resolve();
+        }
+      });
+    });
+
+    await signOut(getAuth()); // dispara onAuthStateChanged(null)
+    await waitForNull;        // esperamos confirmación
   }
 
 

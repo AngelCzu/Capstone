@@ -5,6 +5,9 @@ import { AlertController } from '@ionic/angular';
 
 import { ModalController } from '@ionic/angular';
 import { ConfirmSheetComponent } from '../shared/component/confirm-sheet/confirm-sheet.component';
+import { EmailPinModalComponent } from '../shared/component/email-pin-modal/email-pin-modal.component';
+import { firstValueFrom } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root'
@@ -18,6 +21,7 @@ export class Utils {
   
 
   router = inject(Router);
+  http= inject(HttpClient);
 
   // ================================ Loading ================================
   loading() {
@@ -34,10 +38,12 @@ export class Utils {
 
   // ================================ Navegación ================================
   routerLink(url: string) {
-    return this.router.navigateByUrl(url);
+    return this.router.navigateByUrl(url, { replaceUrl: true });
   }
 
 
+
+  
 
   //============ Guardar en localStorage ===============
   saveLocalStorage(key: string, value: any) {
@@ -107,8 +113,8 @@ async presentConfirmSheet(opts: {
   breakpoints: [0, 0.45],
   initialBreakpoint: 0.45,
   handle: true,
-  backdropDismiss: true, // 👉 permite cerrar al presionar fuera
-  cssClass: 'confirm-sheet-modal' // 👉 para aplicar estilos globales
+  backdropDismiss: true, //  permite cerrar al presionar fuera
+  cssClass: 'confirm-sheet-modal' //  para aplicar estilos globales
 });
 
 
@@ -117,6 +123,58 @@ async presentConfirmSheet(opts: {
   return data ?? false;
 }
 
+//================ Presentar modal ===============================
+// PIN (cambiar correo)
+async presentPinSheet(opts: {
+  email: string,
+  title?: string,
+  message?: string,
+  length?: number,
+  ttlSec?: number
+}): Promise<string | null> {
+  const modal = await this.modalCtrl.create({ 
+    component: EmailPinModalComponent,
+    componentProps: {
+      email: opts.email,                                                           // email al que se envió el PIN                  
+      title: opts.title || 'Verificación de correo',                               // título por defecto
+      message: opts.message || `Introduce el código que enviamos a ${opts.email}`, // mensaje por defecto
+      length: opts.length || 6,                                                    // longitud del PIN, por defecto 6 dígitos
+      ttlSec: opts.ttlSec || 300                                                   // tiempo para que caduque el PIN (en segundos), por defecto 300 (5 min)
+    },
+    breakpoints: [0.57],       // igual que confirm
+    initialBreakpoint: 0.6,      //  misma altura
+    handle: true,
+    backdropDismiss: true,
+    cssClass: 'confirm-sheet-modal'
+  });
+
+
+  
+
+  await modal.present();
+ // 👇 interceptamos el cierre definitivo
+  const { data, role } = await modal.onDidDismiss();
+
+  if (role === 'backdrop') {
+    // 👇 si se cerró por tap afuera, hacemos cancel aquí
+    try {
+      await firstValueFrom(this.http.post('/api/v1/users/me/email-change/cancel', {}));
+      await this.presentToast({
+        message: 'Operación cancelada',
+        duration: 1500,
+        color: 'medium'
+      });
+    } catch (e: any) {
+      await this.presentToast({
+        message: e.error?.error || 'Error al cancelar',
+        duration: 1500,
+        color: 'danger'
+      });
+    }
+    return null;
+  }
+  return data?.code ?? null;
+}
 }
 
 

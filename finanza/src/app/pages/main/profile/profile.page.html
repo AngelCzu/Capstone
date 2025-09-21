@@ -39,7 +39,7 @@
   </div>
 
   <!-- Formulario -->
-  <form [formGroup]="form" (ngSubmit)="saveProfile()" class="form-wrapper">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-wrapper">
     <!-- Nombre -->
     <ion-item>
       <ion-label position="floating">Nombre</ion-label>
@@ -48,6 +48,7 @@
     <div class="validators" *ngIf="form.controls.name.errors && form.controls.name.touched">
       <div *ngIf="form.controls.name.errors?.['required']">El nombre es requerido</div>
       <div *ngIf="form.controls.name.errors?.['minlength']">Debe tener al menos 4 caracteres</div>
+      <div *ngIf="form.controls.name.errors?.['pattern']">No debe tener numeros</div>
     </div>
 
     <!-- Apellido -->
@@ -58,6 +59,7 @@
     <div class="validators" *ngIf="form.controls.lastName.errors && form.controls.lastName.touched">
       <div *ngIf="form.controls.lastName.errors?.['required']">El apellido es requerido</div>
       <div *ngIf="form.controls.lastName.errors?.['minlength']">Debe tener al menos 3 caracteres</div>
+      <div *ngIf="form.controls.name.errors?.['pattern']">No debe tener numeros</div>
     </div>
 
     <!-- Correo -->

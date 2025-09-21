@@ -6,14 +6,18 @@ export const noAuthGuard: CanActivateFn = async () => {
   const auth = getAuth();
   const router = inject(Router);
 
-  return new Promise<boolean>((resolve) => {
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        router.navigateByUrl('/main/home', { replaceUrl: true }); //  Si ya está logueado → directo al home
-        resolve(false);
-      } else {
-        resolve(true); // Si NO está logueado → puede entrar (login, sign-up)
-      }
+  // 🔥 Esperamos el estado real de Firebase
+  const user = await new Promise<any>((resolve) => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      unsub();
+      resolve(u);
     });
   });
+
+  if (user) {
+    router.navigateByUrl('/main/home', { replaceUrl: true }); // donde quieras redirigir si YA está logueado
+    return false;
+  } else {
+    return true; // No autenticado → puede entrar (ej: login, register)
+  }
 };

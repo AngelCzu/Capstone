@@ -102,8 +102,12 @@ def health():
     return {"ok": True}
 
 
+#=============================================PERFIL DE USUARIO=============================================
 
-#Crea el perfil del usuario
+
+#=============================================#
+#=========Crea el perfil del usuario==========#
+#=============================================#
 @api.post("/users/me")
 @require_auth
 def create_user_profile():
@@ -128,57 +132,77 @@ def create_user_profile():
     return {"ok": True}, 201
 
 
-#Obtiene el perfil del usuario
+
+#==============================================#
+#========Obtiene el perfil del usuario=========#
+#==============================================#
 @api.get("/users/me")
 @require_auth
 def get_me():
-    # Documento raíz del usuario
     ref = db.collection("users").document(request.uid)
     snap = ref.get()
 
-    if not snap.exists:
-        # Si no existe, inicializamos con email y valores por defecto
-        try:
-            user_record = auth.get_user(request.uid)
-            email = user_record.email or ""
-        except Exception:
-            email = ""
+    # Email desde Firebase Auth
+    try:
+        user_record = auth.get_user(request.uid)
+        email_auth = user_record.email or ""
+    except Exception:
+        email_auth = ""
 
+    if not snap.exists:
+        # Si no existe el perfil, lo creamos
         data = {
             "name": "",
             "lastName": "",
-            "email": email,
+            "email": email_auth,
             "photoURL": "",
             "premium": False
         }
         ref.set(data)
         return data, 200
 
-    return snap.to_dict(), 200
+    data = snap.to_dict()
+
+    # ⚡ Sincronizar email si difiere
+    if data.get("email") != email_auth:
+        data["email"] = email_auth
+        ref.set({"email": email_auth}, merge=True)
+
+    return data, 200
 
 
-#Actualiza el perfil del usuario
+
+#==============================================#
+#=======Actualiza el perfil del usuario========#
+#==============================================#
 @api.patch("/users/me")
 @require_auth
 def patch_me():
     body = request.get_json() or {}
-    
-    # Permitimos actualizar solo estos campos
+
+    # Solo permitimos actualizar estos campos desde el frontend
     allowed = {
         k: v for k, v in body.items()
-        if k in {"name", "lastName", "email", "photoURL"}
+        if k in {"name", "lastName", "photoURL"}
     }
+
+    # ⚡ Email siempre desde Firebase Authentication
+    try:
+        user_record = auth.get_user(request.uid)
+        allowed["email"] = user_record.email or ""
+    except Exception as e:
+        print("Error obteniendo email desde Firebase Auth:", e)
 
     if not allowed:
         return {"error": "Nada para actualizar"}, 400
 
-    # Guardar en el documento raíz
     db.collection("users").document(request.uid).set(allowed, merge=True)
-
     return {"ok": True}
 
 
-# Subir foto de perfil
+#=============================================#
+#======Subir foto de perfil del usuario=======# 
+#=============================================#
 @api.post("/users/me/photoURL")
 @require_auth
 def upload_photo():
@@ -211,8 +235,207 @@ def upload_photo():
 
     return {"photoURL": photo_url}, 200
 
+
+
+
+#============================================= CAMBIO CORREO =============================================#
+import random, time, smtplib, ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+#==============================================#
+#======PLANTILLA CAMBIO CORREO (PIN)=======#
+#==============================================#
+
+PIN_TTL = int(os.getenv("EMAIL_PIN_TTL_SECONDS", "300"))
+PIN_MAX_ATTEMPTS = int(os.getenv("EMAIL_PIN_MAX_ATTEMPTS", "5"))
+
+def send_pin_email(to_email: str, pin: str):
+    """Envía el PIN por SMTP (Gmail con TLS o SSL)."""
+    host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    port = int(os.getenv("SMTP_PORT", "587"))
+    user = os.getenv("SMTP_USER")
+    pwd  = os.getenv("SMTP_PASS")
+    from_hdr = os.getenv("SMTP_FROM", user)
+
+    if not (host and port and user and pwd):
+        print(f"[WARN] SMTP no configurado. PIN={pin} → {to_email}")
+        return
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Código de verificación de correo (Finanza)"
+    msg["From"] = from_hdr
+    msg["To"] = to_email
+
+    text = f"""Hola,
+Tu código de verificación es: {pin}
+
+Este código expira en {PIN_TTL//60} minutos.
+Si no solicitaste este cambio, ignora este correo.
+
+— Finanza
+"""
+    html = f"""<p>Hola,</p>
+<p>Tu <b>código de verificación</b> es:</p>
+<h2 style="letter-spacing:6px">{pin}</h2>
+<p>Expira en {PIN_TTL//60} minutos.</p>
+<p>— Finanza</p>
+"""
+
+    msg.attach(MIMEText(text, "plain", "utf-8"))
+    msg.attach(MIMEText(html, "html", "utf-8"))
+
+    ctx = ssl.create_default_context()
+
+    try:
+        if port == 465:
+            # SSL directo
+            with smtplib.SMTP_SSL(host, port, context=ctx) as server:
+                server.login(user, pwd)
+                server.sendmail(from_hdr, [to_email], msg.as_string())
+        else:
+            # TLS (587)
+            with smtplib.SMTP(host, port) as server:
+                server.ehlo()
+                server.starttls(context=ctx)
+                server.ehlo()
+                server.login(user, pwd)
+                server.sendmail(from_hdr, [to_email], msg.as_string())
+
+        print(f"[DEBUG] PIN enviado correctamente a {to_email}")
+
+    except Exception as e:
+        print(f"[ERROR] enviando correo PIN: {e}")
+        raise
+
+
+
+#==================================================#
+#====== Genera un PIN numérico de 6 dígitos =======#
+#==================================================#
+def _new_pin(not_equal_to: str | None = None) -> str:
+    while True:
+        pin = f"{random.randint(0, 999999):06d}"
+        if not_equal_to and pin == not_equal_to:
+            continue
+        return pin
+
+#===============================================#
+#======Solicitar cambio de email del usuario====#
+#===============================================#
+@api.post("/users/me/email-change/request")
+@require_auth
+def request_email_change():
+    body = request.get_json() or {}
+    new_email = (body.get("newEmail") or "").strip().lower()
+    if not new_email:
+        return {"error": "Falta newEmail"}, 400
+
+    # Traer último PIN para que no se repita
+    ref = db.collection("pendingEmailChange").document(request.uid)
+    prev = ref.get().to_dict() if ref.get().exists else {}
+    last_pin = prev.get("pin")
+
+    pin = _new_pin(not_equal_to=last_pin)
+    now = int(time.time())
+    ref.set({
+        "uid": request.uid,
+        "newEmail": new_email,
+        "pin": pin,
+        "expiresAt": now + PIN_TTL,
+        "attempts": 0,
+        "maxAttempts": PIN_MAX_ATTEMPTS,
+        "createdAt": now,
+        "status": "pending"
+    })
+    try:
+        send_pin_email(new_email, pin)
+    except Exception as e:
+        print("[ERROR] enviando correo PIN:", e)
+        return {"error": "No se pudo enviar el correo de verificación"}, 500
+
+    return {"ok": True, "ttl": PIN_TTL}, 200
+
+
+
+
+#===============================================#
+#======Confirma el cambio de email con PIN=======#
+#===============================================#
+@api.post("/users/me/email-change/confirm")
+@require_auth
+def confirm_email_change():
+    body = request.get_json() or {}
+    pin = (body.get("pin") or "").strip()
+    if not pin or len(pin) != 6 or not pin.isdigit():
+        return {"error": "PIN inválido"}, 400
+    
+
+    ref = db.collection("pendingEmailChange").document(request.uid)
+    snap = ref.get()
+    if not snap.exists:
+        return {"error": "No hay operación pendiente"}, 400
+
+    data = snap.to_dict()
+    if data.get("status") != "pending":
+        ref.delete()
+        return {"error": "Operación inválida"}, 400
+
+    now = int(time.time())
+    if now > int(data.get("expiresAt", 0)):
+        ref.delete()
+        return {"error": "PIN expirado"}, 400
+
+    attempts = int(data.get("attempts", 0))
+    max_attempts = int(data.get("maxAttempts", PIN_MAX_ATTEMPTS))
+    if attempts >= max_attempts:
+        ref.delete()
+        return {"error": "Demasiados intentos"}, 400
+
+    if pin != data.get("pin"):
+        ref.set({"attempts": attempts + 1}, merge=True)
+        return {"error": "PIN incorrecto"}, 400
+
+    # ✅ PIN correcto → actualizar AUTH & Firestore
+    new_email = data.get("newEmail")
+    try:
+        auth.update_user(request.uid, email=new_email)  # Admin SDK
+    except Exception as e:
+        print("[ERROR] update_user:", e)
+        return {"error": "No se pudo actualizar email en Auth"}, 500
+
+    # Firestore perfil
+    db.collection("users").document(request.uid).set({"email": new_email}, merge=True)
+
+    # Terminar operación y revocar tokens para forzar re-login
+    ref.delete()
+    try:
+        auth.revoke_refresh_tokens(request.uid)
+    except Exception as e:
+        print("[WARN] revoke_refresh_tokens:", e)
+
+    return {"ok": True, "newEmail": new_email}, 200
+
+
+
+#===============================================#
+#======Cancela el cambio de email del usuario====#
+#===============================================#
+@api.post("/users/me/email-change/cancel")
+@require_auth
+def cancel_email_change():
+    ref = db.collection("pendingEmailChange").document(request.uid)
+    ref.delete()
+    return {"ok": True}, 200
+
+
+
 app.register_blueprint(api)
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8080"))
     app.run(host="0.0.0.0", port=port, debug=True)
+
+
+
+
