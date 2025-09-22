@@ -128,11 +128,13 @@ export class LoginPage implements OnInit {
 
 // Iniciar sesión con Google
 async onClick() {
-  try {
 
-    // Mostrar el loading
+  // Mostrar el loading
     const loading = await this.utilsSvc.loading();
     await loading.present();
+  try {
+
+    
 
     // 1) Iniciar sesión con Google
     const res = await this.firebaseSvc.signInGoogle();
@@ -195,6 +197,8 @@ async onClick() {
 
   } catch (error: any) {
     console.error(error);
+
+    
     this.utilsSvc.presentToast({
       message: error.message || 'Error al iniciar sesión',
       duration: 2500,
@@ -202,7 +206,10 @@ async onClick() {
       position: 'middle',
       icon: 'alert-circle-outline'
     });
-  } 
+
+    loading.dismiss();
+  }
+    
 }
 
 

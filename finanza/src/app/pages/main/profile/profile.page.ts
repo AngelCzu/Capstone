@@ -99,13 +99,22 @@ async onSubmit() {
     }else {
       // 2) Si NO cambió el email → actualizar perfil normal
       await firstValueFrom(this.http.patch('/api/v1/users/me', { name, lastName, photoURL }));
-      await this.utilsSvc.presentToast({ message: 'Perfil actualizado', color: 'success' });
+      await this.utilsSvc.presentToast({ 
+        message: 'Perfil actualizado', 
+        color: 'success',
+        position: 'bottom',
+        duration: 1500,
+      });
     }
 
     
 
   } catch (err: any) {
-    await this.utilsSvc.presentToast({ message: err?.message || 'Error', color: 'danger' });
+    await this.utilsSvc.presentToast({
+      message: err?.message || 'Error', 
+      color: 'danger', 
+      duration: 1500,
+      position:"bottom"});
   } finally {
     loading.dismiss();
   }
@@ -201,7 +210,9 @@ async onSubmit() {
   } catch (error) {
     this.utilsSvc.presentToast({
       message: 'Error cerrando sesión',
-      color: 'danger'
+      color: 'danger',
+      position: "bottom",
+      duration: 1500
     });
     loading.dismiss();  
   } finally {

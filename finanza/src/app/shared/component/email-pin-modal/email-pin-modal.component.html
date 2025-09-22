@@ -8,17 +8,17 @@
     </p>
 
     <div class="pin-row" [class.error]="error" (paste)="onPaste($event)">
-      <input id="pin-0" inputmode="numeric" maxlength="1"
+      <input type="number" id="pin-0" inputmode="numeric" maxlength="1"
              (input)="onKey(0, $event)" (keydown)="onKeyDown(0, $event)" />
-      <input id="pin-1" inputmode="numeric" maxlength="1"
+      <input type="number" id="pin-1" inputmode="numeric" maxlength="1"
              (input)="onKey(1, $event)" (keydown)="onKeyDown(1, $event)" />
-      <input id="pin-2" inputmode="numeric" maxlength="1"
+      <input type="number" id="pin-2" inputmode="numeric" maxlength="1"
              (input)="onKey(2, $event)" (keydown)="onKeyDown(2, $event)" />
-      <input id="pin-3" inputmode="numeric" maxlength="1"
+      <input type="number" id="pin-3" inputmode="numeric" maxlength="1"
              (input)="onKey(3, $event)" (keydown)="onKeyDown(3, $event)" />
-      <input id="pin-4" inputmode="numeric" maxlength="1"
+      <input type="number" id="pin-4" inputmode="numeric" maxlength="1"
              (input)="onKey(4, $event)" (keydown)="onKeyDown(4, $event)" />
-      <input id="pin-5" inputmode="numeric" maxlength="1"
+      <input type="number" id="pin-5" inputmode="numeric" maxlength="1"
              (input)="onKey(5, $event)" (keydown)="onKeyDown(5, $event)" />
     </div>
 
