@@ -1,26 +1,16 @@
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
-import { SharedModule } from 'src/app/shared/shared-module';
 
 @Component({
-  selector: 'app-agregar',
-  templateUrl: './agregar.page.html',
-  styleUrls: ['./agregar.page.scss'],
+  selector: 'app-test',
+  templateUrl: './test.page.html',
+  styleUrls: ['./test.page.scss'],
   standalone: true,
-  imports: [SharedModule, CommonModule, FormsModule, IonicModule],
+  imports: [CommonModule, FormsModule, IonicModule]
 })
-/*
-export class AgregarPage implements OnInit {
-
-  constructor() { }
-
-  ngOnInit() {
-  }
-
-}*/
-export class AgregarPage {
+export class TestPage {
   // Selector
   tipoSeleccionado = 'ingreso';
 

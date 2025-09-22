@@ -1,18 +1,20 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule } from '@ionic/angular';
-import { AgregarPageRoutingModule } from './agregar-routing.module';
-import { AgregarPage } from './agregar.page';
 
+import { IonicModule } from '@ionic/angular';
+
+import { TestPageRoutingModule } from './test-routing.module';
+
+import { TestPage } from './test.page';
 
 @NgModule({
   imports: [
     CommonModule,
     FormsModule,
     IonicModule,
-    AgregarPageRoutingModule,
-    AgregarPage,
+    TestPageRoutingModule,
+    TestPage
   ],
 })
-export class AgregarPageModule {}
+export class TestPageModule {}

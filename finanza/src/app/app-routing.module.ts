@@ -41,6 +41,11 @@ const routes: Routes = [
     path: 'menu',
     loadChildren: () => import('./pages/main/menu/menu.module').then( m => m.MenuPageModule),canActivate:[authGuard]
   },
+  {
+    path: 'test',
+    loadChildren: () => import('./pages/main/test/test.module').then( m => m.TestPageModule)
+  },
+
 
 ];
 
