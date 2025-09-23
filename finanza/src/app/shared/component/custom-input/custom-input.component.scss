@@ -1,0 +1,47 @@
+.custom-input {
+  --background: #1e2a38; // gris oscuro elegante
+  --border-radius: 10px;
+  --border-color: #2c3e50; // borde sobrio
+  --highlight-color-focused: #00c896; // tu verde corporativo
+  --padding-start: 12px;
+  --padding-end: 12px;
+  margin: 12px 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  ion-icon {
+    color: #8fa3b0; // gris claro profesional
+    font-size: 20px;
+  }
+
+  ion-input {
+    font-size: 15px;
+
+    --color: #e5eaf0; // texto claro
+  }
+
+  ion-button {
+    --color: #8fa3b0;
+    --padding-start: 6px;
+    --padding-end: 6px;
+    border-radius: 50%;
+  }
+
+  /* Estado enfocado */
+  &.item-has-focus {
+    border-color: var(--highlight-color-focused);
+    box-shadow: 0 0 0 2px rgba(0, 200, 150, 0.25);
+  }
+
+  /* Label más ajustado (que no baje demasiado) */
+  ion-input::part(label) {
+    font-size: 13px;
+    color: #8fa3b0;
+    transform: translateY(-2px); // sube el label
+  }
+
+  ion-input:focus::part(label) {
+    color: var(--highlight-color-focused);
+  }
+}

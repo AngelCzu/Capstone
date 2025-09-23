@@ -94,6 +94,8 @@ async onSubmit() {
         ttlSec: 300, // 5 minutos para que caduque el PIN
         
       });
+      
+       
 
       
     }else {
@@ -223,5 +225,55 @@ async onSubmit() {
   }
 }
 
+async deleteAccountConfirm(): Promise<void> {
+  const confirmed = await this.utilsSvc.presentConfirmSheet({
+  title: 'Eliminar Cuenta',
+  message: '¿Seguro que deseas eliminar tú cuenta? \n Sí la eliminas perderás permanentemente toda información',
+  confirmText: 'Eliminar Cuenta',
+  cancelText: 'Cancelar',
+  color: 'danger',
+  icon: 'alert-circle-outline'
+});
+
+  if (!confirmed) return;
+
+   const loading = await this.utilsSvc.loading();
+   loading.present();
+  try {
+    
+    await firstValueFrom(this.http.post('/api/v1/users/me/email-change/request', { newEmail: this.initialEmail }));
+      loading.dismiss();
+      // 👇 Usamos utilsSvc en vez de crear modal aquí
+      const pin = await this.utilsSvc.presentPinSheet({
+        email: this.initialEmail,
+        title: 'Eliminar cuenta',
+        message: 'Introduce el código de 6 dígitos que enviamos a tu correo para confirma la eliminación de la cuenta /n',
+        ttlSec: 300, // 5 minutos para que caduque el PIN
+        
+      });
+
+      
+    // Limpiar storage local
+    localStorage.clear();
+    sessionStorage.clear();
+
+    
+
+
+  } catch (error) {
+    this.utilsSvc.presentToast({
+      message: 'Error al borrar la cuenta',
+      color: 'danger',
+      position: "bottom",
+      duration: 1500
+    });
+    loading.dismiss();  
+  } finally {
+   // Cierra el loading antes del redirect
+    await loading.dismiss();
+
+    
+  }
+}
 
 }

@@ -82,7 +82,7 @@ export class SignUpPage implements OnInit {
           message: error.message,
           duration: 2500,
           color: 'primary',
-          position: 'middle',
+          position: 'bottom',
           icon: 'alert-circle-outline'
         });
 
@@ -113,7 +113,7 @@ export class SignUpPage implements OnInit {
       message: 'Perfil creado correctamente.',
       duration: 2000,
       color: 'success',
-      position: 'middle',
+      position: 'bottom',
       icon: 'checkmark-circle-outline'
     });
 
@@ -132,7 +132,7 @@ export class SignUpPage implements OnInit {
       message: message,
       duration: 3000,
       color: 'danger',
-      position: 'middle',
+      position: 'bottom',
       icon: 'alert-circle-outline'
     });
 

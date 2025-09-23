@@ -186,7 +186,7 @@ def patch_me():
         if k in {"name", "lastName", "photoURL"}
     }
 
-    # ⚡ Email siempre desde Firebase Authentication
+    #  Email siempre desde Firebase Authentication
     try:
         user_record = auth.get_user(request.uid)
         allowed["email"] = user_record.email or ""
@@ -198,6 +198,36 @@ def patch_me():
 
     db.collection("users").document(request.uid).set(allowed, merge=True)
     return {"ok": True}
+
+
+
+
+#==============================================#
+#========== Eliminar cuenta de usuario =========#
+#==============================================#
+@api.delete("/users/me")
+@require_auth
+def delete_me():
+    try:
+        uid = request.uid
+
+        # 1) Eliminar perfil en Firestore
+        db.collection("users").document(uid).delete()
+
+        # Si tienes colecciones relacionadas (movements, stats, etc.),
+        # deberías borrarlas aquí también con un batch o recursivamente.
+
+        # 2) Eliminar usuario en Firebase Auth
+        auth.delete_user(uid)
+
+        return {"ok": True, "message": "Cuenta eliminada correctamente"}, 200
+
+    except Exception as e:
+        print("[ERROR] Eliminando cuenta:", e)
+        return {"error": str(e)}, 500
+
+
+
 
 
 #=============================================#
@@ -268,19 +298,53 @@ def send_pin_email(to_email: str, pin: str):
     msg["To"] = to_email
 
     text = f"""Hola,
+
+Hemos recibido una solicitud para verificar que eres el dueño de la cuenta en FinanzaApp.
+
 Tu código de verificación es: {pin}
 
-Este código expira en {PIN_TTL//60} minutos.
-Si no solicitaste este cambio, ignora este correo.
+⏳ Este código expira en {PIN_TTL//60} minutos.
 
-— Finanza
+Si no realizaste esta solicitud, ignora este correo y tu cuenta permanecerá segura.
+
+Gracias por confiar en nosotros.
+
+Saludos cordiales,  
+Equipo Finanza
 """
-    html = f"""<p>Hola,</p>
-<p>Tu <b>código de verificación</b> es:</p>
-<h2 style="letter-spacing:6px">{pin}</h2>
-<p>Expira en {PIN_TTL//60} minutos.</p>
-<p>— Finanza</p>
+
+    html = f"""
+<div style="font-family: Arial, Helvetica, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e5e5; border-radius: 8px; background: #fafafa;">
+  <h2 style="color: #2c3e50; text-align: center; font-weight: 600;">Verificación de tu cuenta</h2>
+  
+  <p>Hola,</p>
+  <p>Hemos recibido una solicitud para verificar que eres el dueño de la cuenta en  <strong>FinanzaApp</strong>. 
+  Para continuar, utiliza el siguiente código de verificación:</p>
+  
+  <div style="text-align: center; margin: 25px 0;">
+    <span style="font-size: 28px; font-weight: bold; letter-spacing: 8px; color: #2c3e50; padding: 12px 24px; background: #ffffff; border: 1px solid #ddd; border-radius: 6px; display: inline-block;">
+      {pin}
+    </span>
+  </div>
+  
+  <p style="font-size: 14px; color: #555;">
+    Este código expira en <strong>{PIN_TTL//60} minutos</strong>.  
+    Si no solicitaste esta verificación, no te preocupes, tu información permanecerá protegida.
+  </p>
+  
+  <p style="font-size: 14px; color: #555;">
+    Te recordamos que Finanza nunca solicitará tu contraseña por correo electrónico.  
+    Mantén tus credenciales seguras y no las compartas con nadie.
+  </p>
+  
+  <hr style="margin: 25px 0; border: none; border-top: 1px solid #eee;">
+  <p style="text-align: center; font-size: 13px; color: #999;">
+    Este es un mensaje automático, por favor no respondas a este correo.  
+    — Equipo <strong>Finanza</strong>
+  </p>
+</div>
 """
+
 
     msg.attach(MIMEText(text, "plain", "utf-8"))
     msg.attach(MIMEText(html, "html", "utf-8"))
@@ -302,7 +366,6 @@ Si no solicitaste este cambio, ignora este correo.
                 server.login(user, pwd)
                 server.sendmail(from_hdr, [to_email], msg.as_string())
 
-        print(f"[DEBUG] PIN enviado correctamente a {to_email}")
 
     except Exception as e:
         print(f"[ERROR] enviando correo PIN: {e}")
@@ -350,6 +413,7 @@ def request_email_change():
     })
     try:
         send_pin_email(new_email, pin)
+        print(f'Se envio el correo a {new_email}')
     except Exception as e:
         print("[ERROR] enviando correo PIN:", e)
         return {"error": "No se pudo enviar el correo de verificación"}, 500
@@ -360,11 +424,18 @@ def request_email_change():
 
 
 #===============================================#
-#======Confirma el cambio de email con PIN=======#
+#======Confirma PIN enviado email=======#
 #===============================================#
 @api.post("/users/me/email-change/confirm")
 @require_auth
 def confirm_email_change():
+    
+    emmmail = db.collection("users").document(request.uid)
+    re = emmmail.get()
+    o = re.to_dict()
+    last_email = o.get("email") 
+
+
     body = request.get_json() or {}
     pin = (body.get("pin") or "").strip()
     if not pin or len(pin) != 6 or not pin.isdigit():
@@ -399,14 +470,21 @@ def confirm_email_change():
     # ✅ PIN correcto → actualizar AUTH & Firestore
     new_email = data.get("newEmail")
     try:
-        auth.update_user(request.uid, email=new_email)  # Admin SDK
+        
+        if new_email != last_email:
+            # Firestore perfil
+            auth.update_user(request.uid, email=new_email)  # Admin SDK
+            db.collection("users").document(request.uid).set({"email": new_email}, merge=True)
+        else:
+            auth.delete_user(request.uid)# Admin SDK
+            db.collection("users").document(request.uid).delete()
+            print("eliminado exitosamente")
+          
     except Exception as e:
         print("[ERROR] update_user:", e)
-        return {"error": "No se pudo actualizar email en Auth"}, 500
+        return {"error": "No se pudo realizar cambios en Auth"}, 500
 
-    # Firestore perfil
-    db.collection("users").document(request.uid).set({"email": new_email}, merge=True)
-
+    
     # Terminar operación y revocar tokens para forzar re-login
     ref.delete()
     try:

@@ -58,7 +58,7 @@ export class LoginPage implements OnInit {
           message: error.message,
           duration: 2500,
           color: 'primary',
-          position: 'middle',
+          position: 'bottom',
           icon: 'alert-circle-outline'
 
         });
@@ -97,7 +97,7 @@ export class LoginPage implements OnInit {
           message: `Inicio de sesión exitoso ${user.name}`,
           duration: 1500,
           color: 'primary',
-          position: 'middle',
+          position: 'bottom',
           icon: 'person-circle-outline'
         });
 
@@ -111,7 +111,7 @@ export class LoginPage implements OnInit {
           message: error.message,
           duration: 2500,
           color: 'primary',
-          position: 'middle',
+          position: 'bottom',
           icon: 'alert-circle-outline'
         });
 
@@ -203,7 +203,7 @@ async onClick() {
       message: error.message || 'Error al iniciar sesión',
       duration: 2500,
       color: 'primary',
-      position: 'middle',
+      position: 'bottom',
       icon: 'alert-circle-outline'
     });
 
@@ -244,7 +244,7 @@ async onClick() {
           message: error.message,
           duration: 2500,
           color: 'primary',
-          position: 'middle',
+          position: 'bottom',
           icon: 'alert-circle-outline'
         });
 

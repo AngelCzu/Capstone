@@ -15,6 +15,7 @@ import { Firebase } from 'src/app/services/firebase';
 })
 export class EmailPinModalComponent {
   @Input() email = '';
+  @Input() title = ''; 
   @Input() ttlSec = 300;
   @Output() confirmed = new EventEmitter<string>(); // pin
   @Output() cancelled = new EventEmitter<void>();
@@ -89,19 +90,21 @@ async submit() {
       this.http.post('/api/v1/users/me/email-change/confirm', { pin: this.pin })
     );
 
-    //  PIN correcto
-    await this.utilsSvc.presentToast({
-      message: 'Correo actualizado. Vuelve a iniciar sesión.',
-      duration: 1500,
-      position: 'bottom',
-      color: 'success'
-    });
-
-    await this.firebase.signOutAndWait();
-    this.utilsSvc.routerLink('/login');
+    
 
     await this.modalCtrl.dismiss({ code: this.pin }, 'confirm');
+    //  PIN correcto
+      await this.utilsSvc.presentToast({
+        message: 'Acción realizada correctamente',
+        duration: 1500,
+        position: 'bottom',
+        color: 'success'
+      });
+  
+      await this.firebase.signOutAndWait();
+      this.utilsSvc.routerLink('/login');
 
+      
   } catch (e: any) {
     this.error = true;
 
