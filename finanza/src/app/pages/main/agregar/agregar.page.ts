@@ -11,15 +11,7 @@ import { SharedModule } from 'src/app/shared/shared-module';
   standalone: true,
   imports: [SharedModule, CommonModule, FormsModule, IonicModule],
 })
-/*
-export class AgregarPage implements OnInit {
 
-  constructor() { }
-
-  ngOnInit() {
-  }
-
-}*/
 export class AgregarPage {
   // Selector
   tipoSeleccionado = 'ingreso';
