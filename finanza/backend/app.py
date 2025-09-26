@@ -303,7 +303,7 @@ Hemos recibido una solicitud para verificar que eres el dueño de la cuenta en F
 
 Tu código de verificación es: {pin}
 
-⏳ Este código expira en {PIN_TTL//60} minutos.
+Este código expira en {PIN_TTL//60} minutos.
 
 Si no realizaste esta solicitud, ignora este correo y tu cuenta permanecerá segura.
 
@@ -384,41 +384,60 @@ def _new_pin(not_equal_to: str | None = None) -> str:
         return pin
 
 #===============================================#
-#======Solicitar cambio de email del usuario====#
+#======Solicitar confirmacion del usuario====#
 #===============================================#
-@api.post("/users/me/email-change/request")
+from google.cloud import firestore
+from datetime import datetime, timedelta, timezone
+@api.post("/users/me/pin/request")
 @require_auth
-def request_email_change():
+def request_pin():
     body = request.get_json() or {}
-    new_email = (body.get("newEmail") or "").strip().lower()
-    if not new_email:
-        return {"error": "Falta newEmail"}, 400
+    action = body.get("action")   # ej: "email-change", "delete-account"
+    target = body.get("target")   # ej: nuevo email o simplemente el actual
 
-    # Traer último PIN para que no se repita
-    ref = db.collection("pendingEmailChange").document(request.uid)
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=PIN_TTL)
+    if not action:
+        return {"error": "Falta action"}, 400
+
+    # Email destino → si no es cambio de correo, usamos el actual
+    if action == "email-change":
+        if not target:
+            return {"error": "Falta newEmail"}, 400
+        email = target
+    else:
+        # acciones sensibles → mandar PIN al correo actual
+        user_record = auth.get_user(request.uid)
+        email = user_record.email
+
+    if not email:
+        return {"error": "Usuario sin email"}, 400
+
+    # Generar y guardar PIN
+    ref = db.collection("pendingPins").document(request.uid)
     prev = ref.get().to_dict() if ref.get().exists else {}
     last_pin = prev.get("pin")
-
     pin = _new_pin(not_equal_to=last_pin)
-    now = int(time.time())
+
+
     ref.set({
         "uid": request.uid,
-        "newEmail": new_email,
+        "action": action,
+        "target": target,
         "pin": pin,
-        "expiresAt": now + PIN_TTL,
+        "expiresAt": firestore.SERVER_TIMESTAMP if False else expires_at,
         "attempts": 0,
         "maxAttempts": PIN_MAX_ATTEMPTS,
-        "createdAt": now,
+        "createdAt": datetime.now(timezone.utc),
         "status": "pending"
     })
+
     try:
-        send_pin_email(new_email, pin)
-        print(f'Se envio el correo a {new_email}')
+        send_pin_email(email, pin)
     except Exception as e:
-        print("[ERROR] enviando correo PIN:", e)
-        return {"error": "No se pudo enviar el correo de verificación"}, 500
+        return {"error": "No se pudo enviar el correo"}, 500
 
     return {"ok": True, "ttl": PIN_TTL}, 200
+
 
 
 
@@ -426,85 +445,82 @@ def request_email_change():
 #===============================================#
 #======Confirma PIN enviado email=======#
 #===============================================#
-@api.post("/users/me/email-change/confirm")
+@api.post("/users/me/pin/confirm")
 @require_auth
-def confirm_email_change():
-    
-    emmmail = db.collection("users").document(request.uid)
-    re = emmmail.get()
-    o = re.to_dict()
-    last_email = o.get("email") 
-
-
+def confirm_pin():
     body = request.get_json() or {}
     pin = (body.get("pin") or "").strip()
+
     if not pin or len(pin) != 6 or not pin.isdigit():
         return {"error": "PIN inválido"}, 400
-    
 
-    ref = db.collection("pendingEmailChange").document(request.uid)
+    ref = db.collection("pendingPins").document(request.uid)
     snap = ref.get()
     if not snap.exists:
         return {"error": "No hay operación pendiente"}, 400
 
     data = snap.to_dict()
-    if data.get("status") != "pending":
-        ref.delete()
-        return {"error": "Operación inválida"}, 400
 
-    now = int(time.time())
-    if now > int(data.get("expiresAt", 0)):
+    # Validaciones de expiración
+    now = datetime.now(timezone.utc)
+    if data.get("status") != "pending" or now > data.get("expiresAt"):
         ref.delete()
-        return {"error": "PIN expirado"}, 400
+        return {"error": "PIN expirado o inválido"}, 400
 
+    # Validaciones de intentos
     attempts = int(data.get("attempts", 0))
     max_attempts = int(data.get("maxAttempts", PIN_MAX_ATTEMPTS))
-    if attempts >= max_attempts:
-        ref.delete()
-        return {"error": "Demasiados intentos"}, 400
 
     if pin != data.get("pin"):
-        ref.set({"attempts": attempts + 1}, merge=True)
-        return {"error": "PIN incorrecto"}, 400
-
-    # ✅ PIN correcto → actualizar AUTH & Firestore
-    new_email = data.get("newEmail")
-    try:
-        
-        if new_email != last_email:
-            # Firestore perfil
-            auth.update_user(request.uid, email=new_email)  # Admin SDK
-            db.collection("users").document(request.uid).set({"email": new_email}, merge=True)
+        attempts += 1
+        if attempts >= max_attempts:
+            ref.delete()
+            return {"error": "Demasiados intentos"}, 400
         else:
-            auth.delete_user(request.uid)# Admin SDK
-            db.collection("users").document(request.uid).delete()
-            print("eliminado exitosamente")
-          
-    except Exception as e:
-        print("[ERROR] update_user:", e)
-        return {"error": "No se pudo realizar cambios en Auth"}, 500
+            ref.set({"attempts": attempts}, merge=True)
+            return {"error": "PIN incorrecto"}, 400
 
-    
-    # Terminar operación y revocar tokens para forzar re-login
-    ref.delete()
+    # ✅ PIN correcto → ejecutar acción
+    action = data.get("action")
+    target = data.get("target")
+
     try:
-        auth.revoke_refresh_tokens(request.uid)
+        if action == "email-change":
+            auth.update_user(request.uid, email=target)
+            db.collection("users").document(request.uid).set({"email": target}, merge=True)
+        elif action == "delete-account":
+            db.collection("users").document(request.uid).delete()
+            auth.delete_user(request.uid)
+        else:
+            return {"error": "Acción no soportada"}, 400
     except Exception as e:
-        print("[WARN] revoke_refresh_tokens:", e)
+        return {"error": f"No se pudo completar la acción: {e}"}, 500
+    finally:
+        ref.delete()
+        try:
+            auth.revoke_refresh_tokens(request.uid)
+        except Exception as e:
+            print("[WARN] revoke_refresh_tokens:", e)
 
-    return {"ok": True, "newEmail": new_email}, 200
+    return {"ok": True, "action": action}, 200
+
 
 
 
 #===============================================#
 #======Cancela el cambio de email del usuario====#
 #===============================================#
-@api.post("/users/me/email-change/cancel")
+@api.post("/users/me/pin/cancel")
 @require_auth
-def cancel_email_change():
-    ref = db.collection("pendingEmailChange").document(request.uid)
-    ref.delete()
+def cancel_pin():
+    body = request.get_json() or {}
+    action = body.get("action")
+    ref = db.collection("pendingPins").document(request.uid)
+    snap = ref.get()
+    if snap.exists and (not action or snap.to_dict().get("action") == action):
+        ref.delete()
     return {"ok": True}, 200
+
 
 
 

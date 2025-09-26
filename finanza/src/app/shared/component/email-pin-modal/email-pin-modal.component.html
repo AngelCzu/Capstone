@@ -34,8 +34,12 @@
       </ion-button>
     </div>
 
-    <small class="ttl">
-      El código expira en ~{{ ttlSec/60 | number:'1.0-0' }} min.
+    <small class="ttl" *ngIf="remainingSec > 0">
+      El código expira en {{ remainingTime }} min.
+    </small>
+
+    <small class="ttl expired" *ngIf="remainingSec <= 0">
+      El código ha expirado
     </small>
   </div>
 </ion-content>

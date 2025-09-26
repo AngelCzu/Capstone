@@ -84,19 +84,21 @@ async onSubmit() {
 
     // 1) Si cambió el correo → pedir PIN
     if (email && email !== this.initialEmail) {
-      await firstValueFrom(this.http.post('/api/v1/users/me/email-change/request', { newEmail: email }));
+      await firstValueFrom(this.http.post('/api/v1/users/me/pin/request', {
+        action: 'email-change',
+        target: email
+     }));
       loading.dismiss();
       // 👇 Usamos utilsSvc en vez de crear modal aquí
       const pin = await this.utilsSvc.presentPinSheet({
         email,
+        action: 'email-change',
         title: 'Cambio de correo',
         message: 'Introduce el código de 6 dígitos que enviamos a tu nuevo correo /n',
         ttlSec: 300, // 5 minutos para que caduque el PIN
         
       });
       
-       
-
       
     }else {
       // 2) Si NO cambió el email → actualizar perfil normal
@@ -124,64 +126,64 @@ async onSubmit() {
 
 
 
-  getInitials() {
+getInitials() {
     const { name, lastName } = this.form.value;
     return (name?.[0] || '') + (lastName?.[0] || '');
   }
 
-  onAvatarChange(event: Event) {
-    const input = event.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
+onAvatarChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+  if (!input.files || input.files.length === 0) return;
 
-    const file = input.files[0];
-    if (!file.type.startsWith('image/')) {
-      this.utilsSvc.presentToast({
-        message: 'El archivo debe ser una imagen',
-        duration: 1500,
-        color: 'danger',
-        position: 'bottom',
-        icon: 'warning-outline'
-      });
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('photo', file);
-
-    this.utilsSvc.loading().then(async loading => {
-      await loading.present();
-
-      this.userApi.uploadProfilePhoto(formData).subscribe({
-        next: (res) => {
-          loading.dismiss();
-          this.avatarUrl = res.photoURL;
-          this.form.patchValue({ photoURL: res.photoURL });
-
-          this.utilsSvc.presentToast({
-            message: 'Foto de perfil actualizada',
-            duration: 1500,
-            color: 'success',
-            position: 'bottom',
-            icon: 'checkmark-circle-outline'
-          });
-        },
-        error: (err) => {
-          loading.dismiss();
-          this.utilsSvc.presentToast({
-            message: `Error al subir foto: ${err.message}`,
-            duration: 1500,
-            color: 'danger',
-            position: 'bottom',
-            icon: 'warning-outline'
-          });
-        }
-      });
+  const file = input.files[0];
+  if (!file.type.startsWith('image/')) {
+    this.utilsSvc.presentToast({
+      message: 'El archivo debe ser una imagen',
+      duration: 1500,
+      color: 'danger',
+      position: 'bottom',
+      icon: 'warning-outline'
     });
+    return;
   }
 
+  const formData = new FormData();
+  formData.append('photo', file);
+
+  this.utilsSvc.loading().then(async loading => {
+    await loading.present();
+
+    this.userApi.uploadProfilePhoto(formData).subscribe({
+      next: (res) => {
+        loading.dismiss();
+        this.avatarUrl = res.photoURL;
+        this.form.patchValue({ photoURL: res.photoURL });
+
+        this.utilsSvc.presentToast({
+          message: 'Foto de perfil actualizada',
+          duration: 1500,
+          color: 'success',
+          position: 'bottom',
+          icon: 'checkmark-circle-outline'
+        });
+      },
+      error: (err) => {
+        loading.dismiss();
+        this.utilsSvc.presentToast({
+          message: `Error al subir foto: ${err.message}`,
+          duration: 1500,
+          color: 'danger',
+          position: 'bottom',
+          icon: 'warning-outline'
+        });
+      }
+    });
+  });
+}
 
 
-  async signOutConfirm(): Promise<void> {
+
+async signOutConfirm(): Promise<void> {
   const confirmed = await this.utilsSvc.presentConfirmSheet({
   title: 'Cerrar Sesión',
   message: '¿Seguro que deseas cerrar sesión?',
@@ -241,21 +243,23 @@ async deleteAccountConfirm(): Promise<void> {
    loading.present();
   try {
     
-    await firstValueFrom(this.http.post('/api/v1/users/me/email-change/request', { newEmail: this.initialEmail }));
+      await firstValueFrom(this.http.post('/api/v1/users/me/pin/request', {
+        action: 'delete-account'
+      }));
       loading.dismiss();
       // 👇 Usamos utilsSvc en vez de crear modal aquí
       const pin = await this.utilsSvc.presentPinSheet({
         email: this.initialEmail,
+        action: 'delete-account',
         title: 'Eliminar cuenta',
         message: 'Introduce el código de 6 dígitos que enviamos a tu correo para confirma la eliminación de la cuenta /n',
         ttlSec: 300, // 5 minutos para que caduque el PIN
         
       });
 
-      
-    // Limpiar storage local
-    localStorage.clear();
-    sessionStorage.clear();
+      // Limpiar storage local
+      localStorage.clear();
+      sessionStorage.clear();
 
     
 

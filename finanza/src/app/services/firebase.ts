@@ -72,6 +72,9 @@ export class Firebase {
     await waitForNull;        // esperamos confirmación
   }
 
+  async signOut(){
+  await signOut(getAuth())
+}
 
 
 
