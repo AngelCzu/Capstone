@@ -2,10 +2,10 @@
 
 ## Requirements
 
-- Python 3.13.2
-- Angular 20.1.5
-- Node 22.14.0
-- Ionic 7.2.1
+- Python 3.13.2                      https://www.python.org/downloads/release/python-3132/
+- Node 22.14.0                       https://nodejs.org/download/release/v22.14.0/
+- Angular 20.1.5                     npm install -g @angular/cli@20.1.5
+- Ionic 7.2.1                        npm install -g @ionic/cli@7.2.1
 - npm 10.9.2 
 - Firebase 14.12.1
 - Flask 3.1.2
