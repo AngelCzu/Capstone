@@ -45,6 +45,10 @@ const routes: Routes = [
     path: 'test',
     loadChildren: () => import('./pages/main/test/test.module').then( m => m.TestPageModule)
   },
+  {
+    path: 'analizar',
+    loadChildren: () => import('./pages/main/analizar/analizar.module').then( m => m.AnalizarPageModule),canActivate:[authGuard]
+  },
 
 
 ];
