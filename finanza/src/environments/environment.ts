@@ -3,6 +3,7 @@
 // The list of file replacements can be found in `angular.json`.
 
 import { initializeApp } from "firebase/app";
+ import { getMessaging, getToken } from 'firebase/messaging';
 
 export const environment = {
   production: false,
@@ -15,11 +16,12 @@ export const environment = {
     appId: "1:587138149112:web:c5c0577c030747c822a90d",
     measurementId: "G-LRQ50MG46C"
   },
-  
+  vapidKey: "BMd0JJGitRD56PfjkW_ihDPTjNZuUyZMDMTrcHrouNsQgVmHmh4bBLwfGFsZYu1_meVDrMpTXTc_Qg4Lq2Ho6vs"
 }
 
 // Initialize Firebase
 const app = initializeApp(environment.firebaseConfig);
+
 /*
  * For easier debugging in development mode, you can import the following file
  * to ignore zone related error stack frames such as `zone.run`, `zoneDelegate.invokeTask`.

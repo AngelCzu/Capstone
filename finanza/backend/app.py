@@ -124,7 +124,14 @@ def create_user_profile():
         "photoURL": allowed.get("photoURL", ""),
         "premium": False,
         "createdAt": firestore.SERVER_TIMESTAMP,
-        "updatedAt": firestore.SERVER_TIMESTAMP
+        "updatedAt": firestore.SERVER_TIMESTAMP,
+
+        "settings":{
+            "recordatoriosGastos": True,
+            "recordatoriosPagos": True,
+        },
+        "fcmTokens":[],
+
     }
 
     ref = db.collection("users").document(request.uid)
@@ -156,14 +163,16 @@ def get_me():
             "lastName": "",
             "email": email_auth,
             "photoURL": "",
-            "premium": False
+            "premium": False,
+
+
         }
         ref.set(data)
         return data, 200
 
     data = snap.to_dict()
 
-    # ⚡ Sincronizar email si difiere
+    #  Sincronizar email si difiere
     if data.get("email") != email_auth:
         data["email"] = email_auth
         ref.set({"email": email_auth}, merge=True)
@@ -180,23 +189,29 @@ def get_me():
 def patch_me():
     body = request.get_json() or {}
 
-    # Solo permitimos actualizar estos campos desde el frontend
-    allowed = {
-        k: v for k, v in body.items()
-        if k in {"name", "lastName", "photoURL"}
-    }
+    updates = {}
+
+    # Solo permitimos actualizar estos campos desde el frontend (Campos permitidos)
+
+    for field in ["name", "lastName", "photoURL"]:
+        if field in body:
+            updates[field] = body[field]
 
     #  Email siempre desde Firebase Authentication
     try:
         user_record = auth.get_user(request.uid)
-        allowed["email"] = user_record.email or ""
+        updates["email"] = user_record.email or ""
     except Exception as e:
         print("Error obteniendo email desde Firebase Auth:", e)
 
-    if not allowed:
+    # settings parciales (Notificaciones)
+    if "settings" in body and isinstance(body["settings"], dict):
+        updates["settings"] = body["settings"]
+
+    if not updates:
         return {"error": "Nada para actualizar"}, 400
 
-    db.collection("users").document(request.uid).set(allowed, merge=True)
+    db.collection("users").document(request.uid).set(updates, merge=True)
     return {"ok": True}
 
 
@@ -265,6 +280,77 @@ def upload_photo():
 
     return {"photoURL": photo_url}, 200
 
+
+#============================================= NOTIFICACIONES =============================================#
+
+#==============================================#
+#=======Registrar token de notificación========#
+#==============================================#
+@api.post("/users/me/fcm-token")
+@require_auth
+def register_fcm_token():
+    body = request.get_json() or {}
+    token = body.get("token")
+
+    if not token:
+        return {"error": "Falta token"}, 400
+
+    db.collection("users").document(request.uid).set({
+        "fcmTokens": firestore.ArrayUnion([token])
+    }, merge=True)
+
+    return {"ok": True}
+
+
+#==============================================#
+#====Eliminar token de notificación============#
+#==============================================#
+@api.delete("/users/me/fcm-token")
+@require_auth
+def unregister_fcm_token():
+    body = request.get_json() or {}
+    token = body.get("token")
+
+    if not token:
+        return {"error": "Falta token"}, 400
+
+    db.collection("users").document(request.uid).set({
+        "fcmTokens": firestore.ArrayRemove([token])
+    }, merge=True)
+
+    return {"ok": True}
+
+
+#==============================================#
+#===========Enviar notificación test===========#
+#==============================================#
+from firebase_admin import messaging
+
+@api.post("/users/me/push-test")
+@require_auth
+def push_test():
+    doc = db.collection("users").document(request.uid).get()
+    data = doc.to_dict() or {}
+    tokens = data.get("fcmTokens", [])
+
+    if not tokens:
+        return {"error": "Usuario sin tokens registrados"}, 400
+
+    message = messaging.MulticastMessage(
+        tokens=tokens,
+        notification=messaging.Notification(
+            title="Finanza",
+            body="¡Notificación de prueba enviada! ✅"
+        ),
+        data={"kind": "test"}
+    )
+
+    resp = messaging.send_each_for_multicast(message)
+    return {
+        "ok": True,
+        "success": resp.success_count,
+        "failure": resp.failure_count
+    }
 
 
 

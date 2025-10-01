@@ -7,6 +7,7 @@ import { Firebase } from 'src/app/services/firebase';
 
 import { firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { User } from 'src/app/models/user.model';
 
 
 
@@ -23,6 +24,9 @@ export class ProfilePage implements OnInit {
   utilsSvc = inject(Utils);
   firebaseSvc = inject(Firebase);
   http = inject(HttpClient);
+
+  //Prueba notificaciones
+  user: User | null = null;
   
 
   form = new FormGroup({
@@ -32,8 +36,14 @@ export class ProfilePage implements OnInit {
     lastName: new FormControl('', [Validators.required, Validators.minLength(3),Validators.pattern('^[a-zA-ZÀ-ÿ\\s]+$')]),
     premium: new FormControl(false),
     photoURL: new FormControl(''),
-  });
 
+    //PRUEBA DE NOTIFICACIONES
+    settings: new FormGroup({
+      recordatoriosGastos: new FormControl(true),
+      recordatoriosPagos: new FormControl(true)
+    })
+  });
+  
   initialEmail: string;
 
   
@@ -51,10 +61,17 @@ export class ProfilePage implements OnInit {
 
     this.userApi.getMe().subscribe({
       next: (user) => {
-        this.form.patchValue(user);
+        this.form.patchValue({
+          ...user, 
+          settings: {
+            recordatoriosGastos: user.settings?.recordatoriosGastos ?? true,
+            recordatoriosPagos: user.settings?.recordatoriosPagos ?? true
+          }});
         this.avatarUrl = user.photoURL || '';
         loading.dismiss();
         this.initialEmail = user.email;
+        console.log(user);
+        
 
         
         
@@ -279,5 +296,54 @@ async deleteAccountConfirm(): Promise<void> {
     
   }
 }
+
+//===================================================PRUEBA NOTIFICACIONES===================================================
+async probarNotificacion() {
+    const loading = await this.utilsSvc.loading();
+    try {
+      const resp = await firstValueFrom(this.userApi.sendTestPush());
+      this.utilsSvc.presentToast({
+        message:`Push enviada ✅ (éxitos: ${resp.success}, fallos: ${resp.failure})`,
+        duration: 1500
+
+      });
+    } catch (err) {
+      console.error('Error enviando push:', err);
+      this.utilsSvc.presentToast({
+        message:'❌ Error al enviar notificación',
+        duration: 1500
+
+      });
+    } finally {
+      loading.dismiss();
+    }
+  }
+
+    async onToggleChange(key: 'recordatoriosGastos' | 'recordatoriosPagos', value: boolean) {
+    const loading = await this.utilsSvc.loading();
+    try {
+      await firstValueFrom(this.userApi.updateProfile({ settings: { [key]: value } as any }));
+      if (this.user) {
+        this.user = {
+          ...this.user,
+          settings: { ...(this.user.settings || {}), [key]: value }
+        };
+      }
+      this.utilsSvc.presentToast({ 
+        message:'Configuración actualizada',
+        duration: 1500
+      });
+    } catch (err) {
+      console.error('Error guardando configuración:', err);
+      this.utilsSvc.presentToast({
+        message:'No se pudo guardar la configuración',
+        duration: 1500
+
+        });
+    } finally {
+      loading.dismiss();
+    }
+  }
+
 
 }

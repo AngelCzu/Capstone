@@ -10,12 +10,16 @@ import { AppRoutingModule } from './app-routing.module';
 import { AngularFireModule } from '@angular/fire/compat'; 
 import { environment } from 'src/environments/environment'; 
 
+
+
 // Importaciones de Firebase
 import { provideFirebaseApp, initializeApp } from '@angular/fire/app'; 
+import { provideMessaging, getMessaging } from '@angular/fire/messaging';
 import { provideAuth, getAuth } from '@angular/fire/auth'; 
 import { provideFirestore, getFirestore } from '@angular/fire/firestore'; 
 import { provideStorage, getStorage } from '@angular/fire/storage'; 
-import { HTTP_INTERCEPTORS, HttpClientModule, provideHttpClient, withInterceptors } 
+import { HTTP_INTERCEPTORS, HttpClientModule, } 
+
 from '@angular/common/http'; import { AuthTokenInterceptor } 
 from 'src/app/services/auth-token.interceptor'; 
 @NgModule({ 
@@ -43,6 +47,7 @@ from 'src/app/services/auth-token.interceptor';
                  provideAuth(() => getAuth()), 
                  provideFirestore(() => getFirestore()), 
                  provideStorage(() => getStorage()), 
+                 provideMessaging(() => getMessaging()),
     ], 
     bootstrap: [AppComponent], 
   }) 
