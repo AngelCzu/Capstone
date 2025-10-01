@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 import { SharedModule } from 'src/app/shared/shared-module';
+import { HttpClient } from '@angular/common/http';
+import { Utils } from 'src/app/services/utils';
 
 @Component({
   selector: 'app-agregar',
@@ -11,7 +13,6 @@ import { SharedModule } from 'src/app/shared/shared-module';
   standalone: true,
   imports: [SharedModule, CommonModule, FormsModule, IonicModule],
 })
-
 export class AgregarPage {
   // Selector
   tipoSeleccionado = 'ingreso';
@@ -38,63 +39,132 @@ export class AgregarPage {
   nuevoNombreDeuda = '';
   nuevoNombreObjetivo = '';
 
-  // Exponer nombre del usuario actual para la plantilla
-  public currentUserName: string;
+  // Nombre real del usuario actual
+  public currentUserName: string = 'Usuario';
 
-  constructor() {
-    this.currentUserName = this.getCurrentUserName();
-  }
-
-  // Handlers mínimos (reemplazar con lógica real)
-  guardarIngreso(form?: NgForm) {
-    if (form && !form.form.valid) { alert('Completa Nombre y Monto para el ingreso.'); return; }
-    console.log('Ingreso guardado', this.ingreso);
-  }
-  guardarGasto(form?: NgForm) {
-    if (form && !form.form.valid) { alert('Completa Nombre y Monto para el gasto.'); return; }
-    console.log('Gasto guardado', this.gasto);
-  }
-  guardarDeuda(form?: NgForm) {
-    if (form && !form.form.valid) { alert('Completa Nombre y Monto para la deuda.'); return; }
-    console.log('Deuda guardada', this.deuda);
-  }
-  guardarObjetivo(form?: NgForm) {
-    if (form && !form.form.valid) { alert('Completa Nombre y Monto para el objetivo.'); return; }
-    console.log('Objetivo guardado', this.objetivo);
+  constructor(private http: HttpClient, private utilsSvc: Utils) {
+    this.loadUserName();
   }
 
-  // Obtener nombre del usuario logueado (ajusta a tu fuente real)
-  private getCurrentUserName(): string {
-    // ejemplo: tomar de localStorage si tu app lo guarda ahí; cambia según tu auth
-    return (localStorage.getItem('currentUserName') || 'Usuario') as string;
+  // ==================== Obtener nombre real del usuario ====================
+  async loadUserName() {
+    try {
+      const res: any = await this.http.get('/api/v1/users/me').toPromise();
+      if (res?.name && res?.lastName) {
+        this.currentUserName = `${res.name}`;
+      } else {
+        this.currentUserName = res?.name || 'Usuario';
+      }
+    } catch (e) {
+      console.error('No se pudo cargar el nombre del usuario', e);
+      this.currentUserName = 'Usuario';
+    }
   }
 
-  // Asegura que el usuario actual esté en primera posición
+  // ====================== INGRESO ======================
+  async guardarIngreso(form?: NgForm) {
+    if (form && !form.form.valid) {
+      alert('Completa Nombre y Monto para el ingreso.');
+      return;
+    }
+    const loading = await this.utilsSvc.loading();
+    await loading.present();
+
+    try {
+      await this.http.post('/api/v1/users/me/ingresos', this.ingreso).toPromise();
+      this.utilsSvc.presentToast({ message: 'Ingreso guardado', color: 'success', duration: 2000 });
+      form?.resetForm();
+      this.ingreso = { nombre: '', monto: null };
+    } catch (err) {
+      this.utilsSvc.presentToast({ message: 'Error al guardar ingreso', color: 'danger', duration: 2000 });
+    } finally {
+      loading.dismiss();
+    }
+  }
+
+  // ======================= GASTO =======================
+  async guardarGasto(form?: NgForm) {
+    if (form && !form.form.valid) {
+      alert('Completa Nombre y Monto para el gasto.');
+      return;
+    }
+    const loading = await this.utilsSvc.loading();
+    await loading.present();
+
+    try {
+      await this.http.post('/api/v1/users/me/gastos', this.gasto).toPromise();
+      this.utilsSvc.presentToast({ message: 'Gasto guardado', color: 'danger', duration: 2000 });
+      form?.resetForm();
+      this.gasto = { nombre: '', monto: null };
+    } catch (err) {
+      this.utilsSvc.presentToast({ message: 'Error al guardar gasto', color: 'danger', duration: 2000 });
+    } finally {
+      loading.dismiss();
+    }
+  }
+
+  // ======================= DEUDA =======================
+  async guardarDeuda(form?: NgForm) {
+    if (form && !form.form.valid) {
+      alert('Completa Nombre y Monto para la deuda.');
+      return;
+    }
+    const loading = await this.utilsSvc.loading();
+    await loading.present();
+
+    try {
+      await this.http.post('/api/v1/users/me/deudas', this.deuda).toPromise();
+      this.utilsSvc.presentToast({ message: 'Deuda guardada', color: 'warning', duration: 2000 });
+      form?.resetForm();
+      this.deuda = { nombre: '', monto: null, cuotas: null, compartido: false, participantes: [] };
+    } catch (err) {
+      this.utilsSvc.presentToast({ message: 'Error al guardar deuda', color: 'danger', duration: 2000 });
+    } finally {
+      loading.dismiss();
+    }
+  }
+
+  // ====================== OBJETIVO =====================
+  async guardarObjetivo(form?: NgForm) {
+    if (form && !form.form.valid) {
+      alert('Completa Nombre y Monto para el objetivo.');
+      return;
+    }
+    const loading = await this.utilsSvc.loading();
+    await loading.present();
+
+    try {
+      await this.http.post('/api/v1/users/me/objetivos', this.objetivo).toPromise();
+      this.utilsSvc.presentToast({ message: 'Objetivo guardado', color: 'tertiary', duration: 2000 });
+      form?.resetForm();
+      this.objetivo = { nombre: '', monto: null, tiempo: null, compartido: false, participantes: [] };
+    } catch (err) {
+      this.utilsSvc.presentToast({ message: 'Error al guardar objetivo', color: 'danger', duration: 2000 });
+    } finally {
+      loading.dismiss();
+    }
+  }
+
+  // =================== Helpers ===================
   private ensureCurrentUserFirst(list: Array<{ nombre: string; porcentaje: number }>) {
-    const me = this.getCurrentUserName();
+    const me = this.currentUserName;
     const idx = list.findIndex(p => p.nombre === me);
-    if (idx === 0) return; // ya primero
+    if (idx === 0) return;
     if (idx > 0) {
-      // mover a primera posición
       const [item] = list.splice(idx, 1);
       list.unshift(item);
       return;
     }
-    // no existe => añadir al inicio y redistribuir
     list.unshift({ nombre: me, porcentaje: 0 });
     this.distribuirIgual(list);
   }
 
-  // Llamadas cuando se activa/desactiva compartido
   deudaCompartidoChanged() {
     if (this.deuda.compartido) {
-      // forzar usuario actual primero
       this.ensureCurrentUserFirst(this.deuda.participantes);
       if (this.deuda.participantes.length === 0) {
-        // si no había participantes, crear con el usuario actual
         this.ensureCurrentUserFirst(this.deuda.participantes);
       }
-      // asegurar distribución válida
       this.distribuirIgual(this.deuda.participantes);
     }
   }
@@ -109,15 +179,11 @@ export class AgregarPage {
     }
   }
 
-  // --- DEUDA ---
   agregarParticipanteDeuda() {
     const name = (this.nuevoNombreDeuda || '').trim();
     if (!name) return;
-    // evitar duplicados; si existe, moverlo después del usuario actual
     const exists = this.deuda.participantes.find(p => p.nombre === name);
-    if (exists) {
-      // mover al final (o dejar donde esté)
-    } else {
+    if (!exists) {
       this.deuda.participantes.push({ nombre: name, porcentaje: 0 });
     }
     this.nuevoNombreDeuda = '';
@@ -125,7 +191,6 @@ export class AgregarPage {
     this.distribuirIgual(this.deuda.participantes);
   }
 
-  // ahora recibe índice y valor
   porcentajeCambiadoDeuda(index: number, raw: any) {
     const val = Number(raw);
     const list = this.deuda.participantes;
@@ -136,7 +201,6 @@ export class AgregarPage {
   eliminarParticipanteDeuda(index: number) {
     const list = this.deuda.participantes;
     if (!list || index < 0 || index >= list.length) return;
-    // proteger usuario actual
     if (list[index].nombre === this.currentUserName) {
       console.warn('No se puede eliminar al usuario logueado.');
       return;
@@ -148,14 +212,11 @@ export class AgregarPage {
     }
   }
 
-  // --- OBJETIVO ---
   agregarParticipanteObjetivo() {
     const name = (this.nuevoNombreObjetivo || '').trim();
     if (!name) return;
     const exists = this.objetivo.participantes.find(p => p.nombre === name);
-    if (exists) {
-      // mover al final (o dejar donde esté)
-    } else {
+    if (!exists) {
       this.objetivo.participantes.push({ nombre: name, porcentaje: 0 });
     }
     this.nuevoNombreObjetivo = '';
@@ -173,7 +234,6 @@ export class AgregarPage {
   eliminarParticipanteObjetivo(index: number) {
     const list = this.objetivo.participantes;
     if (!list || index < 0 || index >= list.length) return;
-    // proteger usuario actual
     if (list[index].nombre === this.currentUserName) {
       console.warn('No se puede eliminar al usuario logueado.');
       return;
@@ -185,7 +245,6 @@ export class AgregarPage {
     }
   }
 
-  // Utilidades generales
   private roundTwo(n: number) {
     return Math.round(n * 100) / 100;
   }
@@ -194,13 +253,11 @@ export class AgregarPage {
     return this.roundTwo(list.reduce((s, p) => s + (p.porcentaje || 0), 0));
   }
 
-  // Distribuye 100% en partes iguales (corrige redondeo)
   private distribuirIgual(list: Array<{ nombre: string; porcentaje: number }>) {
     const n = list.length;
     if (n === 0) return;
     const base = this.roundTwo(100 / n);
     list.forEach(p => p.porcentaje = base);
-    // corregir diferencia por redondeo
     const sum = this.totalPorcentaje(list);
     const diff = this.roundTwo(100 - sum);
     if (Math.abs(diff) > 0 && list.length) {
@@ -208,10 +265,12 @@ export class AgregarPage {
     }
   }
 
-  // Ajusta porcentajes cuando un participante cambia; reparte el resto igualmente entre los otros
-  private ajustarPorcentaje(list: Array<{ nombre: string; porcentaje: number }>, changed: { nombre: string; porcentaje: number }, newValue: number) {
+  private ajustarPorcentaje(
+    list: Array<{ nombre: string; porcentaje: number }>,
+    changed: { nombre: string; porcentaje: number },
+    newValue: number
+  ) {
     if (!list || list.length === 0) return;
-    // clamp newValue
     let v = Math.max(0, Math.min(100, this.roundTwo(newValue)));
     const others = list.filter(p => p !== changed);
     if (others.length === 0) {
@@ -222,11 +281,9 @@ export class AgregarPage {
     const remainder = this.roundTwo(100 - v);
     const perOther = this.roundTwo(remainder / others.length);
     others.forEach(o => o.porcentaje = perOther);
-    // corregir suma por redondeo
     const sum = this.totalPorcentaje(list);
     const diff = this.roundTwo(100 - sum);
     if (Math.abs(diff) > 0) {
-      // aplicar corrección al primer otro participante si existe, sino al cambiado
       if (others.length) {
         others[0].porcentaje = this.roundTwo(others[0].porcentaje + diff);
       } else {
