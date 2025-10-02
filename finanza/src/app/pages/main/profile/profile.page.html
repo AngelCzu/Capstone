@@ -7,64 +7,76 @@
 </ion-button>
   <!-- Tarjeta credencial -->
   <div class="cream-card hero">
-    <div class="card-content">
-      <!-- Imagen lado izquierdo -->
-      <div class="avatar-section">
-        <ng-container *ngIf="avatarUrl; else initials">
-          <img [src]="avatarUrl || 'assets/img/avatar-placeholder.png'" alt="avatar" class="avatar"/>
-        </ng-container>
-        <ng-template #initials>
-          <div class="avatar initials">{{ getInitials() }}</div>
-        </ng-template>
+  <div class="card-content">
+    <!-- Imagen lado izquierdo -->
+    <div class="avatar-section">
+      <ng-container *ngIf="avatarUrl; else initials">
+        <img [src]="avatarUrl" alt="avatar" class="avatar" loading="lazy" referrerpolicy="no-referrer"/>
+      </ng-container>
+      <ng-template #initials>
+        <div class="avatar initials">{{ getInitials() }}</div>
+      </ng-template>
 
-        <!-- Botón para cambiar foto -->
-        <label class="avatar-edit">
-          <ion-icon name="camera-outline"></ion-icon>
-          <input type="file" accept="image/*" (change)="onAvatarChange($event)" hidden />
-        </label>
-      </div>
-
-      <!-- Datos lado derecho -->
-      <div class="info-section">
-        <h2>{{ form.value.name }} {{ form.value.lastName }}</h2>
-        <p>{{ form.value.email }}</p>
-      </div>
+      <!-- Botón para cambiar foto -->
+      <label class="avatar-edit">
+        <ion-icon name="camera-outline"></ion-icon>
+        <input type="file" accept="image/*" (change)="onAvatarChange($event)" hidden />
+      </label>
     </div>
 
-    <!-- Timbre de estado -->
-    <div class="status-badge" [ngClass]="form.value.premium ? 'premium' : 'free'">
-      <ion-icon [name]="form.value.premium ? 'checkmark-circle' : 'close-circle'"></ion-icon>
-      <span>{{ form.value.premium ? 'Usuario Premium' : 'Usuario Gratis' }}</span>
+    <!-- Datos lado derecho -->
+    <div class="info-section">
+      <h2>{{ form.value.name }}</h2>
+      <h2> {{ form.value.lastName }}</h2>
+      
+
+      <!-- Timbre de estado ahora aquí -->
+      <div class="status-badge" [ngClass]="form.value.premium ? 'premium' : 'free'">
+        <ion-icon [name]="form.value.premium ? 'checkmark-circle' : 'close-circle'"></ion-icon>
+        <span>{{ form.value.premium ? 'Usuario Premium' : 'Usuario Gratis' }}</span>
+      </div>
     </div>
   </div>
+</div>
+
 
   <!-- Formulario -->
-  <form [formGroup]="form" (ngSubmit)="saveProfile()" class="form-wrapper">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-wrapper">
+
     <!-- Nombre -->
-    <ion-item>
-      <ion-label position="floating">Nombre</ion-label>
-      <ion-input formControlName="name"></ion-input>
-    </ion-item>
+      <app-custom-input
+        [control]="form.controls.name"
+        type="Nombre"
+        label="Nombre"
+      ></app-custom-input>
+      <!-- Validador Nombre -->
     <div class="validators" *ngIf="form.controls.name.errors && form.controls.name.touched">
       <div *ngIf="form.controls.name.errors?.['required']">El nombre es requerido</div>
       <div *ngIf="form.controls.name.errors?.['minlength']">Debe tener al menos 4 caracteres</div>
+      <div *ngIf="form.controls.name.errors?.['pattern']">No debe tener numeros</div>
     </div>
 
+
     <!-- Apellido -->
-    <ion-item>
-      <ion-label position="floating">Apellido</ion-label>
-      <ion-input formControlName="lastName"></ion-input>
-    </ion-item>
+     <app-custom-input
+        [control]="form.controls.lastName"
+        type="Apellido"
+        label="Apellido"
+      ></app-custom-input>
+      <!-- Validador Apellido -->
     <div class="validators" *ngIf="form.controls.lastName.errors && form.controls.lastName.touched">
       <div *ngIf="form.controls.lastName.errors?.['required']">El apellido es requerido</div>
       <div *ngIf="form.controls.lastName.errors?.['minlength']">Debe tener al menos 3 caracteres</div>
+      <div *ngIf="form.controls.lastName.errors?.['pattern']">No debe tener numeros</div>
     </div>
 
+
     <!-- Correo -->
-    <ion-item>
-      <ion-label position="floating">Correo</ion-label>
-      <ion-input formControlName="email"></ion-input>
-    </ion-item>
+    <app-custom-input
+      [control]="form.controls.email"
+      type="email"
+      label="Email"
+    ></app-custom-input>
     <div class="validators" *ngIf="form.controls.email.errors && form.controls.email.touched">
       <div *ngIf="form.controls.email.errors?.['required']">El correo es requerido</div>
       <div *ngIf="form.controls.email.errors?.['email']">Correo no válido</div>
@@ -74,7 +86,50 @@
     <ion-button expand="block" type="submit" [disabled]="form.invalid">
       Guardar cambios
     </ion-button>
+
+
+    <!-- Boton eliminar cuenta -->
+
+    <ion-button (click)="deleteAccountConfirm()" expand="block" fill="solid" color="danger" shape="round">
+      <ion-icon name="trash-outline"></ion-icon>
+      Eliminar cuenta
+    </ion-button>
+
+
+
+
+    <!-- Pruebas notificaciones -->
+   
+
+    <ion-list formGroupName="settings">
+      <ion-item>
+        <ion-label>Recordatorios diarios de gastos</ion-label>
+        <ion-toggle
+          formControlName="recordatoriosGastos"
+          (ionChange)="onToggleChange('recordatoriosGastos', $event.detail.checked)">
+        </ion-toggle>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>Recordatorios de pagos</ion-label>
+        <ion-toggle
+          formControlName="recordatoriosPagos"
+          (ionChange)="onToggleChange('recordatoriosPagos', $event.detail.checked)">
+        </ion-toggle>
+      </ion-item>
+    </ion-list>
+
+
+  <!-- 👇 botón para probar push -->
+  <ion-button expand="block" (click)="probarNotificacion()">
+    Probar notificación push
+  </ion-button>
   </form>
+
+
+  
+
+
 </ion-content>
 
 <app-navbar></app-navbar>

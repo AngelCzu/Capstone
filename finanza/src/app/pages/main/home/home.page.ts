@@ -37,12 +37,6 @@ export class HomePage implements OnInit {
   firebaseSvc = inject(Firebase);
   utilsSvc = inject(Utils);
 
-  //======= Cerrar sesión =======
-  signOut() { 
-    this.firebaseSvc.signOut();
-  }
-
-
 
   
 // Donut / dashboard state

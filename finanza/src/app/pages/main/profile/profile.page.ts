@@ -5,9 +5,11 @@ import { UserApi } from 'src/app/services/user.api';
 import { SharedModule } from 'src/app/shared/shared-module';
 import { Firebase } from 'src/app/services/firebase';
 
-import { getAuth, updateEmail, EmailAuthProvider, reauthenticateWithCredential, signOut } from 'firebase/auth';
 import { firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { User } from 'src/app/models/user.model';
+
+
 
 
 @Component({
@@ -21,21 +23,35 @@ export class ProfilePage implements OnInit {
   private userApi = inject(UserApi);
   utilsSvc = inject(Utils);
   firebaseSvc = inject(Firebase);
-  private http: HttpClient;
+  http = inject(HttpClient);
+
+  //Prueba notificaciones
+  user: User | null = null;
+  
 
   form = new FormGroup({
     uid: new FormControl(''),
     email: new FormControl('', [Validators.required, Validators.email]),
-    name: new FormControl('', [Validators.required, Validators.minLength(4)]),
-    lastName: new FormControl('', [Validators.required, Validators.minLength(3)]),
+    name: new FormControl('', [Validators.required, Validators.minLength(4),Validators.pattern('^[a-zA-ZÀ-ÿ\\s]+$')]),
+    lastName: new FormControl('', [Validators.required, Validators.minLength(3),Validators.pattern('^[a-zA-ZÀ-ÿ\\s]+$')]),
     premium: new FormControl(false),
     photoURL: new FormControl(''),
-  });
 
+    //PRUEBA DE NOTIFICACIONES
+    settings: new FormGroup({
+      recordatoriosGastos: new FormControl(true),
+      recordatoriosPagos: new FormControl(true)
+    })
+  });
+  
+  initialEmail: string;
+
+  
   avatarUrl: string = '';
 
   ngOnInit() {
     this.loadProfile();
+    
   }
 
   async loadProfile() {
@@ -45,9 +61,20 @@ export class ProfilePage implements OnInit {
 
     this.userApi.getMe().subscribe({
       next: (user) => {
-        this.form.patchValue(user);
+        this.form.patchValue({
+          ...user, 
+          settings: {
+            recordatoriosGastos: user.settings?.recordatoriosGastos ?? true,
+            recordatoriosPagos: user.settings?.recordatoriosPagos ?? true
+          }});
         this.avatarUrl = user.photoURL || '';
         loading.dismiss();
+        this.initialEmail = user.email;
+        console.log(user);
+        
+
+        
+        
         
       },
       error: async (err) => {
@@ -63,172 +90,260 @@ export class ProfilePage implements OnInit {
     });
   }
 
-  async saveProfile(): Promise<void> {
-  const loading = await this.utilsSvc.loading();
+async onSubmit() {
+  const loading = await this.utilsSvc.loading(); 
   await loading.present();
-
   try {
-    if (!this.form.valid) throw new Error('Formulario inválido.');
+    const email = this.form.controls.email.value!;
+    const name = this.form.controls.name.value!;
+    const lastName = this.form.controls.lastName.value!;
+    const photoURL = this.form.controls.photoURL.value || '';
 
-    const auth = getAuth();
-    const user = auth.currentUser;
-    if (!user) throw new Error('No hay usuario autenticado.');
-
-    const nuevoEmail = this.form.controls['email'].value;
-
-    // 1) Si cambió el email, actualizar en Firebase Auth (podría pedir re-login)
-    if (nuevoEmail && nuevoEmail !== user.email) {
-      try {
-        await updateEmail(user, nuevoEmail);
-      } catch (err: any) {
-        // Si necesita re-autenticación, pedimos la contraseña actual
-        if (err?.code === 'auth/requires-recent-login') {
-          // Solicita contraseña al usuario mediante tu utilsSvc o un prompt de Ionic
-          const password = await this.utilsSvc.presentPasswordPrompt({
-            header: 'Confirmar identidad',
-            message: 'Ingresa tu contraseña para confirmar el cambio de correo'
-          });
-          if (!password) throw new Error('Operación cancelada');
-
-          // Reautenticar
-          const credential = EmailAuthProvider.credential(user.email!, password);
-          await reauthenticateWithCredential(user, credential);
-
-          // Intentamos nuevamente el cambio de email
-          await updateEmail(user, nuevoEmail);
-        } else {
-          throw err;
-        }
-      }
+    // 1) Si cambió el correo → pedir PIN
+    if (email && email !== this.initialEmail) {
+      await firstValueFrom(this.http.post('/api/v1/users/me/pin/request', {
+        action: 'email-change',
+        target: email
+     }));
+      loading.dismiss();
+      // 👇 Usamos utilsSvc en vez de crear modal aquí
+      const pin = await this.utilsSvc.presentPinSheet({
+        email,
+        action: 'email-change',
+        title: 'Cambio de correo',
+        message: 'Introduce el código de 6 dígitos que enviamos a tu nuevo correo /n',
+        ttlSec: 300, // 5 minutos para que caduque el PIN
+        
+      });
+      
+      
+    }else {
+      // 2) Si NO cambió el email → actualizar perfil normal
+      await firstValueFrom(this.http.patch('/api/v1/users/me', { name, lastName, photoURL }));
+      await this.utilsSvc.presentToast({ 
+        message: 'Perfil actualizado', 
+        color: 'success',
+        position: 'bottom',
+        duration: 1500,
+      });
     }
 
-    // 2) Actualizar en tu backend (Firestore vía Flask)
-    const payload = {
-      name: this.form.controls['name'].value,
-      lastName: this.form.controls['lastName'].value,
-      email: nuevoEmail,
-      photoURL: this.form.controls['photoURL']?.value || ''
-    };
+    
 
-    const res = await firstValueFrom(this.http.patch('/api/v1/users/me', payload));
-    console.log('Perfil actualizado backend:', res);
-
+  } catch (err: any) {
     await this.utilsSvc.presentToast({
-      message: 'Perfil actualizado correctamente.',
-      duration: 2000,
-      color: 'success',
-      position: 'middle',
-      icon: 'checkmark-circle-outline'
-    });
-
-  } catch (error: any) {
-    console.error('Error actualizando perfil:', error);
-    await this.utilsSvc.presentToast({
-      message: error?.message || 'Error al actualizar perfil',
-      duration: 3000,
-      color: 'danger',
-      position: 'middle',
-      icon: 'alert-circle-outline'
-    });
+      message: err?.message || 'Error', 
+      color: 'danger', 
+      duration: 1500,
+      position:"bottom"});
   } finally {
-    await loading.dismiss();
+    loading.dismiss();
   }
 }
 
-  getInitials() {
+
+
+getInitials() {
     const { name, lastName } = this.form.value;
     return (name?.[0] || '') + (lastName?.[0] || '');
   }
 
-  onAvatarChange(event: Event) {
-    const input = event.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
+onAvatarChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+  if (!input.files || input.files.length === 0) return;
 
-    const file = input.files[0];
-    if (!file.type.startsWith('image/')) {
-      this.utilsSvc.presentToast({
-        message: 'El archivo debe ser una imagen',
-        duration: 1500,
-        color: 'danger',
-        position: 'bottom',
-        icon: 'warning-outline'
-      });
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('photo', file);
-
-    this.utilsSvc.loading().then(async loading => {
-      await loading.present();
-
-      this.userApi.uploadProfilePhoto(formData).subscribe({
-        next: (res) => {
-          loading.dismiss();
-          this.avatarUrl = res.photoURL;
-          this.form.patchValue({ photoURL: res.photoURL });
-
-          this.utilsSvc.presentToast({
-            message: 'Foto de perfil actualizada',
-            duration: 1500,
-            color: 'success',
-            position: 'bottom',
-            icon: 'checkmark-circle-outline'
-          });
-        },
-        error: (err) => {
-          loading.dismiss();
-          this.utilsSvc.presentToast({
-            message: `Error al subir foto: ${err.message}`,
-            duration: 1500,
-            color: 'danger',
-            position: 'bottom',
-            icon: 'warning-outline'
-          });
-        }
-      });
+  const file = input.files[0];
+  if (!file.type.startsWith('image/')) {
+    this.utilsSvc.presentToast({
+      message: 'El archivo debe ser una imagen',
+      duration: 1500,
+      color: 'danger',
+      position: 'bottom',
+      icon: 'warning-outline'
     });
+    return;
   }
 
+  const formData = new FormData();
+  formData.append('photo', file);
 
+  this.utilsSvc.loading().then(async loading => {
+    await loading.present();
 
-  async signOutConfirm(): Promise<void> {
-  const ok = await this.utilsSvc.presentCustomConfirm({
-    title: 'Cerrar sesión',
-    message: '¿Estás seguro que quieres cerrar sesión? \n\n Deberás iniciar sesión nuevamente.',
-    confirmText: 'Cerrar sesión',
-    cancelText: 'Cancelar'
+    this.userApi.uploadProfilePhoto(formData).subscribe({
+      next: (res) => {
+        loading.dismiss();
+        this.avatarUrl = res.photoURL;
+        this.form.patchValue({ photoURL: res.photoURL });
+
+        this.utilsSvc.presentToast({
+          message: 'Foto de perfil actualizada',
+          duration: 1500,
+          color: 'success',
+          position: 'bottom',
+          icon: 'checkmark-circle-outline'
+        });
+      },
+      error: (err) => {
+        loading.dismiss();
+        this.utilsSvc.presentToast({
+          message: `Error al subir foto: ${err.message}`,
+          duration: 1500,
+          color: 'danger',
+          position: 'bottom',
+          icon: 'warning-outline'
+        });
+      }
+    });
   });
+}
 
-  if (!ok) return;
 
+
+async signOutConfirm(): Promise<void> {
+  const confirmed = await this.utilsSvc.presentConfirmSheet({
+  title: 'Cerrar Sesión',
+  message: '¿Seguro que deseas cerrar sesión?',
+  confirmText: 'Cerrar Sesión',
+  cancelText: 'Cancelar',
+  color: 'danger',
+  icon: 'alert-circle-outline'
+});
+
+  if (!confirmed) return;
+
+   const loading = await this.utilsSvc.loading();
+   loading.present();
   try {
-    // 1) Llamada al backend para revocar refresh tokens (endpoint protegido)
+    // Revocar en el backend
     await firstValueFrom(this.http.post('/api/v1/users/me/revoke', {}));
 
-    // 2) Hacer signOut local (SDK Firebase)
-    const auth = getAuth();
-    await signOut(auth);
+    // Cerrar sesión en Firebase
+    await this.firebaseSvc.signOutAndWait();
 
-    // 3) Navegar a login
+    // Limpiar storage local
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Redirigir directamente al login
     this.utilsSvc.routerLink('/login');
 
-    await this.utilsSvc.presentToast({
-      message: 'Sesión cerrada. Debes iniciar sesión para volver a usar la app.',
-      duration: 2000,
-      color: 'primary'
+  } catch (error) {
+    this.utilsSvc.presentToast({
+      message: 'Error cerrando sesión',
+      color: 'danger',
+      position: "bottom",
+      duration: 1500
     });
-  } catch (err: any) {
-    console.error('Error cerrando sesión:', err);
-    await this.utilsSvc.presentToast({
-      message: 'No se pudo cerrar sesión correctamente.',
-      duration: 2500,
-      color: 'danger'
-    });
+    loading.dismiss();  
+  } finally {
+   // Cierra el loading antes del redirect
+    await loading.dismiss();
+
+    
   }
 }
 
-  signOut() {
-    this.firebaseSvc.signOut();
+async deleteAccountConfirm(): Promise<void> {
+  const confirmed = await this.utilsSvc.presentConfirmSheet({
+  title: 'Eliminar Cuenta',
+  message: '¿Seguro que deseas eliminar tú cuenta? \n Sí la eliminas perderás permanentemente toda información',
+  confirmText: 'Eliminar Cuenta',
+  cancelText: 'Cancelar',
+  color: 'danger',
+  icon: 'alert-circle-outline'
+});
+
+  if (!confirmed) return;
+
+   const loading = await this.utilsSvc.loading();
+   loading.present();
+  try {
+    
+      await firstValueFrom(this.http.post('/api/v1/users/me/pin/request', {
+        action: 'delete-account'
+      }));
+      loading.dismiss();
+      // 👇 Usamos utilsSvc en vez de crear modal aquí
+      const pin = await this.utilsSvc.presentPinSheet({
+        email: this.initialEmail,
+        action: 'delete-account',
+        title: 'Eliminar cuenta',
+        message: 'Introduce el código de 6 dígitos que enviamos a tu correo para confirma la eliminación de la cuenta /n',
+        ttlSec: 300, // 5 minutos para que caduque el PIN
+        
+      });
+
+      // Limpiar storage local
+      localStorage.clear();
+      sessionStorage.clear();
+
+    
+
+
+  } catch (error) {
+    this.utilsSvc.presentToast({
+      message: 'Error al borrar la cuenta',
+      color: 'danger',
+      position: "bottom",
+      duration: 1500
+    });
+    loading.dismiss();  
+  } finally {
+   // Cierra el loading antes del redirect
+    await loading.dismiss();
+
+    
   }
+}
+
+//===================================================PRUEBA NOTIFICACIONES===================================================
+async probarNotificacion() {
+    const loading = await this.utilsSvc.loading();
+    try {
+      const resp = await firstValueFrom(this.userApi.sendTestPush());
+      this.utilsSvc.presentToast({
+        message:`Push enviada ✅ (éxitos: ${resp.success}, fallos: ${resp.failure})`,
+        duration: 1500
+
+      });
+    } catch (err) {
+      console.error('Error enviando push:', err);
+      this.utilsSvc.presentToast({
+        message:'❌ Error al enviar notificación',
+        duration: 1500
+
+      });
+    } finally {
+      loading.dismiss();
+    }
+  }
+
+    async onToggleChange(key: 'recordatoriosGastos' | 'recordatoriosPagos', value: boolean) {
+    const loading = await this.utilsSvc.loading();
+    try {
+      await firstValueFrom(this.userApi.updateProfile({ settings: { [key]: value } as any }));
+      if (this.user) {
+        this.user = {
+          ...this.user,
+          settings: { ...(this.user.settings || {}), [key]: value }
+        };
+      }
+      this.utilsSvc.presentToast({ 
+        message:'Configuración actualizada',
+        duration: 1500
+      });
+    } catch (err) {
+      console.error('Error guardando configuración:', err);
+      this.utilsSvc.presentToast({
+        message:'No se pudo guardar la configuración',
+        duration: 1500
+
+        });
+    } finally {
+      loading.dismiss();
+    }
+  }
+
+
 }

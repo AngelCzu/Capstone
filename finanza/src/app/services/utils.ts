@@ -1,29 +1,26 @@
 import { inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { LoadingController, ToastController, ToastOptions, } from '@ionic/angular';
-import { AlertController } from '@ionic/angular';
-
-import { ModalController } from '@ionic/angular';
+import { LoadingController, ToastController, ToastOptions, AlertController, ModalController } from '@ionic/angular';
 import { ConfirmSheetComponent } from '../shared/component/confirm-sheet/confirm-sheet.component';
+import { EmailPinModalComponent } from '../shared/component/email-pin-modal/email-pin-modal.component';
+import { firstValueFrom } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root'
 })
 export class Utils {
-
   loandinCtrl = inject(LoadingController);
   toastCtrl = inject(ToastController);
   alertCtrl = inject(AlertController);
   modalCtrl = inject(ModalController);
-  
-
   router = inject(Router);
+  http = inject(HttpClient);
 
   // ================================ Loading ================================
   loading() {
-    return this.loandinCtrl.create({ spinner: 'crescent', message: 'Cargando...', });
+    return this.loandinCtrl.create({ spinner: 'crescent', message: 'Cargando...' });
   }
-
 
   // ================================ Toast ================================
   async presentToast(opts?: ToastOptions) {
@@ -31,99 +28,115 @@ export class Utils {
     toast.present();
   }
 
-
   // ================================ Navegación ================================
   routerLink(url: string) {
-    return this.router.navigateByUrl(url);
+    return this.router.navigateByUrl(url, { replaceUrl: true });
   }
 
-
-
-  //============ Guardar en localStorage ===============
+  // ================================ Storage ================================
   saveLocalStorage(key: string, value: any) {
     return localStorage.setItem(key, JSON.stringify(value));
   }
-
-  //============ Obtener de localStorage ===============
   getLocalStorage(key: string) {
     return JSON.parse(localStorage.getItem(key));
   }
-
-  //============ Eliminar de localStorage ==============
   removeLocalStorage(key: string) {
     return localStorage.removeItem(key);
   }
 
-  //================ Presentar prompt para contraseña ===============================
-  async presentPasswordPrompt(opts: {
-    header?: string;
-    message?: string;
-  }): Promise<string | null> {
+  // ================================ Prompt ================================
+  async presentPasswordPrompt(opts: { header?: string; message?: string; }): Promise<string | null> {
     return new Promise(async (resolve) => {
       const alert = await this.alertCtrl.create({
         header: opts.header || 'Confirmar',
         message: opts.message || 'Ingresa tu contraseña',
-        inputs: [
-          {
-            name: 'password',
-            type: 'password',
-            placeholder: 'Contraseña'
-          }
-        ],
+        inputs: [{ name: 'password', type: 'password', placeholder: 'Contraseña' }],
         buttons: [
-          {
-            text: 'Cancelar',
-            role: 'cancel',
-            handler: () => resolve(null)
-          },
-          {
-            text: 'Aceptar',
-            handler: (data) => {
-              resolve(data.password || null);
-            }
-          }
+          { text: 'Cancelar', role: 'cancel', handler: () => resolve(null) },
+          { text: 'Aceptar', handler: (data) => resolve(data.password || null) }
         ]
       });
-
       await alert.present();
     });
   }
 
+  // ================================ Confirm Sheet ================================
+  async presentConfirmSheet(opts: {
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    color?: string;
+    icon?: string;
+  }): Promise<boolean> {
+    const modal = await this.modalCtrl.create({
+      component: ConfirmSheetComponent,
+      componentProps: opts,
+      breakpoints: [0, 0.45],
+      initialBreakpoint: 0.45,
+      handle: true,
+      backdropDismiss: true,
+      cssClass: 'confirm-sheet-modal'
+    });
 
-  //================ Presentar confirmación ===============================
+    await modal.present();
+    const { data } = await modal.onDidDismiss();
+    return data ?? false;
+  }
 
+  // ================================ PIN Modal ================================
+  async presentPinSheet(opts: {
+    email: string;
+    action: 'email-change' | 'delete-account' | string;
+    title?: string;
+    message?: string;
+    length?: number;
+    ttlSec?: number;
+  }): Promise<string | null> {
+    const modal = await this.modalCtrl.create({
+      component: EmailPinModalComponent,
+      componentProps: {
+        email: opts.email,
+        action: opts.action,
+        title: opts.title || 'Verificación de seguridad',
+        message: opts.message || `Introduce el código que enviamos a ${opts.email}`,
+        length: opts.length || 6,
+        ttlSec: opts.ttlSec || 300
+      },
+      breakpoints: [0.57],
+      initialBreakpoint: 0.6,
+      handle: true,
+      backdropDismiss: true,
+      cssClass: 'confirm-sheet-modal'
+    });
 
-async presentCustomConfirm(opts: {
-  title?: string;
-  message: string;
-  confirmText?: string;
-  cancelText?: string;
-}): Promise<boolean> {
- const modal = await this.modalCtrl.create({
-  component: ConfirmSheetComponent,
-  cssClass: 'confirm-modal',
-  componentProps: {
-    title: opts.title || 'Confirmar',
-    message: opts.message,
-    confirmText: opts.confirmText || 'Aceptar',
-    cancelText: opts.cancelText || 'Cancelar'
-  },
-  backdropDismiss: true,        // permite cerrarlo tocando fuera
-  initialBreakpoint: 0.4,       // altura inicial (40% pantalla)
-  breakpoints: [0, 0.4, 0.8, 1] // posiciones a las que se puede arrastrar
-});
+    await modal.present();
+    const { data, role } = await modal.onDidDismiss();
 
-  await modal.present();
-  const { data } = await modal.onDidDismiss<boolean>();
-  return data ?? false;
+    if (role === 'backdrop') {
+      try {
+        await firstValueFrom(
+          this.http.post('/api/v1/users/me/pin/cancel', { action: opts.action })
+        );
+        await this.presentToast({
+          message: 'Operación cancelada',
+          duration: 1500,
+          color: 'medium'
+        });
+      } catch (e: any) {
+        if (e.status === 401) {
+          console.warn('Cancel ignorado: token inválido');
+        } else {
+          await this.presentToast({
+            message: e.error?.error || 'Error al cancelar',
+            duration: 1500,
+            color: 'danger'
+          });
+        }
+      }
+      return null;
+    }
+
+    return data?.code ?? null;
+  }
 }
-
-}
-
-
-
-
-
-
-
-

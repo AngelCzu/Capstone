@@ -58,7 +58,7 @@ export class LoginPage implements OnInit {
           message: error.message,
           duration: 2500,
           color: 'primary',
-          position: 'middle',
+          position: 'bottom',
           icon: 'alert-circle-outline'
 
         });
@@ -97,7 +97,7 @@ export class LoginPage implements OnInit {
           message: `Inicio de sesión exitoso ${user.name}`,
           duration: 1500,
           color: 'primary',
-          position: 'middle',
+          position: 'bottom',
           icon: 'person-circle-outline'
         });
 
@@ -111,7 +111,7 @@ export class LoginPage implements OnInit {
           message: error.message,
           duration: 2500,
           color: 'primary',
-          position: 'middle',
+          position: 'bottom',
           icon: 'alert-circle-outline'
         });
 
@@ -128,11 +128,13 @@ export class LoginPage implements OnInit {
 
 // Iniciar sesión con Google
 async onClick() {
-  try {
 
-    // Mostrar el loading
+  // Mostrar el loading
     const loading = await this.utilsSvc.loading();
     await loading.present();
+  try {
+
+    
 
     // 1) Iniciar sesión con Google
     const res = await this.firebaseSvc.signInGoogle();
@@ -195,14 +197,19 @@ async onClick() {
 
   } catch (error: any) {
     console.error(error);
+
+    
     this.utilsSvc.presentToast({
       message: error.message || 'Error al iniciar sesión',
       duration: 2500,
       color: 'primary',
-      position: 'middle',
+      position: 'bottom',
       icon: 'alert-circle-outline'
     });
-  } 
+
+    loading.dismiss();
+  }
+    
 }
 
 
@@ -237,7 +244,7 @@ async onClick() {
           message: error.message,
           duration: 2500,
           color: 'primary',
-          position: 'middle',
+          position: 'bottom',
           icon: 'alert-circle-outline'
         });
 

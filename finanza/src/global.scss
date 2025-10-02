@@ -35,30 +35,20 @@
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import "@ionic/angular/css/palettes/dark.system.css";
-.alert-message {
+.alert-message, .confirm-sheet-modal{
   white-space: pre-line; /* respeta los \n como saltos */
 }
 
-/* Elimina el fondo negro del wrapper del modal */
-.modal-wrapper {
-  background: transparent !important;
-  box-shadow: none !important;
-}
-/* Fondo difuminado */
-ion-modal.confirm-modal::part(backdrop) {
-  background: rgba(0, 0, 0, 0.3);
+.confirm-sheet-modal {
+    white-space: pre-line; /* respeta los \n como saltos */
+  --border-radius: 24px;
+  --box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(6px);
 }
 
-/* Quitar fondo interno */
-ion-modal.confirm-modal::part(content),
-ion-modal.confirm-modal::part(background),
-ion-modal.confirm-modal ion-content,
-ion-modal.confirm-modal ion-content .inner-scroll,
-ion-modal.confirm-modal .modal-wrapper {
-  background: transparent !important;
-  box-shadow: none !important;
-}
+
+
+
 
 
 

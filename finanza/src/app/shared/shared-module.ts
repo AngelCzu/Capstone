@@ -9,6 +9,7 @@ import { RouterLink } from '@angular/router';
 import { StorageBarComponent } from './component/storage-bar/storage-bar.component';
 import { NavbarComponent } from './component/navbar/navbar.component';
 import { ConfirmSheetComponent } from './component/confirm-sheet/confirm-sheet.component';
+import { EmailPinModalComponent } from './component/email-pin-modal/email-pin-modal.component';
 
 
 
@@ -20,6 +21,7 @@ import { ConfirmSheetComponent } from './component/confirm-sheet/confirm-sheet.c
     StorageBarComponent,
     NavbarComponent,
     ConfirmSheetComponent,
+    EmailPinModalComponent,
     
   ],
   exports: [
@@ -32,7 +34,8 @@ import { ConfirmSheetComponent } from './component/confirm-sheet/confirm-sheet.c
     RouterLink,
     StorageBarComponent,
     NavbarComponent,
-    ConfirmSheetComponent
+    ConfirmSheetComponent,
+    EmailPinModalComponent,
      
   ],
   imports: [

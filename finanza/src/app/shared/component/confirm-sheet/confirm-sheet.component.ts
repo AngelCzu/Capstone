@@ -8,20 +8,20 @@ import { ModalController } from '@ionic/angular';
   standalone: false
 })
 export class ConfirmSheetComponent {
-  @Input() title: string = 'Confirmar';
-  @Input() message: string = '¿Estás seguro?';
+  @Input() title!: string;
+  @Input() message!: string;
   @Input() confirmText: string = 'Aceptar';
   @Input() cancelText: string = 'Cancelar';
+  @Input() color: string = 'primary';
   @Input() icon: string = 'alert-circle-outline';
-  @Input() color: string = 'danger';
 
   constructor(private modalCtrl: ModalController) {}
 
-  confirm() {
-    this.modalCtrl.dismiss(true);
-  }
-
   cancel() {
     this.modalCtrl.dismiss(false);
+  }
+
+  confirm() {
+    this.modalCtrl.dismiss(true);
   }
 }

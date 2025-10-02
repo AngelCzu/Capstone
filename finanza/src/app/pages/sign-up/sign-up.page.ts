@@ -26,8 +26,8 @@ export class SignUpPage implements OnInit {
     uid: new FormControl(''),
     email: new FormControl('', [Validators.required, Validators.email]),
     password: new FormControl('', [Validators.required]),
-    name: new FormControl('', [Validators.required, Validators.minLength(4)]),
-    lastName: new FormControl('', [Validators.required, Validators.minLength(3)]),
+    name: new FormControl('', [Validators.required, Validators.minLength(4),Validators.pattern('^[a-zA-ZÀ-ÿ\\s]+$')]),
+    lastName: new FormControl('', [Validators.required, Validators.minLength(3),Validators.pattern('^[a-zA-ZÀ-ÿ\\s]+$')]),
     premium: new FormControl(false),
     photoURL: new FormControl('')
 
@@ -82,7 +82,7 @@ export class SignUpPage implements OnInit {
           message: error.message,
           duration: 2500,
           color: 'primary',
-          position: 'middle',
+          position: 'bottom',
           icon: 'alert-circle-outline'
         });
 
@@ -113,7 +113,7 @@ export class SignUpPage implements OnInit {
       message: 'Perfil creado correctamente.',
       duration: 2000,
       color: 'success',
-      position: 'middle',
+      position: 'bottom',
       icon: 'checkmark-circle-outline'
     });
 
@@ -132,7 +132,7 @@ export class SignUpPage implements OnInit {
       message: message,
       duration: 3000,
       color: 'danger',
-      position: 'middle',
+      position: 'bottom',
       icon: 'alert-circle-outline'
     });
 
