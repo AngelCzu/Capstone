@@ -33,6 +33,23 @@ const routes: Routes = [
     path: 'main',
     loadChildren: () => import('./pages/main/main.module').then( m => m.MainPageModule),canActivate:[authGuard]
   },
+  {
+    path: 'agregar',
+    loadChildren: () => import('./pages/main/agregar/agregar.module').then( m => m.AgregarPageModule),canActivate:[authGuard]
+  },
+  {
+    path: 'menu',
+    loadChildren: () => import('./pages/main/menu/menu.module').then( m => m.MenuPageModule),canActivate:[authGuard]
+  },
+  {
+    path: 'test',
+    loadChildren: () => import('./pages/main/test/test.module').then( m => m.TestPageModule)
+  },
+  {
+    path: 'analizar',
+    loadChildren: () => import('./pages/main/analizar/analizar.module').then( m => m.AnalizarPageModule),canActivate:[authGuard]
+  },
+
 
 ];
 

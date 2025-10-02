@@ -8,6 +8,7 @@ node_modules
 
 # Ignora los archivos relacionados a entornos virtuales de Python
 venv
+.venv
 backend/.venv
 
 #ignora la carpeta angular

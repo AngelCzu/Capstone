@@ -1,4 +1,6 @@
 import os
+import time
+import uuid
 from functools import wraps
 from flask import Flask, request, jsonify, Blueprint
 from flask_cors import CORS
@@ -7,10 +9,9 @@ from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, auth, storage
 from google.cloud import firestore
-from google.oauth2 import service_account  # <-- NUEVO
-import uuid
+from google.oauth2 import service_account
 
-# --- Cargar .env --- si existe
+# --- Cargar .env ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"), override=True)
 
@@ -27,7 +28,6 @@ if not os.path.exists(cred_path):
     else:
         raise FileNotFoundError(f"No existe la clave de servicio en: {cred_path}")
 
-# 1) Firebase Admin
 cred = credentials.Certificate(cred_path)
 creds_sa = service_account.Credentials.from_service_account_file(cred_path)
 
@@ -35,8 +35,7 @@ firebase_admin.initialize_app(cred, {
     "storageBucket": f"{creds_sa.project_id}.appspot.com"
 })
 
-# 2) Firestore con credenciales explícitas + project
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path  # fuerza ABSOLUTA (independiente del CWD)
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
 db = firestore.Client(credentials=creds_sa, project=creds_sa.project_id)
 
 # --- Flask + CORS ---
@@ -44,8 +43,6 @@ app = Flask(__name__)
 CORS(app, resources={
     r"/api/*": {"origins": ["http://localhost", "http://localhost:8100", "capacitor://localhost"]}
 })
-
-
 
 # --- Auth helper ---
 def require_auth(fn):
@@ -57,12 +54,11 @@ def require_auth(fn):
             return jsonify({"error": "Unauthorized"}), 401
         token = authz.split(" ", 1)[1]
         try:
-            # IMPORTANTE: check_revoked=True hace que verify_id_token falle si se revocó el refresh token
             decoded = auth.verify_id_token(token, check_revoked=True)
         except auth.InvalidIdTokenError as e:
             print("Invalid token:", e)
             return jsonify({"error": "Invalid token"}), 401
-        except auth.RevokedIdTokenError as e:   # token fue revocado
+        except auth.RevokedIdTokenError as e:
             print("Token revocado:", e)
             return jsonify({"error": "Token revoked"}), 401
         except Exception as e:
@@ -72,14 +68,15 @@ def require_auth(fn):
         return fn(*args, **kwargs)
     return wrapper
 
-
-
-
 # --- Rutas ---
 api = Blueprint("api", __name__, url_prefix="/api/v1")
 
-# Revocar refresh tokens del usuario actual
-import time
+# ========== Salud ==========
+@api.get("/health")
+def health():
+    return {"ok": True}
+
+# ========== Revocar tokens ==========
 @api.post("/users/me/revoke")
 @require_auth
 def revoke_user_tokens():
@@ -96,7 +93,7 @@ def revoke_user_tokens():
 
         return {"error": str(e)}, 500
 
-
+# ========== Salud ==========
 @api.get("/health")
 def health():
     return {"ok": True}
@@ -112,10 +109,8 @@ def health():
 @require_auth
 def create_user_profile():
     body = request.get_json() or {}
-    # Campos permitidos
     allowed = {k: v for k, v in body.items() if k in {"name", "lastName", "email", "photoURL"}}
 
-    # Perfil base
     data = {
         "uid": request.uid,
         "name": allowed.get("name", ""),
@@ -256,23 +251,18 @@ def upload_photo():
 
     file = request.files["photoURL"]
 
-    # Solo permitimos imágenes
     if not file.mimetype.startswith("image/"):
         return jsonify({"error": "Archivo inválido, debe ser imagen"}), 400
 
-    # Nombre único en carpeta avatars/
     filename = f"avatars/{request.uid}_{uuid.uuid4().hex}.jpg"
 
-    # Subir a Firebase Storage
     bucket = storage.bucket()
     blob = bucket.blob(filename)
     blob.upload_from_file(file, content_type=file.mimetype)
 
-    # Hacemos pública la URL (o puedes usar signed_url si prefieres temporal)
     blob.make_public()
     photo_url = blob.public_url
 
-    # Actualizamos Firestore
     db.collection("users").document(request.uid).set(
         {"photoURL": photo_url, "updatedAt": firestore.SERVER_TIMESTAMP},
         merge=True
@@ -610,6 +600,66 @@ def cancel_pin():
 
 
 
+# ========== Subcolecciones ==========
+@api.post("/users/me/ingresos")
+@require_auth
+def add_ingreso():
+    body = request.get_json() or {}
+    data = {
+        "nombre": body.get("nombre"),
+        "monto": body.get("monto"),
+        "createdAt": firestore.SERVER_TIMESTAMP
+    }
+    ref = db.collection("users").document(request.uid).collection("ingresos").document()
+    ref.set(data)
+    return {"ok": True, "id": ref.id}, 201
+
+@api.post("/users/me/gastos")
+@require_auth
+def add_gasto():
+    body = request.get_json() or {}
+    data = {
+        "nombre": body.get("nombre"),
+        "monto": body.get("monto"),
+        "createdAt": firestore.SERVER_TIMESTAMP
+    }
+    ref = db.collection("users").document(request.uid).collection("gastos").document()
+    ref.set(data)
+    return {"ok": True, "id": ref.id}, 201
+
+@api.post("/users/me/deudas")
+@require_auth
+def add_deuda():
+    body = request.get_json() or {}
+    data = {
+        "nombre": body.get("nombre"),
+        "monto": body.get("monto"),
+        "cuotas": body.get("cuotas"),
+        "compartido": body.get("compartido", False),
+        "participantes": body.get("participantes", []),
+        "createdAt": firestore.SERVER_TIMESTAMP
+    }
+    ref = db.collection("users").document(request.uid).collection("deudas").document()
+    ref.set(data)
+    return {"ok": True, "id": ref.id}, 201
+
+@api.post("/users/me/objetivos")
+@require_auth
+def add_objetivo():
+    body = request.get_json() or {}
+    data = {
+        "nombre": body.get("nombre"),
+        "monto": body.get("monto"),
+        "tiempo": body.get("tiempo"),
+        "compartido": body.get("compartido", False),
+        "participantes": body.get("participantes", []),
+        "createdAt": firestore.SERVER_TIMESTAMP
+    }
+    ref = db.collection("users").document(request.uid).collection("objetivos").document()
+    ref.set(data)
+    return {"ok": True, "id": ref.id}, 201
+
+# --- Registrar blueprint ---
 app.register_blueprint(api)
 
 if __name__ == "__main__":

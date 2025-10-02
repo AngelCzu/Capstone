@@ -1,4 +1,4 @@
-<ion-tabs>
+<ion-footer>
   <ion-tab-bar slot="bottom" class="custom-tab-bar">
 
     <ion-tab-button tab="home" [routerLink]="['/main/home']">
@@ -6,12 +6,12 @@
       <ion-label>Home</ion-label>
     </ion-tab-button>
 
-    <ion-tab-button tab="agregar" [routerLink]="['/agregar']">
+    <ion-tab-button tab="agregar" [routerLink]="['/main/agregar']">
       <ion-icon name="add-outline"></ion-icon>
       <ion-label>Agregar</ion-label>
     </ion-tab-button>
 
-    <ion-tab-button tab="analisis" [routerLink]="['/analisis']">
+    <ion-tab-button tab="analisis" [routerLink]="['/main/analizar']">
       <ion-icon name="stats-chart-outline"></ion-icon>
       <ion-label>Análisis</ion-label>
     </ion-tab-button>
@@ -26,5 +26,5 @@
       <ion-label>Profile</ion-label>
     </ion-tab-button> -->
 
-  </ion-tab-bar>
-</ion-tabs>
+    </ion-tab-bar>
+</ion-footer>
