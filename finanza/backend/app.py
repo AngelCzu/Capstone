@@ -93,10 +93,7 @@ def revoke_user_tokens():
 
         return {"error": str(e)}, 500
 
-# ========== Salud ==========
-@api.get("/health")
-def health():
-    return {"ok": True}
+
 
 
 #=============================================PERFIL DE USUARIO=============================================
