@@ -1,11 +1,11 @@
-<app-header backButton="/login" title="Agregar"></app-header>
+<app-header backButton="/main/home" title="Agregar"></app-header>
 
 <ion-content class="ion-padding">
 
-  <!-- Selector del tipo -->
+  <!-- Selector de tipo -->
   <ion-item>
-    <ion-label>Tipo de dato</ion-label>
-    <ion-select [(ngModel)]="tipoSeleccionado" name="tipoSeleccionado" interface="popover" placeholder="Selecciona...">
+    <ion-label>Tipo de movimiento</ion-label>
+    <ion-select [(ngModel)]="tipoSeleccionado" name="tipoSeleccionado" interface="popover">
       <ion-select-option value="ingreso">Ingreso</ion-select-option>
       <ion-select-option value="gasto">Gasto</ion-select-option>
       <ion-select-option value="deuda">Deuda</ion-select-option>
@@ -13,168 +13,195 @@
     </ion-select>
   </ion-item>
 
-  <!-- ===================== INGRESO ===================== -->
-  <form *ngIf="tipoSeleccionado === 'ingreso'" #formIngreso="ngForm" (ngSubmit)="guardarIngreso(formIngreso)">
-    <ion-item>
-      <ion-label position="floating">Nombre</ion-label>
-      <ion-input type="text" [(ngModel)]="ingreso.nombre" name="ingresoNombre" required></ion-input>
-    </ion-item>
+  <!-- ====================== FORMULARIO INGRESO ====================== -->
+  <form *ngIf="tipoSeleccionado === 'ingreso'" [formGroup]="formIngreso" (ngSubmit)="guardarIngreso()">
 
-    <ion-item>
-      <ion-label position="floating">Monto</ion-label>
-      <ion-input type="number" [(ngModel)]="ingreso.monto" name="ingresoMonto" required min="0" step="0.01"></ion-input>
-    </ion-item>
+    <app-custom-input
+      icon="document-text-outline"
+      [control]="formIngreso.controls.nombre"
+      type="text"
+      label="Nombre del ingreso"
+    ></app-custom-input>
+    <div class="validators" *ngIf="formIngreso.controls.nombre.errors && formIngreso.controls.nombre.touched">
+      <div *ngIf="formIngreso.controls.nombre.errors?.['required']">El nombre es requerido</div>
+    </div>
 
-    <ion-button expand="block" color="success" type="submit" [disabled]="!formIngreso.form.valid">
+    <app-custom-input
+      icon="cash-outline"
+      [control]="formIngreso.controls.monto"
+      type="number"
+      label="Monto"
+    ></app-custom-input>
+    <div class="validators" *ngIf="formIngreso.controls.monto.errors && formIngreso.controls.monto.touched">
+      <div *ngIf="formIngreso.controls.monto.errors?.['required']">El monto es requerido</div>
+      <div *ngIf="formIngreso.controls.monto.errors?.['min']">Debe ser mayor o igual a 0</div>
+    </div>
+
+    <ion-button expand="block" color="success" type="submit" [disabled]="formIngreso.invalid">
       Guardar ingreso
     </ion-button>
   </form>
 
-  <!-- ====================== GASTO ====================== -->
-  <form *ngIf="tipoSeleccionado === 'gasto'" #formGasto="ngForm" (ngSubmit)="guardarGasto(formGasto)">
-    <ion-item>
-      <ion-label position="floating">Nombre</ion-label>
-      <ion-input type="text" [(ngModel)]="gasto.nombre" name="gastoNombre" required></ion-input>
-    </ion-item>
+  <!-- ====================== FORMULARIO GASTO ====================== -->
+  <form *ngIf="tipoSeleccionado === 'gasto'" [formGroup]="formGasto" (ngSubmit)="guardarGasto()">
 
-    <ion-item>
-      <ion-label position="floating">Monto</ion-label>
-      <ion-input type="number" [(ngModel)]="gasto.monto" name="gastoMonto" required min="0" step="0.01"></ion-input>
-    </ion-item>
+    <app-custom-input
+      icon="cart-outline"
+      [control]="formGasto.controls.nombre"
+      type="text"
+      label="Nombre del gasto"
+    ></app-custom-input>
+    <div class="validators" *ngIf="formGasto.controls.nombre.errors && formGasto.controls.nombre.touched">
+      <div *ngIf="formGasto.controls.nombre.errors?.['required']">El nombre es requerido</div>
+    </div>
 
-    <ion-button expand="block" color="danger" type="submit" [disabled]="!formGasto.form.valid">
+    <app-custom-input
+      icon="cash-outline"
+      [control]="formGasto.controls.monto"
+      type="number"
+      label="Monto"
+    ></app-custom-input>
+    <div class="validators" *ngIf="formGasto.controls.monto.errors && formGasto.controls.monto.touched">
+      <div *ngIf="formGasto.controls.monto.errors?.['required']">El monto es requerido</div>
+      <div *ngIf="formGasto.controls.monto.errors?.['min']">Debe ser mayor o igual a 0</div>
+    </div>
+
+    <ion-button expand="block" color="danger" type="submit" [disabled]="formGasto.invalid">
       Guardar gasto
     </ion-button>
   </form>
 
-  <!-- ====================== DEUDA ====================== -->
-  <form *ngIf="tipoSeleccionado === 'deuda'" #formDeuda="ngForm" (ngSubmit)="guardarDeuda(formDeuda)">
-    <ion-item>
-      <ion-label position="floating">Nombre</ion-label>
-      <ion-input type="text" [(ngModel)]="deuda.nombre" name="deudaNombre" required></ion-input>
-    </ion-item>
+  <!-- ====================== FORMULARIO DEUDA ====================== -->
+  <form *ngIf="tipoSeleccionado === 'deuda'" [formGroup]="formDeuda" (ngSubmit)="guardarDeuda()">
 
-    <ion-item>
-      <ion-label position="floating">Monto</ion-label>
-      <ion-input type="number" [(ngModel)]="deuda.monto" name="deudaMonto" required min="0" step="0.01"></ion-input>
-    </ion-item>
+    <app-custom-input
+      icon="card-outline"
+      [control]="formDeuda.controls.nombre"
+      type="text"
+      label="Nombre de la deuda"
+    ></app-custom-input>
 
-    <ion-item>
-      <ion-label position="floating">Cuotas</ion-label>
-      <ion-input type="number" [(ngModel)]="deuda.cuotas" name="deudaCuotas" min="0" step="1"></ion-input>
-    </ion-item>
+    <app-custom-input
+      icon="cash-outline"
+      [control]="formDeuda.controls.monto"
+      type="number"
+      label="Monto total"
+    ></app-custom-input>
 
-    <ion-item>
+    <app-custom-input
+      icon="calendar-outline"
+      [control]="formDeuda.controls.cuotas"
+      type="number"
+      label="Cantidad de cuotas"
+    ></app-custom-input>
+
+    <ion-item lines="none">
       <ion-label>¿Compartido?</ion-label>
-      <ion-toggle [(ngModel)]="deuda.compartido" name="deudaCompartido"></ion-toggle>
+      <ion-toggle formControlName="compartido" (ionChange)="deudaCompartidoChanged()"></ion-toggle>
     </ion-item>
 
-    <!-- Agregar participante (nombre) -->
-    <ion-item *ngIf="deuda.compartido">
-      <ion-input placeholder="Nombre participante" [(ngModel)]="nuevoNombreDeuda" name="nuevoNombreDeuda"></ion-input>
-      <ion-button (click)="agregarParticipanteDeuda()" fill="outline">Agregar</ion-button>
+    <!-- Input del nuevo participante -->
+    <ion-item *ngIf="formDeuda.controls.compartido.value">
+      <app-custom-input
+        icon="person-add-outline"
+        [control]="nuevoParticipanteDeuda"
+        type="text"
+        label="Nombre del participante"
+      ></app-custom-input>
+      <ion-button class="ion-margin-start" (click)="agregarParticipanteDeuda()" fill="outline" size="small">
+        Agregar
+      </ion-button>
     </ion-item>
 
-    <!-- Lista de participantes -->
-    <ion-list *ngIf="deuda.compartido && deuda.participantes?.length">
+    <ion-list *ngIf="formDeuda.controls.compartido.value && participantesDeuda.length > 0">
       <ion-item>
-        <ion-label><strong>Participantes (Deuda)</strong></ion-label>
-        <ion-note slot="end">Total: {{ totalPorcentaje(deuda.participantes) }}%</ion-note>
+        <ion-label><strong>Participantes</strong></ion-label>
+        <ion-note slot="end">Total: {{ totalPorcentajeFormArray(participantesDeuda) }}%</ion-note>
       </ion-item>
 
-      <ion-item *ngFor="let p of deuda.participantes; let i = index">
-        <!-- Marca al usuario actual -->
-        <ion-badge *ngIf="i === 0" color="primary" slot="start">Yo</ion-badge>
-
-        <!-- Nombre (solo lectura) -->
-        <ion-input [value]="p.nombre" readonly name="deudaNombrePart{{i}}" placeholder="Nombre"></ion-input>
-
-        <!-- Porcentaje editable -->
+      <ion-item *ngFor="let p of participantesDeuda.controls; let i = index">
+        <ion-badge *ngIf="p.get('nombre')?.value === currentUserName" color="primary" slot="start">Yo</ion-badge>
+        <ion-input [value]="p.get('nombre')?.value" readonly></ion-input>
         <ion-input
           type="number"
-          [(ngModel)]="p.porcentaje"
-          (ngModelChange)="porcentajeCambiadoDeuda(i, $event)"
-          name="deudaPorcentaje{{i}}"
-          step="0.01"
-          min="0"
-          max="100"
+          [value]="p.get('porcentaje')?.value"
+          (ionChange)="porcentajeCambiadoDeuda(i, $event.detail.value)"
           placeholder="%"
         ></ion-input>
-
-        <!-- Eliminar (no para 'Yo') -->
-        <ion-button color="danger" *ngIf="p.nombre !== currentUserName" (click)="eliminarParticipanteDeuda(i)">
-          Eliminar
+        <ion-button color="danger" *ngIf="p.get('nombre')?.value !== currentUserName" (click)="eliminarParticipanteDeuda(i)">
+          <ion-icon name="trash-outline"></ion-icon>
         </ion-button>
       </ion-item>
     </ion-list>
 
-    <ion-button expand="block" color="warning" type="submit" [disabled]="!formDeuda.form.valid">
+    <ion-button expand="block" color="warning" type="submit" [disabled]="formDeuda.invalid">
       Guardar deuda
     </ion-button>
   </form>
 
-  <!-- ===================== OBJETIVO ==================== -->
-  <form *ngIf="tipoSeleccionado === 'objetivo'" #formObjetivo="ngForm" (ngSubmit)="guardarObjetivo(formObjetivo)">
-    <ion-item>
-      <ion-label position="floating">Nombre</ion-label>
-      <ion-input type="text" [(ngModel)]="objetivo.nombre" name="objetivoNombre" required></ion-input>
-    </ion-item>
+  <!-- ====================== FORMULARIO OBJETIVO ====================== -->
+  <form *ngIf="tipoSeleccionado === 'objetivo'" [formGroup]="formObjetivo" (ngSubmit)="guardarObjetivo()">
 
-    <ion-item>
-      <ion-label position="floating">Monto</ion-label>
-      <ion-input type="number" [(ngModel)]="objetivo.monto" name="objetivoMonto" required min="0" step="0.01"></ion-input>
-    </ion-item>
+    <app-custom-input
+      icon="trophy-outline"
+      [control]="formObjetivo.controls.nombre"
+      type="text"
+      label="Nombre del objetivo"
+    ></app-custom-input>
 
-    <ion-item>
-      <ion-label position="floating">Tiempo (meses)</ion-label>
-      <ion-input type="number" [(ngModel)]="objetivo.tiempo" name="objetivoTiempo" min="0" step="1"></ion-input>
-    </ion-item>
+    <app-custom-input
+      icon="cash-outline"
+      [control]="formObjetivo.controls.monto"
+      type="number"
+      label="Monto a alcanzar"
+    ></app-custom-input>
 
-    <ion-item>
+    <app-custom-input
+      icon="time-outline"
+      [control]="formObjetivo.controls.tiempo"
+      type="number"
+      label="Tiempo estimado (meses)"
+    ></app-custom-input>
+
+    <ion-item lines="none">
       <ion-label>¿Compartido?</ion-label>
-      <ion-toggle [(ngModel)]="objetivo.compartido" name="objetivoCompartido"></ion-toggle>
+      <ion-toggle formControlName="compartido" (ionChange)="objetivoCompartidoChanged()"></ion-toggle>
     </ion-item>
 
-    <!-- Agregar participante (nombre) -->
-    <ion-item *ngIf="objetivo.compartido">
-      <ion-input placeholder="Nombre participante" [(ngModel)]="nuevoNombreObjetivo" name="nuevoNombreObjetivo"></ion-input>
-      <ion-button (click)="agregarParticipanteObjetivo()" fill="outline">Agregar</ion-button>
+    <ion-item *ngIf="formObjetivo.controls.compartido.value">
+      <app-custom-input
+        icon="person-add-outline"
+        [control]="nuevoParticipanteObjetivo"
+        type="text"
+        label="Nombre del participante"
+      ></app-custom-input>
+      <ion-button class="ion-margin-start" (click)="agregarParticipanteObjetivo()" fill="outline" size="small">
+        Agregar
+      </ion-button>
     </ion-item>
 
-    <!-- Lista de participantes -->
-    <ion-list *ngIf="objetivo.compartido && objetivo.participantes?.length">
+    <ion-list *ngIf="formObjetivo.controls.compartido.value && participantesObjetivo.length > 0">
       <ion-item>
-        <ion-label><strong>Participantes (Objetivo)</strong></ion-label>
-        <ion-note slot="end">Total: {{ totalPorcentaje(objetivo.participantes) }}%</ion-note>
+        <ion-label><strong>Participantes</strong></ion-label>
+        <ion-note slot="end">Total: {{ totalPorcentajeFormArray(participantesObjetivo) }}%</ion-note>
       </ion-item>
 
-      <ion-item *ngFor="let p of objetivo.participantes; let i = index">
-        <!-- Marca al usuario actual -->
-        <ion-badge *ngIf="i === 0" color="primary" slot="start">{{ currentUserName }}</ion-badge>
-
-        <!-- Nombre (solo lectura) -->
-        <ion-input [value]="p.nombre" readonly name="objNombrePart{{i}}" placeholder="Nombre"></ion-input>
-
-        <!-- Porcentaje editable -->
+      <ion-item *ngFor="let p of participantesObjetivo.controls; let i = index">
+        <ion-badge *ngIf="p.get('nombre')?.value === currentUserName" color="primary" slot="start">Yo</ion-badge>
+        <ion-input [value]="p.get('nombre')?.value" readonly></ion-input>
         <ion-input
           type="number"
-          [(ngModel)]="p.porcentaje"
-          (ngModelChange)="porcentajeCambiadoObjetivo(i, $event)"
-          name="objPorcentaje{{i}}"
-          step="0.01"
-          min="0"
-          max="100"
+          [value]="p.get('porcentaje')?.value"
+          (ionChange)="porcentajeCambiadoObjetivo(i, $event.detail.value)"
           placeholder="%"
         ></ion-input>
-
-        <!-- Eliminar (no para 'Yo') -->
-        <ion-button color="danger" *ngIf="p.nombre !== currentUserName" (click)="eliminarParticipanteObjetivo(i)">
-          Eliminar
+        <ion-button color="danger" *ngIf="p.get('nombre')?.value !== currentUserName" (click)="eliminarParticipanteObjetivo(i)">
+          <ion-icon name="trash-outline"></ion-icon>
         </ion-button>
       </ion-item>
     </ion-list>
 
-    <ion-button expand="block" color="tertiary" type="submit" [disabled]="!formObjetivo.form.valid">
+    <ion-button expand="block" color="tertiary" type="submit" [disabled]="formObjetivo.invalid">
       Guardar objetivo
     </ion-button>
   </form>
