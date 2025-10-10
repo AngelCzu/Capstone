@@ -595,9 +595,14 @@ def cancel_pin():
     return {"ok": True}, 200
 
 
+#========================================= AGREGAR MOVIMIENTOS =========================================#
 
 
-# ========== Subcolecciones ==========
+
+
+#==============================================#
+#=========Agregar ingreso del usuario==========#
+#==============================================#
 @api.post("/users/me/ingresos")
 @require_auth
 def add_ingreso():
@@ -611,6 +616,10 @@ def add_ingreso():
     ref.set(data)
     return {"ok": True, "id": ref.id}, 201
 
+
+#==============================================#
+#=========Agregar gasto del usuario============#
+#==============================================#
 @api.post("/users/me/gastos")
 @require_auth
 def add_gasto():
@@ -624,6 +633,11 @@ def add_gasto():
     ref.set(data)
     return {"ok": True, "id": ref.id}, 201
 
+
+
+#==============================================#
+#=========Agregar deuda del usuario============#
+#==============================================#
 @api.post("/users/me/deudas")
 @require_auth
 def add_deuda():
@@ -640,6 +654,10 @@ def add_deuda():
     ref.set(data)
     return {"ok": True, "id": ref.id}, 201
 
+
+#==============================================#
+#=========Agregar objetivo del usuario========#
+#==============================================#
 @api.post("/users/me/objetivos")
 @require_auth
 def add_objetivo():
@@ -655,6 +673,13 @@ def add_objetivo():
     ref = db.collection("users").document(request.uid).collection("objetivos").document()
     ref.set(data)
     return {"ok": True, "id": ref.id}, 201
+
+
+
+
+
+
+
 
 # --- Registrar blueprint ---
 app.register_blueprint(api)

@@ -5,7 +5,7 @@
   <!-- Selector de tipo -->
   <ion-item>
     <ion-label>Tipo de movimiento</ion-label>
-    <ion-select [(ngModel)]="tipoSeleccionado" name="tipoSeleccionado" interface="popover">
+    <ion-select [formControl]="tipoSeleccionado" interface="popover">
       <ion-select-option value="ingreso">Ingreso</ion-select-option>
       <ion-select-option value="gasto">Gasto</ion-select-option>
       <ion-select-option value="deuda">Deuda</ion-select-option>
@@ -14,17 +14,13 @@
   </ion-item>
 
   <!-- ====================== FORMULARIO INGRESO ====================== -->
-  <form *ngIf="tipoSeleccionado === 'ingreso'" [formGroup]="formIngreso" (ngSubmit)="guardarIngreso()">
-
+  <form *ngIf="tipoSeleccionado.value === 'ingreso'" [formGroup]="formIngreso" (ngSubmit)="guardarIngreso()">
     <app-custom-input
       icon="document-text-outline"
-      [control]="formIngreso.controls.nombre"
+      [control]="formIngreso.controls.origen"
       type="text"
-      label="Nombre del ingreso"
+      label="Origen del dinero"
     ></app-custom-input>
-    <div class="validators" *ngIf="formIngreso.controls.nombre.errors && formIngreso.controls.nombre.touched">
-      <div *ngIf="formIngreso.controls.nombre.errors?.['required']">El nombre es requerido</div>
-    </div>
 
     <app-custom-input
       icon="cash-outline"
@@ -32,10 +28,7 @@
       type="number"
       label="Monto"
     ></app-custom-input>
-    <div class="validators" *ngIf="formIngreso.controls.monto.errors && formIngreso.controls.monto.touched">
-      <div *ngIf="formIngreso.controls.monto.errors?.['required']">El monto es requerido</div>
-      <div *ngIf="formIngreso.controls.monto.errors?.['min']">Debe ser mayor o igual a 0</div>
-    </div>
+
 
     <ion-button expand="block" color="success" type="submit" [disabled]="formIngreso.invalid">
       Guardar ingreso
@@ -43,17 +36,13 @@
   </form>
 
   <!-- ====================== FORMULARIO GASTO ====================== -->
-  <form *ngIf="tipoSeleccionado === 'gasto'" [formGroup]="formGasto" (ngSubmit)="guardarGasto()">
-
+  <form *ngIf="tipoSeleccionado.value === 'gasto'" [formGroup]="formGasto" (ngSubmit)="guardarGasto()">
     <app-custom-input
       icon="cart-outline"
       [control]="formGasto.controls.nombre"
       type="text"
       label="Nombre del gasto"
     ></app-custom-input>
-    <div class="validators" *ngIf="formGasto.controls.nombre.errors && formGasto.controls.nombre.touched">
-      <div *ngIf="formGasto.controls.nombre.errors?.['required']">El nombre es requerido</div>
-    </div>
 
     <app-custom-input
       icon="cash-outline"
@@ -61,10 +50,41 @@
       type="number"
       label="Monto"
     ></app-custom-input>
-    <div class="validators" *ngIf="formGasto.controls.monto.errors && formGasto.controls.monto.touched">
-      <div *ngIf="formGasto.controls.monto.errors?.['required']">El monto es requerido</div>
-      <div *ngIf="formGasto.controls.monto.errors?.['min']">Debe ser mayor o igual a 0</div>
-    </div>
+
+    <ion-item lines="none">
+      <ion-label>¿Es compartido?</ion-label>
+      <ion-toggle formControlName="compartido" (ionChange)="gastoCompartidoChanged()"></ion-toggle>
+    </ion-item>
+
+    <ion-item *ngIf="formGasto.controls.compartido.value">
+      <app-custom-input
+        icon="person-add-outline"
+        [control]="nuevoParticipanteGasto"
+        type="text"
+        label="Nombre del participante"
+      ></app-custom-input>
+      <ion-button (click)="agregarParticipanteGasto()">Agregar</ion-button>
+    </ion-item>
+
+    <ion-list *ngIf="formGasto.controls.compartido.value && participantesGasto.length > 0">
+      <ion-item>
+        <ion-label><strong>Participantes</strong></ion-label>
+      </ion-item>
+
+      <ion-item *ngFor="let p of participantesGasto.controls; let i = index">
+        <ion-badge *ngIf="p.get('nombre')?.value === currentUserName" color="primary" slot="start">Yo</ion-badge>
+        <ion-input [value]="p.get('nombre')?.value" readonly></ion-input>
+        <ion-input
+          type="number"
+          [value]="p.get('porcentaje')?.value"
+          (ionChange)="porcentajeCambiadoGasto(i, $event.detail.value)"
+          placeholder="%"
+        ></ion-input>
+        <ion-button color="danger" *ngIf="p.get('nombre')?.value !== currentUserName" (click)="eliminarParticipanteGasto(i)">
+          <ion-icon name="trash-outline"></ion-icon>
+        </ion-button>
+      </ion-item>
+    </ion-list>
 
     <ion-button expand="block" color="danger" type="submit" [disabled]="formGasto.invalid">
       Guardar gasto
@@ -72,8 +92,7 @@
   </form>
 
   <!-- ====================== FORMULARIO DEUDA ====================== -->
-  <form *ngIf="tipoSeleccionado === 'deuda'" [formGroup]="formDeuda" (ngSubmit)="guardarDeuda()">
-
+  <form *ngIf="tipoSeleccionado.value === 'deuda'" [formGroup]="formDeuda" (ngSubmit)="guardarDeuda()">
     <app-custom-input
       icon="card-outline"
       [control]="formDeuda.controls.nombre"
@@ -100,7 +119,6 @@
       <ion-toggle formControlName="compartido" (ionChange)="deudaCompartidoChanged()"></ion-toggle>
     </ion-item>
 
-    <!-- Input del nuevo participante -->
     <ion-item *ngIf="formDeuda.controls.compartido.value">
       <app-custom-input
         icon="person-add-outline"
@@ -108,15 +126,12 @@
         type="text"
         label="Nombre del participante"
       ></app-custom-input>
-      <ion-button class="ion-margin-start" (click)="agregarParticipanteDeuda()" fill="outline" size="small">
-        Agregar
-      </ion-button>
+      <ion-button (click)="agregarParticipanteDeuda()">Agregar</ion-button>
     </ion-item>
 
     <ion-list *ngIf="formDeuda.controls.compartido.value && participantesDeuda.length > 0">
       <ion-item>
         <ion-label><strong>Participantes</strong></ion-label>
-        <ion-note slot="end">Total: {{ totalPorcentajeFormArray(participantesDeuda) }}%</ion-note>
       </ion-item>
 
       <ion-item *ngFor="let p of participantesDeuda.controls; let i = index">
@@ -140,71 +155,79 @@
   </form>
 
   <!-- ====================== FORMULARIO OBJETIVO ====================== -->
-  <form *ngIf="tipoSeleccionado === 'objetivo'" [formGroup]="formObjetivo" (ngSubmit)="guardarObjetivo()">
+<form *ngIf="tipoSeleccionado.value === 'objetivo'" [formGroup]="formObjetivo" (ngSubmit)="guardarObjetivo()">
+  
+  <app-custom-input
+    icon="trophy-outline"
+    [control]="formObjetivo.controls.nombre"
+    type="text"
+    label="Nombre del objetivo"
+  ></app-custom-input>
 
+  <app-custom-input
+    icon="cash-outline"
+    [control]="formObjetivo.controls.monto"
+    type="number"
+    label="Monto a alcanzar"
+  ></app-custom-input>
+
+  <app-custom-input
+    icon="time-outline"
+    [control]="formObjetivo.controls.tiempo"
+    type="number"
+    label="Tiempo estimado (meses)"
+  ></app-custom-input>
+
+  <ion-item>
+    <ion-label>Seleccionar categoría</ion-label>
+    <ion-select [formControl]="formObjetivo.controls.categoria" (ionChange)="asignarImagenPorCategoria()" interface="action-sheet">
+      <ion-select-option value="verano">Verano</ion-select-option>
+      <ion-select-option value="estudio">Estudio</ion-select-option>
+      <ion-select-option value="viaje">Viaje</ion-select-option>
+      <ion-select-option value="ahorro">Ahorro</ion-select-option>
+    </ion-select>
+  </ion-item>
+
+  <ion-item lines="none">
+    <ion-label>¿Compartido?</ion-label>
+    <ion-toggle formControlName="compartido" (ionChange)="objetivoCompartidoChanged()"></ion-toggle>
+  </ion-item>
+
+  <ion-item *ngIf="formObjetivo.controls.compartido.value">
     <app-custom-input
-      icon="trophy-outline"
-      [control]="formObjetivo.controls.nombre"
+      icon="person-add-outline"
+      [control]="nuevoParticipanteObjetivo"
       type="text"
-      label="Nombre del objetivo"
+      label="Nombre del participante"
     ></app-custom-input>
+    <ion-button class="ion-margin-start" (click)="agregarParticipanteObjetivo()">Agregar</ion-button>
+  </ion-item>
 
-    <app-custom-input
-      icon="cash-outline"
-      [control]="formObjetivo.controls.monto"
-      type="number"
-      label="Monto a alcanzar"
-    ></app-custom-input>
-
-    <app-custom-input
-      icon="time-outline"
-      [control]="formObjetivo.controls.tiempo"
-      type="number"
-      label="Tiempo estimado (meses)"
-    ></app-custom-input>
-
-    <ion-item lines="none">
-      <ion-label>¿Compartido?</ion-label>
-      <ion-toggle formControlName="compartido" (ionChange)="objetivoCompartidoChanged()"></ion-toggle>
+  <ion-list *ngIf="formObjetivo.controls.compartido.value && participantesObjetivo.length > 0">
+    <ion-item>
+      <ion-label><strong>Participantes</strong></ion-label>
     </ion-item>
 
-    <ion-item *ngIf="formObjetivo.controls.compartido.value">
-      <app-custom-input
-        icon="person-add-outline"
-        [control]="nuevoParticipanteObjetivo"
-        type="text"
-        label="Nombre del participante"
-      ></app-custom-input>
-      <ion-button class="ion-margin-start" (click)="agregarParticipanteObjetivo()" fill="outline" size="small">
-        Agregar
+    <ion-item *ngFor="let p of participantesObjetivo.controls; let i = index">
+      <ion-badge *ngIf="p.get('nombre')?.value === currentUserName" color="primary" slot="start">Yo</ion-badge>
+      <ion-input [value]="p.get('nombre')?.value" readonly></ion-input>
+      <ion-input
+        type="number"
+        [value]="p.get('porcentaje')?.value"
+        (ionChange)="porcentajeCambiadoObjetivo(i, $event.detail.value)"
+        placeholder="%"
+      ></ion-input>
+      <ion-button color="danger" *ngIf="p.get('nombre')?.value !== currentUserName" (click)="eliminarParticipanteObjetivo(i)">
+        <ion-icon name="trash-outline"></ion-icon>
       </ion-button>
     </ion-item>
+  </ion-list>
 
-    <ion-list *ngIf="formObjetivo.controls.compartido.value && participantesObjetivo.length > 0">
-      <ion-item>
-        <ion-label><strong>Participantes</strong></ion-label>
-        <ion-note slot="end">Total: {{ totalPorcentajeFormArray(participantesObjetivo) }}%</ion-note>
-      </ion-item>
+  <ion-button expand="block" color="tertiary" type="submit" [disabled]="formObjetivo.invalid">
+    Guardar objetivo
+  </ion-button>
+</form>
 
-      <ion-item *ngFor="let p of participantesObjetivo.controls; let i = index">
-        <ion-badge *ngIf="p.get('nombre')?.value === currentUserName" color="primary" slot="start">Yo</ion-badge>
-        <ion-input [value]="p.get('nombre')?.value" readonly></ion-input>
-        <ion-input
-          type="number"
-          [value]="p.get('porcentaje')?.value"
-          (ionChange)="porcentajeCambiadoObjetivo(i, $event.detail.value)"
-          placeholder="%"
-        ></ion-input>
-        <ion-button color="danger" *ngIf="p.get('nombre')?.value !== currentUserName" (click)="eliminarParticipanteObjetivo(i)">
-          <ion-icon name="trash-outline"></ion-icon>
-        </ion-button>
-      </ion-item>
-    </ion-list>
-
-    <ion-button expand="block" color="tertiary" type="submit" [disabled]="formObjetivo.invalid">
-      Guardar objetivo
-    </ion-button>
-  </form>
 
 </ion-content>
 

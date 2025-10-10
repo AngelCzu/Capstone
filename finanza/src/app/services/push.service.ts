@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Messaging, getToken, onMessage } from '@angular/fire/messaging';
 import { environment } from 'src/environments/environment';
-import { UserApi } from './user.api';
+import { UserApi } from './apis/user.api';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable({ 

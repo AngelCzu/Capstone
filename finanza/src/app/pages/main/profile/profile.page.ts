@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormGroup, FormControl, Validators, FormsModule } from '@angular/forms';
 import { Utils } from 'src/app/services/utils';
-import { UserApi } from 'src/app/services/user.api';
+import { UserApi } from 'src/app/services/apis/user.api';
 import { SharedModule } from 'src/app/shared/shared-module';
 import { Firebase } from 'src/app/services/firebase';
 

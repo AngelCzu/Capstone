@@ -1,15 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
-import { FormArray, FormControl, FormGroup, FormsModule, NgForm, Validators } from '@angular/forms';
+import { FormArray, FormControl, FormGroup, FormsModule, Validators } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 import { SharedModule } from 'src/app/shared/shared-module';
 
 import { Utils } from 'src/app/services/utils';
 import { Firebase } from 'src/app/services/firebase';
 import { User } from 'src/app/models/user.model';
-import { UserApi } from 'src/app/services/user.api';
+import { UserApi } from 'src/app/services/apis/user.api';
 import { firstValueFrom } from 'rxjs';
-import { MovimientosApi } from 'src/app/services/movimientos.api';
+import { MovimientosApi } from 'src/app/services/apis/movimientos.api';
 
 @Component({
   selector: 'app-agregar',
@@ -24,36 +24,30 @@ export class AgregarPage {
   // ============================
   utilsSvc = inject(Utils);
   firebaseSvc = inject(Firebase);
-  userApi = inject(UserApi)
-  movApi = inject(MovimientosApi)
+  userApi = inject(UserApi);
+  movApi = inject(MovimientosApi);
 
   // Tipo de formulario seleccionado
-  tipoSeleccionado = 'ingreso';
+  tipoSeleccionado = new FormControl('ingreso');
 
   // Obtener al usuario
   currentUser: User | null = null;
 
   // ============================
-  // Formulario Ingreso
+  // Formularios
   // ============================
   formIngreso = new FormGroup({
-    nombre: new FormControl('', [Validators.required]),
-    monto: new FormControl(null, [Validators.required, Validators.pattern(/^[1-9]\d*$/), Validators.min(1)],)
+    origen: new FormControl('', [Validators.required]),
+    monto: new FormControl(null, [Validators.required, Validators.pattern(/^[1-9]\d*$/), Validators.min(1)]),
   });
 
-
-  // ============================
-  // Formulario Gasto
-  // ============================
   formGasto = new FormGroup({
     nombre: new FormControl('', [Validators.required]),
-    monto: new FormControl(null, [Validators.required, Validators.pattern(/^[1-9]\d*$/), Validators.min(1)])
+    monto: new FormControl(null, [Validators.required, Validators.pattern(/^[1-9]\d*$/), Validators.min(1)]),
+    compartido: new FormControl(false),
+    participantes: new FormArray([])
   });
 
-
-  // ============================
-  // Formulario Deuda
-  // ============================
   formDeuda = new FormGroup({
     nombre: new FormControl('', [Validators.required]),
     monto: new FormControl(null, [Validators.required, Validators.pattern(/^[1-9]\d*$/), Validators.min(1)]),
@@ -62,43 +56,62 @@ export class AgregarPage {
     participantes: new FormArray([])
   });
 
-
-  // ============================
-  // Formulario Objetivo
-  // ============================
   formObjetivo = new FormGroup({
     nombre: new FormControl('', [Validators.required]),
     monto: new FormControl(null, [Validators.required, Validators.pattern(/^[1-9]\d*$/), Validators.min(1)]),
     tiempo: new FormControl(null),
     compartido: new FormControl(false),
-    participantes: new FormArray([])
+    participantes: new FormArray([]),
+    categoria: new FormControl('', [Validators.required])  // Campo para la categoría
   });
 
   // ============================
   // Formulario Participantes
   // ============================
+  nuevoParticipanteGasto = new FormControl('');
   nuevoParticipanteDeuda = new FormControl('');
   nuevoParticipanteObjetivo = new FormControl('');
-
 
   // Nombre real del usuario actual
   public currentUserName: string = 'Usuario';
 
-  constructor() {
-    
+  // Definir la propiedad para la imagen asignada
+  imagenAsignada: string | null = null;
+
+  // Función que se llama cuando se cambia la categoría
+  asignarImagenPorCategoria() {
+    const categoria = this.formObjetivo.controls.categoria.value;
+
+    // Asignar una imagen según la categoría seleccionada
+    switch(categoria) {
+      case 'verano':
+        this.imagenAsignada = 'assets/images/verano.jpg'; // Imagen de verano
+        break;
+      case 'estudio':
+        this.imagenAsignada = 'assets/images/estudio.jpg'; // Imagen de estudio
+        break;
+      case 'viaje':
+        this.imagenAsignada = 'assets/images/viaje.jpg'; // Imagen de viaje
+        break;
+      case 'ahorro':
+        this.imagenAsignada = 'assets/images/ahorro.jpg'; // Imagen de ahorro
+        break;
+      default:
+        this.imagenAsignada = null; // Si no hay categoría, no asignamos ninguna imagen
+    }
   }
+
+  constructor() { }
 
   ngOnInit() {
     this.getUserProfile();
   }
-
 
   getUserProfile() {
     this.userApi.getMe().subscribe({
       next: (res) => {
         this.currentUser = res;
         this.currentUserName = `${res.name} ${res.lastName}`;
-        
       },
       error: (err) => {
         console.error('Error al obtener perfil:', err);
@@ -106,7 +119,7 @@ export class AgregarPage {
       }
     });
   }
-  
+
   // ============================
   // GUARDAR INGRESO
   // ============================
@@ -116,8 +129,7 @@ export class AgregarPage {
     await loading.present();
 
     try {
-      const uid = this.currentUser.uid
-      const path = `users/${uid}/ingresos`;
+      const uid = this.currentUser?.uid;
       await firstValueFrom(this.movApi.agregarIngreso(this.formIngreso.value));
 
       this.utilsSvc.presentToast({
@@ -139,8 +151,6 @@ export class AgregarPage {
       loading.dismiss();
     }
   }
-
-
 
   // ============================
   // GUARDAR GASTO
@@ -174,7 +184,37 @@ export class AgregarPage {
     }
   }
 
+  // ============================
+  // PARTICIPANTES - GASTO
+  // ============================
+  get participantesGasto() {
+    return this.formGasto.get('participantes') as FormArray;
+  }
 
+  agregarParticipanteGasto() {
+    const name = (this.nuevoParticipanteGasto.value || '').trim();
+    if (!name) return;
+
+    const exists = this.participantesGasto.controls.some(c => c.get('nombre')?.value === name);
+    if (!exists) {
+      this.participantesGasto.push(new FormGroup({
+        nombre: new FormControl(name),
+        porcentaje: new FormControl(0),
+      }));
+    }
+    this.nuevoParticipanteGasto.reset();
+    this.recalcularPorcentajes(this.participantesGasto);
+  }
+
+  eliminarParticipanteGasto(index: number) {
+    this.participantesGasto.removeAt(index);
+    this.recalcularPorcentajes(this.participantesGasto);
+  }
+
+  porcentajeCambiadoGasto(index: number, raw: any) {
+    const val = Number(raw);
+    if (!isNaN(val)) this.ajustarPorcentajeFormArray(this.participantesGasto, index, val);
+  }
 
   // ============================
   // PARTICIPANTES - DEUDA
@@ -187,21 +227,16 @@ export class AgregarPage {
     const name = (this.nuevoParticipanteDeuda.value || '').trim();
     if (!name) return;
 
-    const exists = this.participantesDeuda.controls.some(
-      c => c.get('nombre')?.value === name
-    );
+    const exists = this.participantesDeuda.controls.some(c => c.get('nombre')?.value === name);
     if (!exists) {
-      this.participantesDeuda.push(
-        new FormGroup({
-          nombre: new FormControl(name),
-          porcentaje: new FormControl(0),
-        })
-      );
+      this.participantesDeuda.push(new FormGroup({
+        nombre: new FormControl(name),
+        porcentaje: new FormControl(0),
+      }));
     }
     this.nuevoParticipanteDeuda.reset();
     this.recalcularPorcentajes(this.participantesDeuda);
   }
-
 
   eliminarParticipanteDeuda(index: number) {
     this.participantesDeuda.removeAt(index);
@@ -242,9 +277,6 @@ export class AgregarPage {
     }
   }
 
-
-
-
   // ============================
   // PARTICIPANTES - OBJETIVO
   // ============================
@@ -253,24 +285,19 @@ export class AgregarPage {
   }
 
   agregarParticipanteObjetivo() {
-  const name = (this.nuevoParticipanteObjetivo.value || '').trim();
-  if (!name) return;
+    const name = (this.nuevoParticipanteObjetivo.value || '').trim();
+    if (!name) return;
 
-  const exists = this.participantesObjetivo.controls.some(
-    c => c.get('nombre')?.value === name
-  );
-  if (!exists) {
-    this.participantesObjetivo.push(
-      new FormGroup({
+    const exists = this.participantesObjetivo.controls.some(c => c.get('nombre')?.value === name);
+    if (!exists) {
+      this.participantesObjetivo.push(new FormGroup({
         nombre: new FormControl(name),
         porcentaje: new FormControl(0),
-      })
-    );
+      }));
+    }
+    this.nuevoParticipanteObjetivo.reset();
+    this.recalcularPorcentajes(this.participantesObjetivo);
   }
-  this.nuevoParticipanteObjetivo.reset();
-  this.recalcularPorcentajes(this.participantesObjetivo);
-}
-
 
   eliminarParticipanteObjetivo(index: number) {
     this.participantesObjetivo.removeAt(index);
@@ -285,9 +312,7 @@ export class AgregarPage {
     if (total === 0) return;
 
     const base = Math.floor(100 / total);
-    formArray.controls.forEach((ctrl) =>
-      ctrl.get('porcentaje')?.setValue(base, { emitEvent: false })
-    );
+    formArray.controls.forEach((ctrl) => ctrl.get('porcentaje')?.setValue(base, { emitEvent: false }));
 
     const diff = 100 - base * total;
     if (diff !== 0 && total > 0) {
@@ -331,11 +356,9 @@ export class AgregarPage {
     }
   }
 
-  
   // ============================
   // FUNCIONES DE AJUSTE DE PORCENTAJES
   // ============================
-
   private roundTwo(n: number) {
     return Math.round(n * 100) / 100;
   }
@@ -397,11 +420,19 @@ export class AgregarPage {
     );
   }
 
-
-  
   // ============================
   // CAMBIOS EN "COMPARTIDO"
   // ============================
+  gastoCompartidoChanged() {
+    if (this.formGasto.get('compartido')?.value) {
+      const list = this.participantesGasto;
+      this.ensureCurrentUserFirstFormArray(list);
+      this.distribuirIgualFormArray(list);
+    } else {
+      this.participantesGasto.clear();  // Limpiar los participantes si no es compartido
+    }
+  }
+
   deudaCompartidoChanged() {
     if (this.formDeuda.get('compartido')?.value) {
       const list = this.participantesDeuda;
@@ -432,4 +463,3 @@ export class AgregarPage {
     if (!isNaN(val)) this.ajustarPorcentajeFormArray(this.participantesObjetivo, index, val);
   }
 }
-
