@@ -1,0 +1,239 @@
+.agregar-page {
+  background: #0f0f0f; // fondo general
+  color: #f2f2f2;
+
+  ion-content {
+    --background: #0f0f0f;
+  }
+
+  /* ===== Tarjetas base ===== */
+  ion-card {
+    background: #1a1a1a;
+    border-radius: 16px;
+    margin-bottom: 1rem;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.25s ease;
+  }
+
+  ion-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 18px rgba(0, 0, 0, 0.8);
+  }
+
+  ion-card-header {
+    background: #1a1a1a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    text-align: center;
+    padding: 0.9rem 0;
+
+    ion-card-title {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+
+      ion-icon {
+        font-size: 1.3rem;
+        opacity: 0.9;
+      }
+    }
+  }
+
+  ion-card-content {
+    background: #1a1a1a;
+    color: #e0e0e0;
+  }
+
+  /* ===== Tipos de formularios ===== */
+  .ingreso-card ion-card-header {
+    border-left: 4px solid #00c853;
+  }
+
+  .gasto-card ion-card-header {
+    border-left: 4px solid #d50000;
+  }
+
+  .deuda-card ion-card-header {
+    border-left: 4px solid #ffab00;
+  }
+
+  .objetivo-card ion-card-header {
+    border-left: 4px solid #7c4dff;
+  }
+
+  /* ===== Selector de tipo ===== */
+  .tipo-card {
+    ion-item {
+      --background: #1a1a1a;
+      --color: #f2f2f2;
+      border-radius: 12px;
+      margin-bottom: 0.8rem;
+
+      ion-label {
+        font-weight: 600;
+      }
+
+      ion-select {
+        color: #f2f2f2;
+      }
+
+      ion-select-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        ion-icon {
+          font-size: 1.2rem;
+        }
+      }
+    }
+  }
+
+  .option-icon.ingreso {
+    color: #00c853;
+  }
+  .option-icon.gasto {
+    color: #ff5252;
+  }
+  .option-icon.deuda {
+    color: #ffca28;
+  }
+  .option-icon.objetivo {
+    color: #b388ff;
+  }
+
+  /* ===== Inputs y toggles ===== */
+  ion-item {
+    --background: #1a1a1a;
+    --color: #f2f2f2;
+    border-radius: 10px;
+    margin-top: 0.3rem;
+  }
+
+  ion-input {
+    color: #fafafa;
+  }
+
+  ion-toggle {
+    --handle-background: #333;
+    --handle-background-checked: var(--ion-color-primary);
+  }
+
+  ion-select {
+    color: #f5f5f5;
+  }
+
+  ion-note {
+    font-weight: 500;
+    color: #9e9e9e;
+  }
+
+  ion-list {
+    background: #141414;
+    border-radius: 12px;
+    padding: 0.5rem;
+    margin-top: 0.6rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  ion-badge {
+    background: #303030;
+    color: #fff;
+  }
+
+  .moneda-item ion-segment {
+    width: 100%;
+    background: #141414;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  ion-segment-button {
+    --color: #ccc;
+    --color-checked: #fff;
+    --background-checked: #2b2b2b;
+    font-weight: 600;
+  }
+
+  /* ===== Botones ===== */
+  ion-button {
+    --border-radius: 10px;
+    font-weight: 600;
+    margin-top: 1rem;
+    height: 46px;
+    --box-shadow: none;
+  }
+
+  ion-button[color='success'] {
+    --background: #00c853;
+  }
+
+  ion-button[color='danger'] {
+    --background: #ff5252;
+  }
+
+  ion-button[color='warning'] {
+    --background: #ffca28;
+    --color: #000;
+  }
+
+  ion-button[color='tertiary'] {
+    --background: #7c4dff;
+  }
+
+  ion-icon[name='trash-outline'] {
+    color: #ff5252;
+  }
+
+  /* ===== Imagen de categoría ===== */
+  .categoria-preview {
+    width: 100%;
+    border-radius: 12px;
+    margin: 14px 0;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  /* ===== Colores de iconos de categorías ===== */
+  .option-icon.verano {
+    color: #fbc02d;
+  }
+  .option-icon.estudio {
+    color: #64b5f6;
+  }
+  .option-icon.viaje {
+    color: #26a69a;
+  }
+  .option-icon.ahorro {
+    color: #9575cd;
+  }
+
+  /* ===== Transiciones suaves ===== */
+  form {
+    animation: fadeIn 0.25s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ===== Responsive ===== */
+  @media (min-width: 768px) {
+    ion-card {
+      margin: 0 auto 1.2rem auto;
+      max-width: 500px;
+    }
+  }
+}

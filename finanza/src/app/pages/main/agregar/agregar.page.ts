@@ -44,25 +44,37 @@ export class AgregarPage {
   formGasto = new FormGroup({
     nombre: new FormControl('', [Validators.required]),
     monto: new FormControl(null, [Validators.required, Validators.pattern(/^[1-9]\d*$/), Validators.min(1)]),
+    moneda: new FormControl('CLP', [Validators.required]),  // CLP o UF
+    montoUF: new FormControl(null),                         // solo si moneda = UF
+    valorUF: new FormControl(null),                         // valor de referencia UF
+    categoria: new FormControl('', [Validators.required]),
+    frecuencia: new FormControl('unica'),
     compartido: new FormControl(false),
-    participantes: new FormArray([])
+    participantes: new FormArray([]),
   });
 
   formDeuda = new FormGroup({
     nombre: new FormControl('', [Validators.required]),
     monto: new FormControl(null, [Validators.required, Validators.pattern(/^[1-9]\d*$/), Validators.min(1)]),
+    moneda: new FormControl('CLP', [Validators.required]),  // CLP o UF
+    montoUF: new FormControl(null),
+    valorUF: new FormControl(null),
     cuotas: new FormControl(null),
+    fechaPago: new FormControl(null),
     compartido: new FormControl(false),
-    participantes: new FormArray([])
+    participantes: new FormArray([]),
   });
 
   formObjetivo = new FormGroup({
     nombre: new FormControl('', [Validators.required]),
     monto: new FormControl(null, [Validators.required, Validators.pattern(/^[1-9]\d*$/), Validators.min(1)]),
+    moneda: new FormControl('CLP', [Validators.required]),  // CLP o UF
+    montoUF: new FormControl(null),
+    valorUF: new FormControl(null),
     tiempo: new FormControl(null),
     compartido: new FormControl(false),
     participantes: new FormArray([]),
-    categoria: new FormControl('', [Validators.required])  // Campo para la categoría
+    categoria: new FormControl('', [Validators.required])
   });
 
   // ============================
@@ -107,6 +119,63 @@ export class AgregarPage {
     this.getUserProfile();
   }
 
+  // ============================
+  // Obtener valor UF actual (con cache localStorage)
+  // ============================
+  async obtenerValorUF() {
+    const cacheKey = 'valorUF_cache';
+    const cached = localStorage.getItem(cacheKey);
+
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      const hoy = new Date().toISOString().split('T')[0]; // yyyy-mm-dd
+
+      // Si el valor es del mismo día, usar cache
+      if (parsed.fecha === hoy) {
+        return parsed.valor;
+      }
+    }
+
+    // Si no hay cache o está desactualizado, consultamos la API
+    try {
+      const response = await fetch('https://mindicador.cl/api/uf');
+      const data = await response.json();
+      const valorUF = data.serie[0].valor;
+
+      // Guardar cache del día
+      localStorage.setItem(cacheKey, JSON.stringify({
+        valor: valorUF,
+        fecha: new Date().toISOString().split('T')[0]
+      }));
+
+      return valorUF;
+    } catch (err) {
+      console.error('Error al obtener UF:', err);
+      return 37000; // fallback seguro
+    }
+  }
+
+// ============================
+// Reaccionar a cambio de moneda
+// ============================
+async onCambioMoneda(form: FormGroup) {
+  const moneda = form.get('moneda')?.value;
+
+  if (moneda === 'UF') {
+    const valorUF = await this.obtenerValorUF();
+    form.patchValue({ valorUF });
+
+    // Si el usuario ya llenó montoUF, calcular previsualización CLP
+    const montoUF = form.get('montoUF')?.value;
+    if (montoUF) {
+      const montoCLP = valorUF * montoUF;
+      form.patchValue({ monto: montoCLP });
+    }
+  } else {
+    // Si vuelve a CLP, limpiar campos UF
+    form.patchValue({ montoUF: null, valorUF: null });
+  }
+}
   getUserProfile() {
     this.userApi.getMe().subscribe({
       next: (res) => {
@@ -157,12 +226,24 @@ export class AgregarPage {
   // ============================
   async guardarGasto() {
     if (this.formGasto.invalid) return;
-
     const loading = await this.utilsSvc.loading();
     await loading.present();
 
     try {
-      await firstValueFrom(this.movApi.agregarGasto(this.formGasto.value));
+      const data = this.formGasto.value;
+
+      // ✅ Validación UF
+      if (data.moneda === 'UF') {
+        if (!data.montoUF || !data.valorUF) {
+          throw new Error('Debe ingresar el monto en UF y tener valor UF válido.');
+        }
+        data.monto = data.montoUF * data.valorUF;
+      } else {
+        data.montoUF = null;
+        data.valorUF = null;
+      }
+
+      await firstValueFrom(this.movApi.agregarGasto(data));
 
       this.utilsSvc.presentToast({
         message: 'Gasto guardado correctamente',
@@ -171,7 +252,6 @@ export class AgregarPage {
         position: 'bottom',
       });
       this.formGasto.reset();
-
     } catch (error: any) {
       this.utilsSvc.presentToast({
         message: error.message || 'Error al guardar gasto',
@@ -254,6 +334,15 @@ export class AgregarPage {
 
     try {
       const data = this.formDeuda.value;
+
+      // Si es UF, aseguramos los campos necesarios
+      if (data.moneda === 'UF') {
+        if (!data.montoUF || !data.valorUF) {
+          throw new Error('Debe ingresar el monto en UF y tener valor UF válido.');
+        }
+        data.monto = data.montoUF * data.valorUF;
+      }
+
       await firstValueFrom(this.movApi.agregarDeuda(data));
 
       this.utilsSvc.presentToast({
@@ -327,12 +416,23 @@ export class AgregarPage {
   // ============================
   async guardarObjetivo() {
     if (this.formObjetivo.invalid) return;
-
     const loading = await this.utilsSvc.loading();
     await loading.present();
 
     try {
       const data = this.formObjetivo.value;
+
+      // ✅ Validación UF
+      if (data.moneda === 'UF') {
+        if (!data.montoUF || !data.valorUF) {
+          throw new Error('Debe ingresar el monto en UF y tener valor UF válido.');
+        }
+        data.monto = data.montoUF * data.valorUF;
+      } else {
+        data.montoUF = null;
+        data.valorUF = null;
+      }
+
       await firstValueFrom(this.movApi.agregarObjetivo(data));
 
       this.utilsSvc.presentToast({
@@ -343,7 +443,6 @@ export class AgregarPage {
       });
       this.formObjetivo.reset();
       this.participantesObjetivo.clear();
-
     } catch (error: any) {
       this.utilsSvc.presentToast({
         message: error.message || 'Error al guardar el objetivo',
@@ -355,6 +454,7 @@ export class AgregarPage {
       loading.dismiss();
     }
   }
+
 
   // ============================
   // FUNCIONES DE AJUSTE DE PORCENTAJES

@@ -11,6 +11,7 @@ from firebase_admin import credentials, auth, storage
 from google.cloud import firestore
 from google.oauth2 import service_account
 
+
 # --- Cargar .env ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"), override=True)
@@ -599,82 +600,180 @@ def cancel_pin():
 
 
 
+# Helper para actualizar resumen
+def actualizar_resumen(uid, año, mes, tipo, monto):
+    resumen_ref = (
+        db.collection("users")
+        .document(uid)
+        .collection("resumenes")
+        .document(f"{año}-{mes:02d}")
+    )
+    resumen = resumen_ref.get().to_dict() or {"ingresos": 0, "gastos": 0, "deudas": 0, "ahorro": 0}
 
-#==============================================#
-#=========Agregar ingreso del usuario==========#
-#==============================================#
+    if tipo == "ingreso":
+        resumen["ingresos"] += monto
+    elif tipo == "gasto":
+        resumen["gastos"] += monto
+    elif tipo == "deuda":
+        resumen["deudas"] += monto
+
+    resumen["ahorro"] = resumen["ingresos"] - resumen["gastos"] - resumen["deudas"]
+    resumen_ref.set(resumen, merge=True)
+
+# Helper para calcular semestre
+def obtener_semestre(mes):
+    return 1 if mes <= 6 else 2
+
+# ======================================
+# 1️⃣ AGREGAR INGRESO
+# ======================================
 @api.post("/users/me/ingresos")
 @require_auth
 def add_ingreso():
     body = request.get_json() or {}
+    now = datetime.utcnow()
+    año, mes, semestre = now.year, now.month, obtener_semestre(now.month)
+
     data = {
         "nombre": body.get("nombre"),
-        "monto": body.get("monto"),
-        "createdAt": firestore.SERVER_TIMESTAMP
+        "monto": float(body.get("monto", 0)),
+        "fecha": now.isoformat(),
+        "año": año,
+        "mes": mes,
+        "semestre": semestre,
+        "createdAt": firestore.SERVER_TIMESTAMP,
     }
-    ref = db.collection("users").document(request.uid).collection("ingresos").document()
-    ref.set(data)
-    return {"ok": True, "id": ref.id}, 201
+
+    mov_ref = (
+        db.collection("users")
+        .document(request.uid)
+        .collection("movimientos")
+        .document()
+    )
+    mov_ref.set(data)
+
+    actualizar_resumen(request.uid, año, mes, "ingreso", data["monto"])
+
+    return {"ok": True, "id": mov_ref.id}, 201
 
 
-#==============================================#
-#=========Agregar gasto del usuario============#
-#==============================================#
+# ======================================
+# 2️⃣ AGREGAR GASTO
+# ======================================
 @api.post("/users/me/gastos")
 @require_auth
 def add_gasto():
     body = request.get_json() or {}
+    now = datetime.utcnow()
+    año, mes, semestre = now.year, now.month, obtener_semestre(now.month)
+
     data = {
         "nombre": body.get("nombre"),
-        "monto": body.get("monto"),
-        "createdAt": firestore.SERVER_TIMESTAMP
+        "monto": float(body.get("monto", 0)),        # Valor en CLP ya calculado
+        "montoUF": body.get("montoUF") or None,              # Solo si el gasto fue en UF
+        "valorUF": body.get("valorUF") or None,              # Valor de la UF usada
+        "moneda": body.get("moneda", "CLP"),         # "CLP" o "UF"
+        "categoria": body.get("categoria"),
+        "frecuencia": body.get("frecuencia", "unica"),
+        "compartido": body.get("compartido", False),
+        "participantes": body.get("participantes", []),
+        "fecha": now.isoformat(),
+        "año": año,
+        "mes": mes,
+        "semestre": semestre,
+        "createdAt": firestore.SERVER_TIMESTAMP,
     }
-    ref = db.collection("users").document(request.uid).collection("gastos").document()
-    ref.set(data)
-    return {"ok": True, "id": ref.id}, 201
+
+    mov_ref = (
+        db.collection("users")
+        .document(request.uid)
+        .collection("movimientos")
+        .document()
+    )
+    mov_ref.set(data)
+
+    actualizar_resumen(request.uid, año, mes, "gasto", data["monto"])
+
+    return {"ok": True, "id": mov_ref.id}, 201
 
 
+# ======================================
+# ========== AGREGAR DEUDA =============
+# ======================================
 
-#==============================================#
-#=========Agregar deuda del usuario============#
-#==============================================#
 @api.post("/users/me/deudas")
 @require_auth
 def add_deuda():
     body = request.get_json() or {}
+    now = datetime.utcnow()
+    año, mes, semestre = now.year, now.month, obtener_semestre(now.month)
+
     data = {
         "nombre": body.get("nombre"),
-        "monto": body.get("monto"),
-        "cuotas": body.get("cuotas"),
+        "monto": float(body.get("monto", 0)),         # Valor en CLP (calculado en el front)
+        "montoUF": body.get("montoUF") or None,               # Solo si fue en UF
+        "valorUF": body.get("valorUF") or None,               # Valor de la UF usada
+        "moneda": body.get("moneda", "CLP"),          # "CLP" o "UF"
+        "cuotas": body.get("cuotas"),                 # Número de cuotas
+        "fechaPago": body.get("fechaPago"),           # Fecha de pago elegida
         "compartido": body.get("compartido", False),
         "participantes": body.get("participantes", []),
-        "createdAt": firestore.SERVER_TIMESTAMP
+        "fecha": now.isoformat(),
+        "año": año,
+        "mes": mes,
+        "semestre": semestre,
+        "createdAt": firestore.SERVER_TIMESTAMP,
     }
-    ref = db.collection("users").document(request.uid).collection("deudas").document()
-    ref.set(data)
-    return {"ok": True, "id": ref.id}, 201
+
+    mov_ref = (
+        db.collection("users")
+        .document(request.uid)
+        .collection("movimientos")
+        .document()
+    )
+    mov_ref.set(data)
+
+    actualizar_resumen(request.uid, año, mes, "deuda", data["monto"])
+
+    return {"ok": True, "id": mov_ref.id}, 201
 
 
-#==============================================#
-#=========Agregar objetivo del usuario========#
-#==============================================#
+# ======================================
+# 4️⃣ AGREGAR OBJETIVO
+# ======================================
 @api.post("/users/me/objetivos")
 @require_auth
 def add_objetivo():
     body = request.get_json() or {}
+    now = datetime.utcnow()
+    año, mes, semestre = now.year, now.month, obtener_semestre(now.month)
+
     data = {
         "nombre": body.get("nombre"),
-        "monto": body.get("monto"),
-        "tiempo": body.get("tiempo"),
+        "monto": float(body.get("monto", 0)),          # Valor en CLP calculado por el front
+        "montoUF": body.get("montoUF") or None,                # Solo si se ingresó en UF
+        "valorUF": body.get("valorUF") or None,                # Valor de la UF usada
+        "moneda": body.get("moneda", "CLP"),           # "CLP" o "UF"
+        "categoria": body.get("categoria"),
+        "tiempo": body.get("tiempo") or None,                  # Plazo del objetivo
         "compartido": body.get("compartido", False),
         "participantes": body.get("participantes", []),
-        "createdAt": firestore.SERVER_TIMESTAMP
+        "fecha": now.isoformat(),
+        "año": año,
+        "mes": mes,
+        "semestre": semestre,
+        "createdAt": firestore.SERVER_TIMESTAMP,
     }
-    ref = db.collection("users").document(request.uid).collection("objetivos").document()
-    ref.set(data)
-    return {"ok": True, "id": ref.id}, 201
 
+    mov_ref = (
+        db.collection("users")
+        .document(request.uid)
+        .collection("movimientos")
+        .document()
+    )
+    mov_ref.set(data)
 
+    return {"ok": True, "id": mov_ref.id}, 201
 
 
 
