@@ -109,27 +109,71 @@ def create_user_profile():
     body = request.get_json() or {}
     allowed = {k: v for k, v in body.items() if k in {"name", "lastName", "email", "photoURL"}}
 
-    data = {
-        "uid": request.uid,
-        "name": allowed.get("name", ""),
-        "lastName": allowed.get("lastName", ""),
-        "email": allowed.get("email", ""),
-        "photoURL": allowed.get("photoURL", ""),
-        "premium": False,
-        "createdAt": firestore.SERVER_TIMESTAMP,
-        "updatedAt": firestore.SERVER_TIMESTAMP,
+    uid = request.uid
+    ref_user = db.collection("users").document(uid)
+    doc = ref_user.get()
 
-        "settings":{
-            "recordatoriosGastos": True,
-            "recordatoriosPagos": True,
-        },
-        "fcmTokens":[],
+    # Si el usuario no existe, lo creamos y agregamos categorías
+    if not doc.exists:
+        data = {
+            "uid": uid,
+            "name": allowed.get("name", ""),
+            "lastName": allowed.get("lastName", ""),
+            "email": allowed.get("email", ""),
+            "photoURL": allowed.get("photoURL", ""),
+            "premium": False,
+            "createdAt": firestore.SERVER_TIMESTAMP,
+            "updatedAt": firestore.SERVER_TIMESTAMP,
+            "settings": {
+                "recordatoriosGastos": True,
+                "recordatoriosPagos": True,
+            },
+            "fcmTokens": [],
+        }
+        ref_user.set(data, merge=True)
 
-    }
+        # 🔹 Categorías base de movimientos
+        categorias_mov = [
+            {"tipo": "movimiento", "nombre": "Comida", "icono": "🍽️", "color": "#2ecc71"},
+            {"tipo": "movimiento", "nombre": "Servicios", "icono": "💡", "color": "#3498db"},
+            {"tipo": "movimiento", "nombre": "Transporte", "icono": "🚌", "color": "#e67e22"},
+            {"tipo": "movimiento", "nombre": "Ocio / Personal", "icono": "🎮", "color": "#9b59b6"},
+            {"tipo": "movimiento", "nombre": "Salud / Educación", "icono": "🏥", "color": "#e74c3c"},
+        ]
 
-    ref = db.collection("users").document(request.uid)
-    ref.set(data, merge=True)
-    return {"ok": True}, 201
+        # 🔹 Categorías base de objetivos
+        categorias_obj = [
+            {"tipo": "objetivo", "nombre": "Vacaciones / Verano", "icono": "😎", "color": "#f1c40f"},
+            {"tipo": "objetivo", "nombre": "Estudio / Educación", "icono": "📘", "color": "#2980b9"},
+            {"tipo": "objetivo", "nombre": "Transporte / Vehículo", "icono": "🚗", "color": "#e67e22"},
+            {"tipo": "objetivo", "nombre": "Hogar / Vivienda", "icono": "🏠", "color": "#27ae60"},
+            {"tipo": "objetivo", "nombre": "Personal / Especial", "icono": "💍", "color": "#8e44ad"},
+            {"tipo": "objetivo", "nombre": "Tecnología / Trabajo", "icono": "💻", "color": "#16a085"},
+            {"tipo": "objetivo", "nombre": "Viaje / Experiencia", "icono": "🧳", "color": "#d35400"},
+        ]
+
+        batch = db.batch()
+        col_ref = ref_user.collection("categorias")
+
+        for cat in categorias_mov + categorias_obj:
+            doc_ref = col_ref.document()
+            batch.set(doc_ref, {
+                **cat,
+                "createdAt": firestore.SERVER_TIMESTAMP
+            })
+
+        batch.commit()
+
+        return {"ok": True, "message": "Usuario y categorías creadas."}, 201
+
+    # Si el usuario ya existía, solo actualizamos datos básicos
+    else:
+        ref_user.update({
+            **allowed,
+            "updatedAt": firestore.SERVER_TIMESTAMP
+        })
+        return {"ok": True, "message": "Usuario actualizado."}, 200
+
 
 
 
@@ -612,40 +656,28 @@ def cancel_pin():
 # ======================================
 
 
-#========OBTENER CATEGORÍAS========#
+#==============================================#
+#=========== Obtener categorías ===============#
+#==============================================#
 @api.get("/users/me/categorias")
 @require_auth
 def get_categorias():
-    tipo = request.args.get("tipo", "movimiento")
+    tipo = request.args.get("tipo")  # puede ser 'movimiento' o 'objetivo'
     ref = db.collection("users").document(request.uid).collection("categorias")
-    docs = ref.where("tipo", "==", tipo).stream()
-    categorias = [{**d.to_dict(), "id": d.id} for d in docs]
+
+    if tipo:
+        docs = ref.where("tipo", "==", tipo).stream()
+    else:
+        docs = ref.stream()
+
+    categorias = []
+    for d in docs:
+        cat = d.to_dict()
+        cat["id"] = d.id
+        categorias.append(cat)
+
     return {"ok": True, "categorias": categorias}, 200
 
-
-#========AGREGAR CATEGORÍAS========#
-@api.post("/users/me/categorias")
-@require_auth
-def add_categoria():
-    body = request.get_json() or {}
-    nombre = body.get("nombre")
-    tipo = body.get("tipo", "movimiento")
-    icono = body.get("icono", "📦")
-    color = body.get("color", "#999999")
-
-    if not nombre:
-        return {"ok": False, "error": "El nombre es obligatorio"}, 400
-
-    ref = db.collection("users").document(request.uid).collection("categorias").document()
-    ref.set({
-        "tipo": tipo,
-        "nombre": nombre,
-        "icono": icono,
-        "color": color,
-        "createdAt": firestore.SERVER_TIMESTAMP
-    })
-
-    return {"ok": True, "id": ref.id}, 201
 
 
 #========ELIMINAR CATEGORÍAS========#
@@ -735,7 +767,7 @@ def add_gasto():
         "origen": body.get("origen"),
         "monto": float(body.get("monto", 0)),        # Valor en CLP ya calculado
         "montoUF": body.get("montoUF") or None,              # Solo si el gasto fue en UF
-        "valorUF": body.get("valorUF") or None,              # Valor de la UF usada
+        "valorRealUF": body.get("valorUF") or None,              # Valor de la UF usada
         "moneda": body.get("moneda", "CLP"),         # "CLP" o "UF"
         "categoria": body.get("categoria"),
         "frecuencia": body.get("frecuencia", "unica"),
@@ -777,7 +809,7 @@ def add_deuda():
         "origen": body.get("origen"),
         "monto": float(body.get("monto", 0)),         # Valor en CLP (calculado en el front)
         "montoUF": body.get("montoUF") or None,               # Solo si fue en UF
-        "valorUF": body.get("valorUF") or None,               # Valor de la UF usada
+        "valorRealUF": body.get("valorUF") or None,               # Valor de la UF usada
         "moneda": body.get("moneda", "CLP"),          # "CLP" o "UF"
         "cuotas": body.get("cuotas"),                 # Número de cuotas
         "fechaPago": body.get("fechaPago"),           # Fecha de pago elegida

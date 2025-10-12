@@ -87,36 +87,86 @@ export class AgregarPage {
   // Nombre real del usuario actual
   public currentUserName: string = 'Usuario';
 
-  // Definir la propiedad para la imagen asignada
-  imagenAsignada: string | null = null;
+  // =============================== Imagen de Categoría ===============================
+imagenAsignada: string | null = null;
 
-  // Función que se llama cuando se cambia la categoría
-  asignarImagenPorCategoria() {
-    const categoria = this.formObjetivo.controls.categoria.value;
+asignarImagenPorCategoria() {
+  const categoria = this.formObjetivo?.value?.categoria;
 
-    // Asignar una imagen según la categoría seleccionada
-    switch(categoria) {
-      case 'verano':
-        this.imagenAsignada = 'assets/images/verano.jpg'; // Imagen de verano
-        break;
-      case 'estudio':
-        this.imagenAsignada = 'assets/images/estudio.jpg'; // Imagen de estudio
-        break;
-      case 'viaje':
-        this.imagenAsignada = 'assets/images/viaje.jpg'; // Imagen de viaje
-        break;
-      case 'ahorro':
-        this.imagenAsignada = 'assets/images/ahorro.jpg'; // Imagen de ahorro
-        break;
-      default:
-        this.imagenAsignada = null; // Si no hay categoría, no asignamos ninguna imagen
+  switch (categoria) {
+    case 'verano':
+      this.imagenAsignada = 'assets/objetivos/verano.png';
+      break;
+    case 'estudio':
+      this.imagenAsignada = 'assets/objetivos/estudio.png';
+      break;
+    case 'viaje':
+      this.imagenAsignada = 'assets/objetivos/viaje.png';
+      break;
+    case 'ahorro':
+      this.imagenAsignada = 'assets/objetivos/ahorro.png';
+      break;
+    default:
+      this.imagenAsignada = null;
+  }
+}
+
+  categoriasGasto: any[] = [];
+  constructor() { }
+
+   // =============================== Agregar Categoria ===============================
+  async agregarCategoria() {
+    const data = await this.utilsSvc.presentGenericModal({
+      title: 'Agregar categoría',
+      fields: [
+        { name: 'nombre', label: 'Nombre de categoría', type: 'text', required: true },
+        { name: 'color', label: 'Color de categoría', type: 'color', required: true }
+      ],
+      confirmText: 'Guardar categoría',
+      color: 'success',
+      breakpoints: [0.7],
+      initialBreakpoint: 0.7
+    });
+
+    if (!data) return; // usuario canceló
+
+    try {
+      const body = { ...data, tipo: 'movimiento', icono: '📦' };
+      const res: any = await firstValueFrom(this.movApi.agregarCategoria(body));
+      if (res.ok) this.cargarCategorias();
+
+      this.utilsSvc.presentToast({
+        message: 'Categoría agregada correctamente.',
+        color: 'success',
+        duration: 1500
+      });
+
+    } catch (err) {
+      this.utilsSvc.presentToast({
+        message: 'Error al guardar categoría',
+        color: 'danger',
+        duration: 2000
+      });
     }
   }
 
-  constructor() { }
+// =============================== Cargar Categorías ===============================
+  async cargarCategorias() {
+    try {
+      const res: any = await firstValueFrom(this.movApi.obtenerCategorias('movimiento'));
+      if (res.ok) {
+        this.categoriasGasto = res.categorias;
+        console.log('✅ Categorías cargadas:', this.categoriasGasto);
+      }
+    } catch (err) {
+      console.error('Error cargando categorías', err);
+    }
+  }
+
 
   ngOnInit() {
     this.getUserProfile();
+    this.cargarCategorias();
   }
 
   // ============================
@@ -168,7 +218,9 @@ async onCambioMoneda(form: FormGroup) {
     // Si el usuario ya llenó montoUF, calcular previsualización CLP
     const montoUF = form.get('montoUF')?.value;
     if (montoUF) {
-      const montoCLP = valorUF * montoUF;
+      const montoCLP = Math.round(valorUF * montoUF);
+      console.log('monto CLP calculado:', montoCLP);
+      
       form.patchValue({ monto: montoCLP });
     }
   } else {
@@ -237,7 +289,7 @@ async onCambioMoneda(form: FormGroup) {
         if (!data.montoUF || !data.valorUF) {
           throw new Error('Debe ingresar el monto en UF y tener valor UF válido.');
         }
-        data.monto = data.montoUF * data.valorUF;
+        data.monto = Math.round(data.montoUF * data.valorUF);
       } else {
         data.montoUF = null;
         data.valorUF = null;
@@ -251,7 +303,9 @@ async onCambioMoneda(form: FormGroup) {
         color: 'success',
         position: 'bottom',
       });
-      this.formGasto.reset();
+
+      // Reset con valor inicial forzado
+      this.formGasto.reset({ compartido: false, moneda: 'CLP', frecuencia: 'unica' });
     } catch (error: any) {
       this.utilsSvc.presentToast({
         message: error.message || 'Error al guardar gasto',
@@ -340,7 +394,7 @@ async onCambioMoneda(form: FormGroup) {
         if (!data.montoUF || !data.valorUF) {
           throw new Error('Debe ingresar el monto en UF y tener valor UF válido.');
         }
-        data.monto = data.montoUF * data.valorUF;
+        data.monto = Math.round(data.montoUF * data.valorUF);
       }
 
       await firstValueFrom(this.movApi.agregarDeuda(data));

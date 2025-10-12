@@ -5,6 +5,7 @@ import { ConfirmSheetComponent } from '../shared/component/confirm-sheet/confirm
 import { EmailPinModalComponent } from '../shared/component/email-pin-modal/email-pin-modal.component';
 import { firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { GenericModalComponent } from '../shared/component/modal-generic/modal-generic.component';
 
 @Injectable({
   providedIn: 'root'
@@ -139,4 +140,41 @@ export class Utils {
 
     return data?.code ?? null;
   }
+
+
+
+// ================================ Modal Genérico ================================
+async presentGenericModal(opts: {
+  title: string;
+  fields: Array<{ name: string; label: string; type: string; required?: boolean; default?: any; options?: any[] }>;
+  confirmText?: string;
+  cancelText?: string;
+  color?: string;
+  cssClass?: string;
+  breakpoints?: number[];
+  initialBreakpoint?: number;
+}): Promise<any | null> {
+  const modal = await this.modalCtrl.create({
+    component: GenericModalComponent,
+    componentProps: {
+      title: opts.title,
+      fields: opts.fields,
+      confirmText: opts.confirmText || 'Guardar',
+      cancelText: opts.cancelText || 'Cancelar',
+      color: opts.color || 'primary'
+    },
+    breakpoints: opts.breakpoints || [0.55],
+    initialBreakpoint: opts.initialBreakpoint || 0.55,
+    handle: true,
+    backdropDismiss: true,
+    cssClass: 'confirm-sheet-modal modal-generic'
+
+  });
+
+  await modal.present();
+  const { data, role } = await modal.onDidDismiss();
+  if (role === 'backdrop') return null;
+  return data ?? null;
+}
+
 }

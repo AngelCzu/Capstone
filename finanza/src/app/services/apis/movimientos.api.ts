@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -27,18 +28,13 @@ export class MovimientosApi {
 
 
   //============================================= CATEGORIAS ============================================================//
-  // Obtener categorías (por defecto de tipo 'movimiento')
-  getCategorias(tipo: string = 'movimiento') {
-    return this.http.get(`${this.baseUrl}/categorias?tipo=${tipo}`);
+  obtenerCategorias(tipo: string): Observable<{ ok: boolean; categorias: any[] }> {
+    return this.http.get<{ ok: boolean; categorias: any[] }>(
+      `${this.baseUrl}/categorias?tipo=${tipo}`
+    );
   }
 
-  // Agregar una nueva categoría
-  agregarCategoria(data: any) {
-    return this.http.post(`${this.baseUrl}/categorias`, data);
-  }
-
-  // Eliminar una categoría por ID
-  eliminarCategoria(id: string) {
-    return this.http.delete(`${this.baseUrl}/categorias/${id}`);
+  agregarCategoria(data: any): Observable<{ ok: boolean; id: string }> {
+    return this.http.post<{ ok: boolean; id: string }>(`${this.baseUrl}/categorias`, data);
   }
 }

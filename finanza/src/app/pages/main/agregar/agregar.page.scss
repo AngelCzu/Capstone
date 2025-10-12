@@ -236,4 +236,110 @@
       max-width: 500px;
     }
   }
+
+
+/* ===================== PARTICIPANTES COMPARTIDOS ===================== */
+  .participantes-header {
+    font-size: 0.8rem;
+    color: #bdbdbd;
+    margin: 6px 4px 4px;
+    text-align: left;
+    padding-left: 4px;
+  }
+
+  ion-list {
+    background: #1a1a1a;
+    border-radius: 10px;
+    padding: 0.6rem 0.5rem;
+    margin-top: 0.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+
+    ion-item {
+      --background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      box-sizing: border-box; /* evita saltos por borde */
+
+      &.yo {
+        position: relative;
+        background: rgba(0, 200, 83, 0.08);
+        border-color: rgba(0, 200, 83, 0.2);
+        box-shadow: inset 0 0 0 1px rgba(0, 200, 83, 0.15); /* visual, sin expandir */
+      }
+
+      ion-label {
+        flex: 1;
+        font-weight: 500;
+        color: #f2f2f2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        padding-right: 10px;
+      }
+
+      ion-input {
+        --background: #252525;
+        --color: #f2f2f2;
+        --padding-start: 6px;
+        --padding-end: 6px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        width: 70px;
+        text-align: right;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        height: 34px;
+        box-sizing: border-box;
+      }
+
+      ion-button[color='danger'] {
+        --background: rgba(255, 99, 99, 0.12);
+        --background-hover: rgba(255, 99, 99, 0.22);
+        --border-radius: 8px;
+        height: 34px;
+        width: 34px;
+        min-width: 34px;
+        --padding-start: 0;
+        --padding-end: 0;
+
+        ion-icon {
+          color: #ff7070;
+          font-size: 1.1rem;
+        }
+      }
+    }
+  
+  }
+
+  /* Input de nuevo participante */
+  ion-item.add-participante {
+    --background: #1a1a1a;
+    border-radius: 10px;
+    margin-top: 0.8rem;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+
+    ion-button {
+      --color: #00c853;
+      --padding-start: 6px;
+      --padding-end: 6px;
+      ion-icon {
+        font-size: 1.4rem;
+      }
+    }
+  }
+  ion-button.hidden-btn {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  touch-action: none;  /* ✅ evita que al tocar genere scroll o reacomodo */
+}
+  
 }

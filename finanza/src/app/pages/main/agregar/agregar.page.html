@@ -118,15 +118,16 @@
         <!-- Categoría -->
         <ion-item>
           <ion-label>Categoría</ion-label>
-          <ion-select formControlName="categoria" interface="action-sheet">
-            <ion-select-option value="alimentacion">🍽️ Comida</ion-select-option>
-            <ion-select-option value="servicios">💡 Servicios</ion-select-option>
-            <ion-select-option value="otros">❤️‍🩹 Salud</ion-select-option>
-            <ion-select-option value="hogar">🏠 Hogar</ion-select-option>
-            <ion-select-option value="educacion">🎓 Educación</ion-select-option>
-            <ion-select-option value="transporte">🚗 Transporte</ion-select-option>
-            <ion-select-option value="otros">📦 Ocio / Personal</ion-select-option>
+          <ion-select formControlName="categoria" interface="action-sheet" placeholder="Seleccionar categoría">
+            <ion-select-option *ngFor="let c of categoriasGasto" [value]="c.nombre">
+              {{ c.icono }} {{ c.nombre }}
+            </ion-select-option>
           </ion-select>
+
+          <!-- 🔹 Botón para agregar nueva categoría -->
+          <ion-button slot="end" fill="clear" color="success" (click)="agregarCategoria()">
+            <ion-icon name="add-circle-outline"></ion-icon>
+          </ion-button>
         </ion-item>
 
         <!-- Frecuencia -->
@@ -236,6 +237,18 @@
           label="Cantidad de cuotas">
         </app-custom-input>
 
+        <!-- Fecha de pago -->
+        <app-custom-input
+          icon="calendar-outline"
+          [control]="formDeuda.controls.fechaPago"
+          type="number"
+          label="Día de pago (Ej: 15)"
+          min="1"
+          max="31">
+        </app-custom-input>
+
+        
+
         <ion-item lines="none">
           <ion-label>¿Compartido?</ion-label>
           <ion-toggle formControlName="compartido" (ionChange)="deudaCompartidoChanged()"></ion-toggle>
@@ -249,14 +262,22 @@
             </ion-button>
           </ion-item>
 
+          <div class="participantes-header">
+            <ion-icon name="information-circle-outline"></ion-icon>
+            &nbsp;El participante resaltado es tu usuario
+          </div>
+          
           <ion-list>
-            <ion-item *ngFor="let p of participantesDeuda.controls; let i = index">
-              <ion-badge *ngIf="p.get('nombre')?.value === currentUserName" color="primary">Yo</ion-badge>
-              <ion-label>{{ p.get('nombre')?.value }}</ion-label>
-              <ion-input type="number" [value]="p.get('porcentaje')?.value"
-                         (ionChange)="porcentajeCambiadoDeuda(i, $event.detail.value)" placeholder="%">
-              </ion-input>
-              <ion-button color="danger" *ngIf="p.get('nombre')?.value !== currentUserName" (click)="eliminarParticipanteDeuda(i)">
+            <ion-item *ngFor="let p of participantesDeuda.controls; let i = index"
+                        [class.yo]="p.get('nombre')?.value === currentUserName">
+                <ion-label>{{ p.get('nombre')?.value }}</ion-label>
+                <ion-input type="number" [value]="p.get('porcentaje')?.value"
+                          (ionChange)="porcentajeCambiadoDeuda(i, $event.detail.value)" placeholder="%">
+                </ion-input>
+                <ion-button color="danger"
+                          [disabled]="p.get('nombre')?.value === currentUserName"
+                          [class.hidden-btn]="p.get('nombre')?.value === currentUserName"
+                          (click)="eliminarParticipanteDeuda(i)">
                 <ion-icon name="trash-outline"></ion-icon>
               </ion-button>
             </ion-item>

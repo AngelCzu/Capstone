@@ -1,0 +1,130 @@
+:host {
+  ion-content {
+    --background: rgba(25, 25, 25, 0.85);
+    --color: #fff;
+    backdrop-filter: blur(20px);
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    box-shadow: 0 -6px 25px rgba(0, 0, 0, 0.45);
+    padding: 1.2rem;
+  }
+
+  .modal-body {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+
+    ion-icon.modal-icon {
+      font-size: 3rem;
+      color: var(--ion-color-primary);
+      margin-bottom: 0.5rem;
+      filter: drop-shadow(0 0 6px rgba(0, 255, 255, 0.3));
+    }
+
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+
+    }
+
+    p {
+      font-size: 0.95rem;
+      color: #cfcfcf;
+      margin-bottom: 0.5rem;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+
+      ion-item {
+        --background: rgba(255, 255, 255, 0.05);
+        --inner-padding-end: 0.75rem;
+        --border-color: rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        ion-label {
+          color: #bdbdbd;
+          font-weight: 500;
+          font-size: 0.9rem;
+        }
+
+        ion-input,
+        ion-select {
+          color: #fff;
+          font-size: 0.95rem;
+        }
+
+        ion-note {
+          font-size: 0.8rem;
+          margin-top: 0.2rem;
+        }
+      }
+    }
+
+    .color-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.8rem;
+      margin: 1rem;
+
+      .color-circle {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.25s ease;
+
+        &:hover {
+          transform: scale(1.1);
+          filter: brightness(1.15);
+        }
+
+        &.selected {
+          box-shadow: 0 0 10px rgba(255, 255, 255, 0.855);
+          transform: scale(1.05);
+        }
+      }
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+
+      ion-button {
+        --border-radius: 14px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        height: 44px;
+      }
+
+      ion-button[color="medium"] {
+        --background: rgba(255, 255, 255, 0.08);
+        --color: #ccc;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+    }
+  }
+
+  /* Animación de entrada */
+  ::ng-deep ion-modal::part(content) {
+    animation: modalFadeIn 0.25s ease;
+  }
+
+  @keyframes modalFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}

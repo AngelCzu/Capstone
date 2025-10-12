@@ -1,0 +1,51 @@
+<ion-content>
+  <div class="modal-body">
+    <ion-icon *ngIf="icon" [name]="icon" class="modal-icon"></ion-icon>
+    <h2>{{ title }}</h2>
+    <p *ngIf="message">{{ message }}</p>
+
+    <form [formGroup]="form">
+      <ion-item *ngFor="let field of fields" lines="none">
+        <ion-label position="stacked">{{ field.label }}</ion-label>
+
+        <ion-input
+          *ngIf="field.type === 'text' || field.type === 'number'"
+          [type]="field.type"
+          [formControlName]="field.name"
+          [required]="field.required">
+        </ion-input>
+
+        <ion-select
+          *ngIf="field.type === 'select'"
+          [formControlName]="field.name"
+          interface="popover">
+          <ion-select-option *ngFor="let opt of field.options" [value]="opt.value">
+            {{ opt.label }}
+          </ion-select-option>
+        </ion-select>
+
+        <!-- Paleta extendida de colores -->
+        <ng-container *ngIf="field.type === 'color'">
+          <div class="color-grid">
+            <div
+              *ngFor="let c of ionicColorsExtended"
+              class="color-circle"
+              [style.background-color]="c.value"
+              [class.selected]="form.get(field.name)?.value === c.name"
+              (click)="form.get(field.name)?.setValue(c.name)">
+            </div>
+          </div>
+        </ng-container>
+
+        <ion-note color="danger" *ngIf="form.get(field.name)?.invalid && form.get(field.name)?.touched">
+          Campo obligatorio o inválido
+        </ion-note>
+      </ion-item>
+    </form>
+
+    <div class="buttons">
+      <ion-button expand="block" [color]="color" (click)="confirmar()">{{ confirmText }}</ion-button>
+      <ion-button expand="block" color="medium" (click)="cancelar()">{{ cancelText }}</ion-button>
+    </div>
+  </div>
+</ion-content>
