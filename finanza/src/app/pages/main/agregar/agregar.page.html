@@ -70,7 +70,7 @@
       <ion-card-content>
         <app-custom-input
           icon="cart-outline"
-          [control]="formGasto.controls.nombre"
+          [control]="formGasto.controls.origen"
           type="text"
           label="Nombre del gasto">
         </app-custom-input>
@@ -119,12 +119,27 @@
         <ion-item>
           <ion-label>Categoría</ion-label>
           <ion-select formControlName="categoria" interface="action-sheet">
-            <ion-select-option value="alimentacion">🍽️ Alimentación</ion-select-option>
+            <ion-select-option value="alimentacion">🍽️ Comida</ion-select-option>
             <ion-select-option value="servicios">💡 Servicios</ion-select-option>
+            <ion-select-option value="otros">❤️‍🩹 Salud</ion-select-option>
+            <ion-select-option value="hogar">🏠 Hogar</ion-select-option>
+            <ion-select-option value="educacion">🎓 Educación</ion-select-option>
             <ion-select-option value="transporte">🚗 Transporte</ion-select-option>
-            <ion-select-option value="otros">📦 Otros</ion-select-option>
+            <ion-select-option value="otros">📦 Ocio / Personal</ion-select-option>
           </ion-select>
         </ion-item>
+
+        <!-- Frecuencia -->
+        <ion-item>
+          <ion-label>Frecuencia</ion-label>
+          <ion-select formControlName="frecuencia" interface="popover">
+            <ion-select-option value="unica">Única</ion-select-option>
+            <ion-select-option value="semanal">Semanal</ion-select-option>
+            <ion-select-option value="mensual">Mensual</ion-select-option>
+            <ion-select-option value="anual">Anual</ion-select-option>
+          </ion-select>
+        </ion-item>
+
 
         <!-- Compartido -->
         <ion-item lines="none">
@@ -174,7 +189,7 @@
       <ion-card-content>
         <app-custom-input
           icon="card-outline"
-          [control]="formDeuda.controls.nombre"
+          [control]="formDeuda.controls.origen"
           type="text"
           label="Nombre de la deuda">
         </app-custom-input>

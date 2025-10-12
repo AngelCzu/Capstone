@@ -596,9 +596,71 @@ def cancel_pin():
     return {"ok": True}, 200
 
 
-#========================================= AGREGAR MOVIMIENTOS =========================================#
 
 
+
+
+
+
+
+#===================================================================================================================================#
+#===================================================== AGREGAR MOVIMIENTOS =========================================================#
+#===================================================================================================================================#
+
+# ======================================
+# ========CATEGORÍAS USUARIOS==========
+# ======================================
+
+
+#========OBTENER CATEGORÍAS========#
+@api.get("/users/me/categorias")
+@require_auth
+def get_categorias():
+    tipo = request.args.get("tipo", "movimiento")
+    ref = db.collection("users").document(request.uid).collection("categorias")
+    docs = ref.where("tipo", "==", tipo).stream()
+    categorias = [{**d.to_dict(), "id": d.id} for d in docs]
+    return {"ok": True, "categorias": categorias}, 200
+
+
+#========AGREGAR CATEGORÍAS========#
+@api.post("/users/me/categorias")
+@require_auth
+def add_categoria():
+    body = request.get_json() or {}
+    nombre = body.get("nombre")
+    tipo = body.get("tipo", "movimiento")
+    icono = body.get("icono", "📦")
+    color = body.get("color", "#999999")
+
+    if not nombre:
+        return {"ok": False, "error": "El nombre es obligatorio"}, 400
+
+    ref = db.collection("users").document(request.uid).collection("categorias").document()
+    ref.set({
+        "tipo": tipo,
+        "nombre": nombre,
+        "icono": icono,
+        "color": color,
+        "createdAt": firestore.SERVER_TIMESTAMP
+    })
+
+    return {"ok": True, "id": ref.id}, 201
+
+
+#========ELIMINAR CATEGORÍAS========#
+@api.delete("/users/me/categorias/<cat_id>")
+@require_auth
+def delete_categoria(cat_id):
+    ref = db.collection("users").document(request.uid).collection("categorias").document(cat_id)
+    ref.delete()
+    return {"ok": True, "message": "Categoría eliminada"}, 200
+
+
+
+#=====================================#
+#========AGREGAR MOVIMIENTOS==========#
+#=====================================#
 
 # Helper para actualizar resumen
 def actualizar_resumen(uid, año, mes, tipo, monto):
@@ -635,7 +697,8 @@ def add_ingreso():
     año, mes, semestre = now.year, now.month, obtener_semestre(now.month)
 
     data = {
-        "nombre": body.get("nombre"),
+        "tipo": "ingreso",
+        "origen": body.get("origen"),
         "monto": float(body.get("monto", 0)),
         "fecha": now.isoformat(),
         "año": año,
@@ -668,7 +731,8 @@ def add_gasto():
     año, mes, semestre = now.year, now.month, obtener_semestre(now.month)
 
     data = {
-        "nombre": body.get("nombre"),
+        "tipo": "gasto",
+        "origen": body.get("origen"),
         "monto": float(body.get("monto", 0)),        # Valor en CLP ya calculado
         "montoUF": body.get("montoUF") or None,              # Solo si el gasto fue en UF
         "valorUF": body.get("valorUF") or None,              # Valor de la UF usada
@@ -709,7 +773,8 @@ def add_deuda():
     año, mes, semestre = now.year, now.month, obtener_semestre(now.month)
 
     data = {
-        "nombre": body.get("nombre"),
+        "tipo": "deuda",
+        "origen": body.get("origen"),
         "monto": float(body.get("monto", 0)),         # Valor en CLP (calculado en el front)
         "montoUF": body.get("montoUF") or None,               # Solo si fue en UF
         "valorUF": body.get("valorUF") or None,               # Valor de la UF usada
@@ -749,6 +814,7 @@ def add_objetivo():
     año, mes, semestre = now.year, now.month, obtener_semestre(now.month)
 
     data = {
+        "tipo": "objetivo",
         "nombre": body.get("nombre"),
         "monto": float(body.get("monto", 0)),          # Valor en CLP calculado por el front
         "montoUF": body.get("montoUF") or None,                # Solo si se ingresó en UF

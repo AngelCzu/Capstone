@@ -42,19 +42,19 @@ export class AgregarPage {
   });
 
   formGasto = new FormGroup({
-    nombre: new FormControl('', [Validators.required]),
+    origen: new FormControl('', [Validators.required]),
     monto: new FormControl(null, [Validators.required, Validators.pattern(/^[1-9]\d*$/), Validators.min(1)]),
     moneda: new FormControl('CLP', [Validators.required]),  // CLP o UF
     montoUF: new FormControl(null),                         // solo si moneda = UF
     valorUF: new FormControl(null),                         // valor de referencia UF
     categoria: new FormControl('', [Validators.required]),
-    frecuencia: new FormControl('unica'),
+    frecuencia: new FormControl('unica', [Validators.required]),
     compartido: new FormControl(false),
     participantes: new FormArray([]),
   });
 
   formDeuda = new FormGroup({
-    nombre: new FormControl('', [Validators.required]),
+    origen: new FormControl('', [Validators.required]),
     monto: new FormControl(null, [Validators.required, Validators.pattern(/^[1-9]\d*$/), Validators.min(1)]),
     moneda: new FormControl('CLP', [Validators.required]),  // CLP o UF
     montoUF: new FormControl(null),
@@ -74,7 +74,7 @@ export class AgregarPage {
     tiempo: new FormControl(null),
     compartido: new FormControl(false),
     participantes: new FormArray([]),
-    categoria: new FormControl('', [Validators.required])
+    categoria: new FormControl('', [Validators.required]),
   });
 
   // ============================
