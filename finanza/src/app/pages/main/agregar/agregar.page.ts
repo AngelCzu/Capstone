@@ -50,6 +50,7 @@ export class AgregarPage {
     categoria: new FormControl('', [Validators.required]),
     frecuencia: new FormControl('unica', [Validators.required]),
     compartido: new FormControl(false),
+    modoDivision: new FormControl('porcentaje'), // porcentaje o clp
     participantes: new FormArray([]),
   });
 
@@ -62,6 +63,7 @@ export class AgregarPage {
     cuotas: new FormControl(null),
     fechaPago: new FormControl(null),
     compartido: new FormControl(false),
+    modoDivision: new FormControl('porcentaje'),
     participantes: new FormArray([]),
   });
 
@@ -74,6 +76,7 @@ export class AgregarPage {
     tiempo: new FormControl(null),
     compartido: new FormControl(false),
     participantes: new FormArray([]),
+    modoDivision: new FormControl('porcentaje'),
     categoria: new FormControl('', [Validators.required]),
   });
 
@@ -208,6 +211,7 @@ asignarImagenPorCategoria() {
 // ============================
 // Reaccionar a cambio de moneda
 // ============================
+
 async onCambioMoneda(form: FormGroup) {
   const moneda = form.get('moneda')?.value;
 
@@ -240,6 +244,129 @@ async onCambioMoneda(form: FormGroup) {
       }
     });
   }
+
+
+
+
+
+// ============================
+// ACTUALIZAR PORCENTAJE
+// ============================
+actualizarPorcentaje(index: number, value: any) {
+  const val = parseInt(value, 10);
+
+  // Validamos número entero
+  if (isNaN(val) || val < 0 || val > 100) return;
+
+  const participante = this.participantesDeuda.at(index) as FormGroup;
+
+  // Actualizamos el porcentaje y limpiamos monto directo
+  participante.get('porcentaje')?.setValue(val, { emitEvent: false });
+  participante.get('monto')?.setValue(null, { emitEvent: false });
+
+  // Recalcular los montos CLP según modo
+  this.actualizarMontosParticipantes();
+}
+
+// ============================
+// ACTUALIZAR MONTO DIRECTO (CLP)
+// ============================
+actualizarMonto(index: number, value: any) {
+  const val = parseInt(value, 10);
+
+  if (isNaN(val) || val < 0) return;
+
+  const participante = this.participantesDeuda.at(index) as FormGroup;
+
+  participante.get('monto')?.setValue(val, { emitEvent: false });
+  participante.get('porcentaje')?.setValue(null, { emitEvent: false });
+
+  // ✅ validación de total actualizado
+  this.validarTotalParticipantes();
+}
+
+
+// ============================
+// REPARTIR MONTOS IGUALMENTE
+// ============================
+validarTotalParticipantes() {
+  const data = this.formDeuda.value;
+
+  // Solo aplica si está compartido y en modo CLP
+  if (!data.compartido || data.modoDivision !== 'clp') return;
+
+  const total = data.monto || 0;
+  const totalParticipantes = this.participantesDeuda.controls.reduce((acc, ctrl) => {
+    const val = Number(ctrl.get('monto')?.value) || 0;
+    return acc + val;
+  }, 0);
+
+  // Si la suma supera el total, mostrar error y bloquear guardado
+  if (totalParticipantes > total) {
+    this.formDeuda.setErrors({ totalExcedido: true });
+    this.utilsSvc.presentToast({
+      message: `El total repartido (${totalParticipantes.toLocaleString()}) supera el monto total (${total.toLocaleString()}).`,
+      color: 'danger',
+      duration: 2000,
+    });
+  } else {
+    // limpiar error si vuelve a ser válido
+    this.formDeuda.setErrors(null);
+  }
+}
+
+// ============================
+// REPARTIR MONTOS IGUALMENTE
+// ============================
+distribuirMontosIguales() {
+  const data = this.formDeuda.value;
+
+  if (!data.compartido || data.modoDivision !== 'clp' || !data.monto) return;
+
+  const total = data.monto;
+  const n = this.participantesDeuda.length;
+  if (n === 0) return;
+
+  // repartir el monto total entre los participantes
+  const base = Math.floor(total / n);
+  const resto = total - base * n;
+
+  this.participantesDeuda.controls.forEach((ctrl, i) => {
+    let val = base;
+    if (i === 0 && resto > 0) val += resto; // ajusta el redondeo
+    ctrl.get('monto')?.setValue(val, { emitEvent: false });
+  });
+}
+
+
+// ============================
+// ACTUALIZAR MONTOS AUTOMÁTICAMENTE SEGÚN MODO
+// ============================
+actualizarMontosParticipantes() {
+  const data = this.formDeuda.value;
+
+  if (!data.compartido || !data.participantes?.length) return;
+
+  // Si es por porcentaje → calcular CLP
+  if (data.modoDivision === 'porcentaje' && data.monto) {
+    const total = data.monto;
+    this.participantesDeuda.controls.forEach((ctrl) => {
+      const porcentaje = ctrl.get('porcentaje')?.value || 0;
+      const montoCLP = Math.round((total * porcentaje) / 100);
+      ctrl.get('monto')?.setValue(montoCLP, { emitEvent: false });
+    });
+  }
+
+  // Si es por CLP → solo aseguramos que los campos sean válidos
+  if (data.modoDivision === 'clp') {
+    this.participantesDeuda.controls.forEach((ctrl) => {
+      const monto = ctrl.get('monto')?.value || 0;
+      if (monto < 0 || isNaN(monto)) ctrl.get('monto')?.setValue(0, { emitEvent: false });
+    });
+  }
+}
+
+
 
   // ============================
   // GUARDAR INGRESO
@@ -357,68 +484,113 @@ async onCambioMoneda(form: FormGroup) {
     return this.formDeuda.get('participantes') as FormArray;
   }
 
-  agregarParticipanteDeuda() {
-    const name = (this.nuevoParticipanteDeuda.value || '').trim();
-    if (!name) return;
+agregarParticipanteDeuda() {
+  const name = (this.nuevoParticipanteDeuda.value || '').trim();
+  if (!name) return;
 
-    const exists = this.participantesDeuda.controls.some(c => c.get('nombre')?.value === name);
-    if (!exists) {
-      this.participantesDeuda.push(new FormGroup({
+  const exists = this.participantesDeuda.controls.some(
+    c => c.get('nombre')?.value === name
+  );
+
+  if (!exists) {
+    this.participantesDeuda.push(
+      new FormGroup({
         nombre: new FormControl(name),
-        porcentaje: new FormControl(0),
-      }));
-    }
-    this.nuevoParticipanteDeuda.reset();
-    this.recalcularPorcentajes(this.participantesDeuda);
+        porcentaje: new FormControl(0, [
+          Validators.pattern(/^[0-9]+$/),
+          Validators.min(0),
+          Validators.max(100),
+        ]),
+        monto: new FormControl(0, [
+          Validators.pattern(/^[0-9]+$/),
+          Validators.min(0),
+        ]),
+      })
+    );
   }
 
-  eliminarParticipanteDeuda(index: number) {
-    this.participantesDeuda.removeAt(index);
-    this.recalcularPorcentajes(this.participantesDeuda);
-  }
+  this.nuevoParticipanteDeuda.reset();
 
-  // ============================
-  // GUARDAR DEUDA
-  // ============================
-  async guardarDeuda() {
-    if (this.formDeuda.invalid) return;
+  // ✅ si está en modo CLP → repartir automáticamente
+  this.distribuirMontosIguales();
 
-    const loading = await this.utilsSvc.loading();
-    await loading.present();
+  // ✅ validar que no supere el total
+  this.validarTotalParticipantes();
+}
 
-    try {
-      const data = this.formDeuda.value;
 
-      // Si es UF, aseguramos los campos necesarios
-      if (data.moneda === 'UF') {
-        if (!data.montoUF || !data.valorUF) {
-          throw new Error('Debe ingresar el monto en UF y tener valor UF válido.');
-        }
-        data.monto = Math.round(data.montoUF * data.valorUF);
+
+eliminarParticipanteDeuda(index: number) {
+  this.participantesDeuda.removeAt(index);
+
+  // ✅ redistribuye los montos al eliminar
+  this.distribuirMontosIguales();
+
+  // ✅ vuelve a validar el total
+  this.validarTotalParticipantes();
+}
+
+
+
+
+// ============================
+// GUARDAR DEUDA
+// ============================
+async guardarDeuda() {
+  if (this.formDeuda.invalid) return;
+
+  const loading = await this.utilsSvc.loading();
+  await loading.present();
+
+  try {
+    const data = this.formDeuda.value;
+
+    // ===== Validación UF =====
+    if (data.moneda === 'UF') {
+      if (!data.montoUF || !data.valorUF) {
+        throw new Error('Debe ingresar el monto en UF y tener valor UF válido.');
       }
-
-      await firstValueFrom(this.movApi.agregarDeuda(data));
-
-      this.utilsSvc.presentToast({
-        message: 'Deuda guardada correctamente',
-        duration: 2000,
-        color: 'success',
-        position: 'bottom',
-      });
-      this.formDeuda.reset();
-      this.participantesDeuda.clear();
-
-    } catch (error: any) {
-      this.utilsSvc.presentToast({
-        message: error.message || 'Error al guardar la deuda',
-        duration: 2500,
-        color: 'danger',
-        position: 'bottom',
-      });
-    } finally {
-      loading.dismiss();
+      data.monto = Math.round(data.montoUF * data.valorUF);
     }
+
+    // ===== Actualizamos montos CLP según modo antes de enviar =====
+    this.actualizarMontosParticipantes();
+
+    // ===== Conversión de porcentajes a CLP (por seguridad) =====
+    if (data.modoDivision === 'porcentaje' && data.participantes?.length) {
+      const total = data.monto;
+      data.participantes = data.participantes.map((p: any) => {
+        const montoCLP = Math.round((total * (p.porcentaje || 0)) / 100);
+        return { ...p, monto: montoCLP };
+      });
+    }
+
+    // ===== Enviar datos al backend =====
+    await firstValueFrom(this.movApi.agregarDeuda(data));
+
+    // ===== Feedback =====
+    this.utilsSvc.presentToast({
+      message: 'Deuda guardada correctamente',
+      duration: 2000,
+      color: 'success',
+      position: 'bottom',
+    });
+
+    // Limpiar formulario
+    this.formDeuda.reset();
+    this.participantesDeuda.clear();
+
+  } catch (error: any) {
+    this.utilsSvc.presentToast({
+      message: error.message || 'Error al guardar la deuda',
+      duration: 2500,
+      color: 'danger',
+      position: 'bottom',
+    });
+  } finally {
+    loading.dismiss();
   }
+}
 
   // ============================
   // PARTICIPANTES - OBJETIVO

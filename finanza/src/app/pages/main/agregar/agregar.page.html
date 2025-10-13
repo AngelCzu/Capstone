@@ -142,34 +142,106 @@
         </ion-item>
 
 
-        <!-- Compartido -->
-        <ion-item lines="none">
-          <ion-label>¿Es compartido?</ion-label>
-          <ion-toggle formControlName="compartido" (ionChange)="gastoCompartidoChanged()"></ion-toggle>
-        </ion-item>
+        <!-- ====================== TOGGLE COMPARTIDO ====================== -->
+<ion-item lines="none">
+  <ion-label>¿Compartido?</ion-label>
+  <ion-toggle
+    formControlName="compartido"
+    (ionChange)="gastoCompartidoChanged()"
+  ></ion-toggle>
+</ion-item>
 
-        <!-- Participantes -->
-        <ng-container *ngIf="formGasto.value.compartido">
-          <ion-item>
-            <app-custom-input icon="person-add-outline" [control]="nuevoParticipanteGasto" type="text" label="Agregar participante"></app-custom-input>
-            <ion-button fill="clear" (click)="agregarParticipanteGasto()">
-              <ion-icon name="add-circle-outline"></ion-icon>
-            </ion-button>
-          </ion-item>
+<!-- ====================== TIPO DE DIVISIÓN ====================== -->
+<ion-item *ngIf="formGasto.value.compartido" lines="none">
+  <ion-label>Tipo de división</ion-label>
+  <ion-segment formControlName="modoDivision" mode="md">
+    <ion-segment-button value="porcentaje">
+      <ion-label>%</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="clp">
+      <ion-label>CLP</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+</ion-item>
 
-          <ion-list>
-            <ion-item *ngFor="let p of participantesGasto.controls; let i = index">
-              <ion-badge *ngIf="p.get('nombre')?.value === currentUserName" color="primary">Yo</ion-badge>
-              <ion-label>{{ p.get('nombre')?.value }}</ion-label>
-              <ion-input type="number" [value]="p.get('porcentaje')?.value"
-                         (ionChange)="porcentajeCambiadoGasto(i, $event.detail.value)" placeholder="%">
-              </ion-input>
-              <ion-button color="danger" *ngIf="p.get('nombre')?.value !== currentUserName" (click)="eliminarParticipanteGasto(i)">
-                <ion-icon name="trash-outline"></ion-icon>
-              </ion-button>
-            </ion-item>
-          </ion-list>
-        </ng-container>
+<!-- ====================== PARTICIPANTES ====================== -->
+<ion-card *ngIf="formGasto.value.compartido" class="participantes-card gasto-participantes">
+  <ion-card-header>
+    <ion-card-title>
+      <ion-icon name="people-outline"></ion-icon> Participantes
+    </ion-card-title>
+  </ion-card-header>
+
+  <ion-card-content>
+    <ion-text color="medium" class="label-participantes">
+      El participante con fondo resaltado eres tú.
+    </ion-text>
+
+    <!-- Agregar participante -->
+    <div class="add-participante-row">
+      <ion-input
+        [formControl]="nuevoParticipanteGasto"
+        placeholder="Nombre del participante"
+        class="add-input"
+      ></ion-input>
+
+      <ion-button
+        color="success"
+        (click)="agregarParticipanteGasto()"
+        [disabled]="!nuevoParticipanteGasto.value?.trim()"
+      >
+        <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+      </ion-button>
+    </div>
+
+    <!-- Lista de participantes -->
+    <div class="lista-participantes">
+      <div
+        class="participante-item"
+        *ngFor="let p of participantesGasto.controls; let i = index"
+        [class.is-me]="p.get('nombre')?.value === currentUserName"
+      >
+        <!-- Nombre -->
+        <div class="nombre">
+          <ion-label>{{ p.get('nombre')?.value }}</ion-label>
+        </div>
+
+        <!-- MODO PORCENTAJE -->
+        <div class="porcentaje" *ngIf="formGasto.value.modoDivision === 'porcentaje'">
+          <ion-input
+            type="number"
+            [value]="p.get('porcentaje')?.value"
+            (ionChange)="actualizarPorcentaje(i, $event.detail.value)"
+          ></ion-input>
+          <span class="porcentaje-simbolo">%</span>
+        </div>
+
+        <!-- MODO CLP -->
+        <div class="monto" *ngIf="formGasto.value.modoDivision === 'clp'">
+          <ion-input
+            type="number"
+            [value]="p.get('monto')?.value"
+            (ionChange)="actualizarMonto(i, $event.detail.value)"
+            placeholder="CLP"
+          ></ion-input>
+          <span class="moneda-simbolo">$</span>
+        </div>
+
+        <!-- Botón eliminar -->
+        <ion-button
+          fill="clear"
+          size="small"
+          class="btn-delete"
+          (click)="eliminarParticipanteGasto(i)"
+          [style.visibility]="p.get('nombre')?.value === currentUserName ? 'hidden' : 'visible'"
+        >
+          <ion-icon name="trash-outline"></ion-icon>
+        </ion-button>
+      </div>
+    </div>
+  </ion-card-content>
+</ion-card>
+
 
         <ion-button expand="block" color="danger" type="submit" [disabled]="formGasto.invalid">
           Guardar gasto
@@ -178,118 +250,185 @@
     </ion-card>
   </form>
 
-  <!-- ====================== FORMULARIO DEUDA ====================== -->
-  <form *ngIf="tipoSeleccionado.value === 'deuda'" [formGroup]="formDeuda" (ngSubmit)="guardarDeuda()">
-    <ion-card class="form-card deuda-card">
-      <ion-card-header>
-        <ion-card-title>
-          <ion-icon name="card-outline"></ion-icon> Registrar deuda
-        </ion-card-title>
-      </ion-card-header>
+<!-- ====================== FORMULARIO DEUDA ====================== -->
+<form *ngIf="tipoSeleccionado.value === 'deuda'" [formGroup]="formDeuda" (ngSubmit)="guardarDeuda()">
+  <ion-card class="form-card deuda-card">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="card-outline"></ion-icon> Registrar deuda
+      </ion-card-title>
+    </ion-card-header>
 
-      <ion-card-content>
-        <app-custom-input
-          icon="card-outline"
-          [control]="formDeuda.controls.origen"
-          type="text"
-          label="Nombre de la deuda">
-        </app-custom-input>
+    <ion-card-content>
+      <!-- Nombre de la deuda -->
+      <app-custom-input
+        icon="card-outline"
+        [control]="formDeuda.controls.origen"
+        type="text"
+        label="Nombre de la deuda">
+      </app-custom-input>
 
-        <!-- Moneda -->
-        <ion-item lines="none" class="moneda-item">
-          <ion-label>Moneda</ion-label>
-          <ion-segment [formControl]="formDeuda.controls.moneda" (ionChange)="onCambioMoneda(formDeuda)">
-            <ion-segment-button value="CLP">CLP</ion-segment-button>
-            <ion-segment-button value="UF">UF</ion-segment-button>
-          </ion-segment>
-        </ion-item>
+      <!-- ====================== MONEDA ====================== -->
+      <ion-item lines="none" class="moneda-item">
+        <ion-label>Moneda</ion-label>
+        <ion-segment [formControl]="formDeuda.controls.moneda" (ionChange)="onCambioMoneda(formDeuda)">
+          <ion-segment-button value="CLP">CLP</ion-segment-button>
+          <ion-segment-button value="UF">UF</ion-segment-button>
+        </ion-segment>
+      </ion-item>
 
-        <!-- Monto -->
-        <app-custom-input
-          *ngIf="formDeuda.value.moneda === 'CLP'"
-          icon="cash-outline"
-          [control]="formDeuda.controls.monto"
-          type="number"
-          label="Monto total (CLP)">
-        </app-custom-input>
+      <!-- ====================== MONTOS ====================== -->
+      <app-custom-input
+        *ngIf="formDeuda.value.moneda === 'CLP'"
+        icon="cash-outline"
+        [control]="formDeuda.controls.monto"
+        type="number"
+        label="Monto total (CLP)">
+      </app-custom-input>
 
-        <app-custom-input
-          *ngIf="formDeuda.value.moneda === 'UF'"
-          icon="stats-chart-outline"
-          [control]="formDeuda.controls.montoUF"
-          type="number"
-          label="Monto total (UF)"
-          (ionChange)="onCambioMoneda(formDeuda)">
-        </app-custom-input>
+      <app-custom-input
+        *ngIf="formDeuda.value.moneda === 'UF'"
+        icon="stats-chart-outline"
+        [control]="formDeuda.controls.montoUF"
+        type="number"
+        label="Monto total (UF)"
+        (ionChange)="onCambioMoneda(formDeuda)">
+      </app-custom-input>
 
-        <!-- Previsualización CLP -->
-        <ion-item *ngIf="formDeuda.value.moneda === 'UF' && formDeuda.value.montoUF">
-          <ion-label>Total estimado</ion-label>
-          <ion-note slot="end" color="success">
-            {{ (formDeuda.value.montoUF * formDeuda.value.valorUF) | number:'1.0-0' }} CLP
-          </ion-note>
-        </ion-item>
+      <!-- Previsualización CLP -->
+      <ion-item *ngIf="formDeuda.value.moneda === 'UF' && formDeuda.value.montoUF">
+        <ion-label>Total estimado</ion-label>
+        <ion-note slot="end" color="success">
+          {{ (formDeuda.value.montoUF * formDeuda.value.valorUF) | number:'1.0-0' }} CLP
+        </ion-note>
+      </ion-item>
 
-        <app-custom-input
-          icon="calendar-outline"
-          [control]="formDeuda.controls.cuotas"
-          type="number"
-          label="Cantidad de cuotas">
-        </app-custom-input>
+      <!-- Cantidad de cuotas -->
+      <app-custom-input
+        icon="calendar-outline"
+        [control]="formDeuda.controls.cuotas"
+        type="number"
+        label="Cantidad de cuotas">
+      </app-custom-input>
 
-        <!-- Fecha de pago -->
-        <app-custom-input
-          icon="calendar-outline"
-          [control]="formDeuda.controls.fechaPago"
-          type="number"
-          label="Día de pago (Ej: 15)"
-          min="1"
-          max="31">
-        </app-custom-input>
+      <!-- Fecha de pago -->
+      <app-custom-input
+        icon="calendar-outline"
+        [control]="formDeuda.controls.fechaPago"
+        type="number"
+        label="Día de pago (Ej: 15)"
+        min="1"
+        max="31">
+      </app-custom-input>
 
-        
+      <!-- ====================== TOGGLE COMPARTIDO ====================== -->
+      <ion-item lines="none">
+        <ion-label>¿Compartido?</ion-label>
+        <ion-toggle formControlName="compartido" (ionChange)="deudaCompartidoChanged()"></ion-toggle>
+      </ion-item>
 
-        <ion-item lines="none">
-          <ion-label>¿Compartido?</ion-label>
-          <ion-toggle formControlName="compartido" (ionChange)="deudaCompartidoChanged()"></ion-toggle>
-        </ion-item>
+      <!-- ====================== TIPO DE DIVISIÓN ====================== -->
+      <ion-item *ngIf="formDeuda.value.compartido" lines="none">
+        <ion-label>Tipo de división</ion-label>
+        <ion-segment formControlName="modoDivision" mode="md">
+          <ion-segment-button value="porcentaje">
+            <ion-label>%</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="clp">
+            <ion-label>CLP</ion-label>
+          </ion-segment-button>
+        </ion-segment>
+      </ion-item>
 
-        <ng-container *ngIf="formDeuda.value.compartido">
-          <ion-item>
-            <app-custom-input icon="person-add-outline" [control]="nuevoParticipanteDeuda" type="text" label="Agregar participante"></app-custom-input>
-            <ion-button fill="clear" (click)="agregarParticipanteDeuda()">
-              <ion-icon name="add-circle-outline"></ion-icon>
-            </ion-button>
-          </ion-item>
+      <!-- ====================== PARTICIPANTES ====================== -->
+        <ion-card *ngIf="formDeuda.value.compartido" class="participantes-card">
+          <ion-card-header>
+            <ion-card-title>
+              <ion-icon name="people-outline"></ion-icon> Participantes
+            </ion-card-title>
+          </ion-card-header>
 
-          <div class="participantes-header">
-            <ion-icon name="information-circle-outline"></ion-icon>
-            &nbsp;El participante resaltado es tu usuario
-          </div>
-          
-          <ion-list>
-            <ion-item *ngFor="let p of participantesDeuda.controls; let i = index"
-                        [class.yo]="p.get('nombre')?.value === currentUserName">
-                <ion-label>{{ p.get('nombre')?.value }}</ion-label>
-                <ion-input type="number" [value]="p.get('porcentaje')?.value"
-                          (ionChange)="porcentajeCambiadoDeuda(i, $event.detail.value)" placeholder="%">
-                </ion-input>
-                <ion-button color="danger"
-                          [disabled]="p.get('nombre')?.value === currentUserName"
-                          [class.hidden-btn]="p.get('nombre')?.value === currentUserName"
-                          (click)="eliminarParticipanteDeuda(i)">
-                <ion-icon name="trash-outline"></ion-icon>
+          <ion-card-content>
+            <ion-text color="medium" class="label-participantes">
+              El participante con fondo resaltado eres tú.
+            </ion-text>
+
+            <!-- Agregar participante -->
+            <div class="add-participante-row">
+              <ion-input
+                [formControl]="nuevoParticipanteDeuda"
+                placeholder="Nombre del participante"
+                class="add-input"
+              ></ion-input>
+
+              <ion-button
+                color="success"
+                (click)="agregarParticipanteDeuda()"
+                [disabled]="!nuevoParticipanteDeuda.value?.trim()"
+              >
+                <ion-icon slot="icon-only" name="add-outline"></ion-icon>
               </ion-button>
-            </ion-item>
-          </ion-list>
-        </ng-container>
+            </div>
 
-        <ion-button expand="block" color="warning" type="submit" [disabled]="formDeuda.invalid">
-          Guardar deuda
-        </ion-button>
-      </ion-card-content>
-    </ion-card>
-  </form>
+            <!-- Lista de participantes -->
+
+            <div class="lista-participantes">
+              <div
+                class="participante-item"
+                *ngFor="let p of participantesDeuda.controls; let i = index"
+                [class.is-me]="p.get('nombre')?.value === currentUserName"
+              >
+                <!-- Nombre -->
+                <div class="nombre">
+                  <ion-label>{{ p.get('nombre')?.value }}</ion-label>
+                </div>
+
+                <!-- =================== MODO PORCENTAJE =================== -->
+                <div class="porcentaje" *ngIf="formDeuda.value.modoDivision === 'porcentaje'">
+                  <ion-input
+                    type="number"
+                    [value]="p.get('porcentaje')?.value"
+                    (ionChange)="actualizarPorcentaje(i, $event.detail.value)"
+
+                  ></ion-input>
+                  <span class="porcentaje-simbolo">%</span>
+                </div>
+
+                <!-- =================== MODO CLP =================== -->
+                <div class="monto" *ngIf="formDeuda.value.modoDivision === 'clp'">
+                  <ion-input
+                    type="number"
+                    [value]="p.get('monto')?.value"
+                    (ionChange)="actualizarMonto(i, $event.detail.value)"
+                    placeholder="CLP"
+                  ></ion-input>
+                  <span class="moneda-simbolo">$</span>
+                  
+                </div>
+
+                <!-- Eliminar -->
+                <ion-button
+                  fill="clear"
+                  size="small"
+                  class="btn-delete"
+                  (click)="eliminarParticipanteDeuda(i)"
+                  [style.visibility]="p.get('nombre')?.value === currentUserName ? 'hidden' : 'visible'"
+                >
+                  <ion-icon name="trash-outline"></ion-icon>
+                </ion-button>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+      <!-- ====================== BOTÓN GUARDAR ====================== -->
+      <ion-button expand="block" color="warning" type="submit" [disabled]="formDeuda.invalid">
+        Guardar deuda
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+</form>
+
 
   <!-- ====================== FORMULARIO OBJETIVO ====================== -->
 <form *ngIf="tipoSeleccionado.value === 'objetivo'" [formGroup]="formObjetivo" (ngSubmit)="guardarObjetivo()">
@@ -386,37 +525,106 @@
       <!-- Imagen de categoría -->
       <ion-img *ngIf="imagenAsignada" [src]="imagenAsignada" class="categoria-preview"></ion-img>
 
-      <!-- Compartido -->
-      <ion-item lines="none">
-        <ion-label>¿Compartido?</ion-label>
-        <ion-toggle formControlName="compartido" (ionChange)="objetivoCompartidoChanged()"></ion-toggle>
-      </ion-item>
+      <!-- ====================== TOGGLE COMPARTIDO ====================== -->
+<ion-item lines="none">
+  <ion-label>¿Compartido?</ion-label>
+  <ion-toggle
+    formControlName="compartido"
+    (ionChange)="objetivoCompartidoChanged()"
+  ></ion-toggle>
+</ion-item>
 
-      <!-- Participantes -->
-      <ng-container *ngIf="formObjetivo.value.compartido">
-        <ion-item>
-          <app-custom-input icon="person-add-outline" [control]="nuevoParticipanteObjetivo" type="text" label="Agregar participante"></app-custom-input>
-          <ion-button fill="clear" (click)="agregarParticipanteObjetivo()">
-            <ion-icon name="add-circle-outline"></ion-icon>
-          </ion-button>
-        </ion-item>
+<!-- ====================== TIPO DE DIVISIÓN ====================== -->
+<ion-item *ngIf="formObjetivo.value.compartido" lines="none">
+  <ion-label>Tipo de división</ion-label>
+  <ion-segment formControlName="modoDivision" mode="md">
+    <ion-segment-button value="porcentaje">
+      <ion-label>%</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="clp">
+      <ion-label>CLP</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+</ion-item>
 
-        <ion-list>
-          <ion-item *ngFor="let p of participantesObjetivo.controls; let i = index">
-            <ion-badge *ngIf="p.get('nombre')?.value === currentUserName" color="primary">Yo</ion-badge>
-            <ion-label>{{ p.get('nombre')?.value }}</ion-label>
-            <ion-input type="number"
-                       [value]="p.get('porcentaje')?.value"
-                       (ionChange)="porcentajeCambiadoObjetivo(i, $event.detail.value)"
-                       placeholder="%"></ion-input>
-            <ion-button color="danger"
-                        *ngIf="p.get('nombre')?.value !== currentUserName"
-                        (click)="eliminarParticipanteObjetivo(i)">
-              <ion-icon name="trash-outline"></ion-icon>
-            </ion-button>
-          </ion-item>
-        </ion-list>
-      </ng-container>
+<!-- ====================== PARTICIPANTES ====================== -->
+<ion-card *ngIf="formObjetivo.value.compartido" class="participantes-card objetivo-participantes">
+  <ion-card-header>
+    <ion-card-title>
+      <ion-icon name="people-outline"></ion-icon> Participantes
+    </ion-card-title>
+  </ion-card-header>
+
+  <ion-card-content>
+    <ion-text color="medium" class="label-participantes">
+      El participante con fondo resaltado eres tú.
+    </ion-text>
+
+    <!-- Agregar participante -->
+    <div class="add-participante-row">
+      <ion-input
+        [formControl]="nuevoParticipanteObjetivo"
+        placeholder="Nombre del participante"
+        class="add-input"
+      ></ion-input>
+
+      <ion-button
+        color="success"
+        (click)="agregarParticipanteObjetivo()"
+        [disabled]="!nuevoParticipanteObjetivo.value?.trim()"
+      >
+        <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+      </ion-button>
+    </div>
+
+    <!-- Lista de participantes -->
+    <div class="lista-participantes">
+      <div
+        class="participante-item"
+        *ngFor="let p of participantesObjetivo.controls; let i = index"
+        [class.is-me]="p.get('nombre')?.value === currentUserName"
+      >
+        <!-- Nombre -->
+        <div class="nombre">
+          <ion-label>{{ p.get('nombre')?.value }}</ion-label>
+        </div>
+
+        <!-- MODO PORCENTAJE -->
+        <div class="porcentaje" *ngIf="formObjetivo.value.modoDivision === 'porcentaje'">
+          <ion-input
+            type="number"
+            [value]="p.get('porcentaje')?.value"
+            (ionChange)="actualizarPorcentaje(i, $event.detail.value)"
+          ></ion-input>
+          <span class="porcentaje-simbolo">%</span>
+        </div>
+
+        <!-- MODO CLP -->
+        <div class="monto" *ngIf="formObjetivo.value.modoDivision === 'clp'">
+          <ion-input
+            type="number"
+            [value]="p.get('monto')?.value"
+            (ionChange)="actualizarMonto(i, $event.detail.value)"
+            placeholder="CLP"
+          ></ion-input>
+          <span class="moneda-simbolo">$</span>
+        </div>
+
+        <!-- Botón eliminar -->
+        <ion-button
+          fill="clear"
+          size="small"
+          class="btn-delete"
+          (click)="eliminarParticipanteObjetivo(i)"
+          [style.visibility]="p.get('nombre')?.value === currentUserName ? 'hidden' : 'visible'"
+        >
+          <ion-icon name="trash-outline"></ion-icon>
+        </ion-button>
+      </div>
+    </div>
+  </ion-card-content>
+</ion-card>
+
 
       <ion-button expand="block" color="tertiary" type="submit" [disabled]="formObjetivo.invalid">
         Guardar objetivo

@@ -238,108 +238,208 @@
   }
 
 
-/* ===================== PARTICIPANTES COMPARTIDOS ===================== */
-  .participantes-header {
-    font-size: 0.8rem;
-    color: #bdbdbd;
-    margin: 6px 4px 4px;
-    text-align: left;
-    padding-left: 4px;
+  //========================= PARTICIPANTES =========================//
+  //========================= PARTICIPANTES =========================//
+/* ===== PARTICIPANTES ===== */
+.participantes-card {
+  margin-top: 1rem;
+
+  ion-card-header {
+    border-left: 4px solid #ffca28;
   }
 
-  ion-list {
-    background: #1a1a1a;
-    border-radius: 10px;
-    padding: 0.6rem 0.5rem;
-    margin-top: 0.4rem;
-    border: 1px solid rgba(255, 255, 255, 0.04);
+  .label-participantes {
+    display: block;
+    font-size: 0.85rem;
+    opacity: 0.7;
+    margin-bottom: 0.8rem;
+    text-align: center;
+  }
 
-    ion-item {
-      --background: transparent;
+  /* ===== Agregar participante ===== */
+  .add-participante-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 1rem;
+
+    .add-input {
+      flex: 1;
+      --background: #1a1a1a;
+      --color: #f2f2f2;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding-left: 8px;
+      height: 44px; /* asegura que el input y el botón estén al mismo nivel */
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 6px 8px;
-      border-radius: 8px;
-      margin-bottom: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      box-sizing: border-box; /* evita saltos por borde */
-
-      &.yo {
-        position: relative;
-        background: rgba(0, 200, 83, 0.08);
-        border-color: rgba(0, 200, 83, 0.2);
-        box-shadow: inset 0 0 0 1px rgba(0, 200, 83, 0.15); /* visual, sin expandir */
-      }
-
-      ion-label {
-        flex: 1;
-        font-weight: 500;
-        color: #f2f2f2;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        padding-right: 10px;
-      }
-
-      ion-input {
-        --background: #252525;
-        --color: #f2f2f2;
-        --padding-start: 6px;
-        --padding-end: 6px;
-        border-radius: 6px;
-        font-size: 0.9rem;
-        width: 70px;
-        text-align: right;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        height: 34px;
-        box-sizing: border-box;
-      }
-
-      ion-button[color='danger'] {
-        --background: rgba(255, 99, 99, 0.12);
-        --background-hover: rgba(255, 99, 99, 0.22);
-        --border-radius: 8px;
-        height: 34px;
-        width: 34px;
-        min-width: 34px;
-        --padding-start: 0;
-        --padding-end: 0;
-
-        ion-icon {
-          color: #ff7070;
-          font-size: 1.1rem;
-        }
-      }
     }
-  
+
+    ion-button {
+      width: 44px;
+      height: 44px;
+      --background: #00c853;
+      --color: #fff;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 0;
+    }
+
+    ion-icon {
+      font-size: 1.4rem;
+    }
   }
 
-  /* Input de nuevo participante */
-  ion-item.add-participante {
-    --background: #1a1a1a;
-    border-radius: 10px;
-    margin-top: 0.8rem;
-    padding: 6px 10px;
+  /* ===== Lista de participantes ===== */
+  .lista-participantes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .participante-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    background: #141414;
+    padding: 10px 12px;
+    border-radius: 10px;
     border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.3s ease;
+    min-height: 48px; /* altura uniforme */
+    gap: 8px;
 
-    ion-button {
-      --color: #00c853;
-      --padding-start: 6px;
-      --padding-end: 6px;
-      ion-icon {
-        font-size: 1.4rem;
+    &.is-me {
+      background: rgba(255, 202, 40, 0.08);
+      border-color: rgba(255, 202, 40, 0.2);
+    }
+
+    .nombre {
+      flex: 2;
+      display: flex;
+      align-items: center;
+      color: #f2f2f2;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Contenedor del porcentaje */
+    .porcentaje {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      position: relative;
+      min-width: 60px;
+
+      .porcentaje-input {
+        --background: #1a1a1a;
+        --color: #f2f2f2;
+        text-align: right;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        padding-right: 18px;
+        height: 32px; /* iguala altura visual del campo numérico */
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+      }
+
+      .porcentaje-simbolo {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.85rem;
+        color: #9e9e9e;
+        line-height: 1;
       }
     }
+
+    /* Botón de eliminar */
+    .btn-delete {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 30px;
+      width: 30px;
+      margin: 0;
+      --padding-start: 0;
+      --padding-end: 0;
+
+      ion-icon {
+        color: #ff5252;
+        font-size: 1.25rem;
+      }
+
+      visibility: visible;
+    }
   }
-  ion-button.hidden-btn {
-  opacity: 0;
-  pointer-events: none;
-  visibility: hidden;
-  touch-action: none;  /* ✅ evita que al tocar genere scroll o reacomodo */
+
+
+    .monto {
+      display: flex;
+      align-items: center;
+      width: 90px;
+
+      ion-input {
+        text-align: right;
+        font-size: 0.9rem;
+      }
+
+      .porcentaje-simbolo,
+      .moneda-simbolo {
+        margin-left: 4px;
+        color: var(--ion-color-medium);
+      }
+    }
 }
-  
+
+
+/* ===== PARTICIPANTES GASTO ===== */
+.gasto-participantes {
+  ion-card-header {
+    border-left: 4px solid #d50000 !important;
+  }
+
+  .participante-item.is-me {
+    background: rgba(213, 0, 0, 0.08);
+    border-color: rgba(213, 0, 0, 0.25);
+  }
+
+  .add-participante-row ion-button {
+    --background: #d50000;
+  }
+
+  ion-icon[name='trash-outline'] {
+    color: #ff6b6b;
+  }
+}
+
+/* ===== PARTICIPANTES OBJETIVO ===== */
+.objetivo-participantes {
+  ion-card-header {
+    border-left: 4px solid #7c4dff !important;
+  }
+
+  .participante-item.is-me {
+    background: rgba(124, 77, 255, 0.08);
+    border-color: rgba(124, 77, 255, 0.25);
+  }
+
+  .add-participante-row ion-button {
+    --background: #7c4dff;
+  }
+
+  ion-icon[name='trash-outline'] {
+    color: #b388ff;
+  }
+}
+
+
 }
