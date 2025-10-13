@@ -651,14 +651,7 @@ def cancel_pin():
 #===================================================== AGREGAR MOVIMIENTOS =========================================================#
 #===================================================================================================================================#
 
-# ======================================
-# ========CATEGORÍAS USUARIOS==========
-# ======================================
-
-
-#==============================================#
 #=========== Obtener categorías ===============#
-#==============================================#
 @api.get("/users/me/categorias")
 @require_auth
 def get_categorias():
@@ -690,9 +683,8 @@ def delete_categoria(cat_id):
 
 
 
-#=====================================#
+
 #========AGREGAR MOVIMIENTOS==========#
-#=====================================#
 
 # Helper para actualizar resumen
 def actualizar_resumen(uid, año, mes, tipo, monto):
@@ -718,9 +710,9 @@ def actualizar_resumen(uid, año, mes, tipo, monto):
 def obtener_semestre(mes):
     return 1 if mes <= 6 else 2
 
-# ======================================
-# 1️⃣ AGREGAR INGRESO
-# ======================================
+
+#========= AGREGAR INGRESO ===========
+
 @api.post("/users/me/ingresos")
 @require_auth
 def add_ingreso():
@@ -737,6 +729,7 @@ def add_ingreso():
         "mes": mes,
         "semestre": semestre,
         "createdAt": firestore.SERVER_TIMESTAMP,
+        "moneda": "CLP",
     }
 
     mov_ref = (
@@ -752,9 +745,8 @@ def add_ingreso():
     return {"ok": True, "id": mov_ref.id}, 201
 
 
-# ======================================
-# 2️⃣ AGREGAR GASTO
-# ======================================
+#=========== AGREGAR GASTO =============
+
 @api.post("/users/me/gastos")
 @require_auth
 def add_gasto():
@@ -793,10 +785,8 @@ def add_gasto():
     return {"ok": True, "id": mov_ref.id}, 201
 
 
-# ======================================
-# ========== AGREGAR DEUDA =============
-# ======================================
 
+# ========== AGREGAR DEUDA =============
 @api.post("/users/me/deudas")
 @require_auth
 def add_deuda():
@@ -835,9 +825,8 @@ def add_deuda():
     return {"ok": True, "id": mov_ref.id}, 201
 
 
-# ======================================
-# 4️⃣ AGREGAR OBJETIVO
-# ======================================
+
+#=========== AGREGAR OBJETIVO =============
 @api.post("/users/me/objetivos")
 @require_auth
 def add_objetivo():

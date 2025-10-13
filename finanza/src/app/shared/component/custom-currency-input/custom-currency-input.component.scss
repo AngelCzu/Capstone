@@ -1,0 +1,38 @@
+.currency-input {
+  --background: #111;
+  --color: #fff;
+  --highlight-color-focused: var(--ion-color-success);
+  border-radius: 12px;
+  margin-top: 10px;
+  padding-left: 4px;
+  transition: all 0.2s ease-in-out;
+
+  ion-label {
+    font-size: 0.9rem;
+    color: #ccc;
+    transform: translateY(-3px);
+  }
+
+  ion-icon.input-icon {
+    font-size: 1.4rem;
+    align-self: center;
+    color: var(--ion-color-success);
+    margin-right: 4px;
+  }
+
+  ion-input {
+    font-weight: 500;
+    color: #fff;
+    padding-top: 6px;
+  }
+
+  &:focus-within {
+    box-shadow: 0 0 0 1.5px var(--ion-color-success);
+    background: #151515;
+  }
+
+  &.item-has-focus ion-label,
+  &.item-has-value ion-label {
+    color: var(--ion-color-success);
+  }
+}

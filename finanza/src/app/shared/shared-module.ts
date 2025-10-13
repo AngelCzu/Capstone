@@ -10,6 +10,9 @@ import { StorageBarComponent } from './component/storage-bar/storage-bar.compone
 import { NavbarComponent } from './component/navbar/navbar.component';
 import { ConfirmSheetComponent } from './component/confirm-sheet/confirm-sheet.component';
 import { EmailPinModalComponent } from './component/email-pin-modal/email-pin-modal.component';
+import { VisualCurrencyDirective } from '../directives/visual-currency.directive';
+import { CustomCurrencyInputComponent } from './component/custom-currency-input/custom-currency-input.component';
+
 
 
 
@@ -22,11 +25,14 @@ import { EmailPinModalComponent } from './component/email-pin-modal/email-pin-mo
     NavbarComponent,
     ConfirmSheetComponent,
     EmailPinModalComponent,
-    
+    VisualCurrencyDirective,
+    CustomCurrencyInputComponent 
+
   ],
   exports: [
     HeaderComponent,
     CustomInputComponent,
+    CustomCurrencyInputComponent ,
     LogoComponent,
     CommonModule,
     IonicModule,
@@ -36,6 +42,9 @@ import { EmailPinModalComponent } from './component/email-pin-modal/email-pin-mo
     NavbarComponent,
     ConfirmSheetComponent,
     EmailPinModalComponent,
+    VisualCurrencyDirective,
+
+
      
   ],
   imports: [
@@ -44,6 +53,7 @@ import { EmailPinModalComponent } from './component/email-pin-modal/email-pin-mo
     ReactiveFormsModule,
     FormsModule,
     RouterLink,
+    
     
     
     
