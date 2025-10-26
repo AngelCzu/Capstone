@@ -39,7 +39,7 @@ export class AgregarPage {
 // ======================================================
   formIngreso = new FormGroup({
     origen: new FormControl('', [Validators.required]),
-    monto: new FormControl(null, [Validators.required, Validators.pattern(/^[1-9]\d*$/), Validators.min(1)]),
+    monto: new FormControl(null, [Validators.required,Validators.pattern(/^[1-9]\d*$/),  Validators.min(1)]),
   });
 
   formGasto = new FormGroup({
@@ -249,13 +249,15 @@ objetivoCompartidoChanged() {
 // ======================================================
 
 async agregarCategoria() {
+  const coloresUsados = this.categoriasGasto.map(c => c.color);
   const data = await this.utilsSvc.presentGenericModal({
+    
     title: 'Agregar categoría',
     fields: [
       { name: 'nombre', label: 'Nombre de categoría', type: 'text', required: true },
-      { name: 'color', label: 'Color de categoría', type: 'color', required: true }
+      { name: 'color', label: 'Color de categoría', type: 'color', required: true, options: coloresUsados }
     ],
-    confirmText: 'Guardar categoría',
+    confirmText: 'Guardar categoría', 
     color: 'success',
     breakpoints: [0.7],
     initialBreakpoint: 0.7
@@ -403,31 +405,32 @@ obtenerFormularioPorFormArray(formArray: FormArray): FormGroup | null {
 // GUARDAR INGRESO
 async guardarIngreso() {
   if (this.formIngreso.invalid) return;
-  const loading = await this.utilsSvc.loading();
-  await loading.present();
+  console.log(this.formIngreso.value);
+  
+   const loading = await this.utilsSvc.loading();
+   await loading.present();
 
-  try {
-    const uid = this.currentUser?.uid;
-    await firstValueFrom(this.movApi.agregarIngreso(this.formIngreso.value));
+   try {
+     await firstValueFrom(this.movApi.agregarIngreso(this.formIngreso.value));
+      
+     this.utilsSvc.presentToast({
+       message: 'Ingreso guardado correctamente',
+       duration: 2000,
+       color: 'success',
+       position: 'bottom',
+     });
+     this.formIngreso.reset();
 
-    this.utilsSvc.presentToast({
-      message: 'Ingreso guardado correctamente',
-      duration: 2000,
-      color: 'success',
-      position: 'bottom',
-    });
-    this.formIngreso.reset();
-
-  } catch (error: any) {
-    this.utilsSvc.presentToast({
-      message: error.message || 'Error al guardar ingreso',
-      duration: 2500,
-      color: 'danger',
-      position: 'bottom'
-    });
-  } finally {
-    loading.dismiss();
-  }
+   } catch (error: any) {
+     this.utilsSvc.presentToast({
+       message: error.message || 'Error al guardar ingreso',
+       duration: 2500,
+       color: 'danger',
+       position: 'bottom'
+     });
+   } finally {
+     loading.dismiss();
+   }
 }
 
 // GUARDAR GASTO
@@ -593,7 +596,7 @@ private ensureCurrentUserFirstFormArray(list: FormArray) {
   const idx = list.controls.findIndex(c => c.get('nombre')?.value === me);
   if (idx === 0) return;
   if (idx > 0) {
-    const ctrl = list.at(idx);
+    const ctrl = list.at(idx); 
     list.removeAt(idx);
     list.insert(0, ctrl);
     return;
@@ -601,6 +604,7 @@ private ensureCurrentUserFirstFormArray(list: FormArray) {
   const ctrl = new FormGroup({
     nombre: new FormControl(me),
     porcentaje: new FormControl(0),
+    monto: new FormControl(0)
   });
   list.insert(0, ctrl);
   this.distribuirIgualFormArray(list);
@@ -678,7 +682,7 @@ validarTotalParticipantes() {
   const data = this.formDeuda.value;
 
   // Solo aplica si está compartido y en modo CLP
-  if (!data.compartido || data.modoDivision !== 'clp') return;
+  if (!data.compartido || data.modoDivision !== 'clp') return null;
 
   const total = data.monto || 0;
   const totalParticipantes = this.participantesDeuda.controls.reduce((acc, ctrl) => {
@@ -721,5 +725,6 @@ distribuirMontosIguales() {
     ctrl.get('monto')?.setValue(val, { emitEvent: false });
   });
 }
+
 
 }

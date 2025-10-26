@@ -24,7 +24,7 @@
           </ion-select-option>
         </ion-select>
 
-        <!-- Paleta extendida de colores -->
+        <!-- Paleta extendida de colores con bloqueo -->
         <ng-container *ngIf="field.type === 'color'">
           <div class="color-grid">
             <div
@@ -32,10 +32,20 @@
               class="color-circle"
               [style.background-color]="c.value"
               [class.selected]="form.get(field.name)?.value === c.name"
-              (click)="form.get(field.name)?.setValue(c.name)">
+              [style.opacity]="colorDisabled(c.value, field.options) ? 0.3 : 1"
+              (click)="!colorDisabled(c.value, field.options) && form.get(field.name)?.setValue(c.value)">
+              <ion-icon
+                *ngIf="form.get(field.name)?.value === c.value"
+                name="checkmark-outline">
+              </ion-icon>
+              <ion-icon
+                *ngIf="colorDisabled(c.value, field.options)"
+                name="lock-closed-outline">
+              </ion-icon>
             </div>
           </div>
         </ng-container>
+
 
         <ion-note color="danger" *ngIf="form.get(field.name)?.invalid && form.get(field.name)?.touched">
           Campo obligatorio o inválido

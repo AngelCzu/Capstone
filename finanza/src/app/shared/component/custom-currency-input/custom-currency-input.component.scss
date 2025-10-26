@@ -1,38 +1,39 @@
-.currency-input {
-  --background: #111;
-  --color: #fff;
-  --highlight-color-focused: var(--ion-color-success);
-  border-radius: 12px;
-  margin-top: 10px;
-  padding-left: 4px;
-  transition: all 0.2s ease-in-out;
+.custom-input {
+  --background: #1e2a38; // gris oscuro elegante
+  --border-radius: 10px;
+  --border-color: #2c3e50; // borde sobrio
+  --highlight-color-focused: #00c896; // tu verde corporativo
+  --padding-start: 12px;
+  --padding-end: 12px;
+  margin: 12px 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  transition: border-color 0.2s, box-shadow 0.2s;
 
-  ion-label {
-    font-size: 0.9rem;
-    color: #ccc;
-    transform: translateY(-3px);
+  ion-icon{
+    color: #8fa3b0; // gris claro profesional
+    font-size: 20px;
   }
-
-  ion-icon.input-icon {
-    font-size: 1.4rem;
-    align-self: center;
-    color: var(--ion-color-success);
-    margin-right: 4px;
-  }
-
   ion-input {
-    font-weight: 500;
-    color: #fff;
-    padding-top: 6px;
+    font-size: 15px;
+
+    --color: #e5eaf0; // texto claro
   }
 
-  &:focus-within {
-    box-shadow: 0 0 0 1.5px var(--ion-color-success);
-    background: #151515;
+  /* Estado enfocado */
+  &.item-has-focus {
+    border-color: var(--highlight-color-focused);
+    box-shadow: 0 0 0 2px rgba(0, 200, 150, 0.25);
   }
 
-  &.item-has-focus ion-label,
-  &.item-has-value ion-label {
-    color: var(--ion-color-success);
+  /* Label más ajustado (que no baje demasiado) */
+  ion-input::part(label) {
+    font-size: 13px;
+    color: #8fa3b0;
+    transform: translateY(-2px); // sube el label
+  }
+
+  ion-input:focus::part(label) {
+    color: var(--highlight-color-focused);
   }
 }

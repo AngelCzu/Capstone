@@ -1,5 +1,5 @@
 import { Component, Input, OnInit, forwardRef } from '@angular/core';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 @Component({
   selector: 'app-custom-currency-input',
@@ -18,6 +18,8 @@ export class CustomCurrencyInputComponent implements ControlValueAccessor, OnIni
   @Input() icon = 'cash-outline';
   @Input() label = 'Monto (CLP)';
   @Input() placeholder = '';
+  @Input() control!: FormControl;
+
   visualValue = '';   // valor con puntos
   rawValue = '';      // valor sin puntos
 

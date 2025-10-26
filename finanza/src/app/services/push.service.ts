@@ -17,7 +17,7 @@ async init() {
   try {
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
-      console.warn("Permiso de notificaciones no concedido");
+      // console.warn("Permiso de notificaciones no concedido");
       return;
     }
     console.log("iniciando el push.services");

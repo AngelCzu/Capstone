@@ -1,9 +1,8 @@
 import { inject, Injectable } from '@angular/core';
-import { AngularFireAuth } from '@angular/fire/compat/auth';
-import { getAuth, UserCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut,  } from 'firebase/auth';
+import { Auth,  UserCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup, signOut } from '@angular/fire/auth';
 import { User } from '../models/user.model';
-import { AngularFirestore } from '@angular/fire/compat/firestore';
-import { getFirestore, setDoc, doc, getDoc} from '@angular/fire/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
+import { Firestore, getFirestore, setDoc, doc, getDoc } from '@angular/fire/firestore';
 import { Utils } from './utils';
 
 
@@ -14,53 +13,53 @@ import { Utils } from './utils';
   providedIn: 'root'
 })
 export class Firebase {
-  auth = inject(AngularFireAuth);
-  firestore = inject(AngularFirestore);
+  auth = inject(Auth);
+  firestore = inject(Firestore);
   utilsSvc = inject(Utils);
 
 
   // ================================ Autenticación ================================
 
-  getAuth() {
-    return getAuth();
-  }
 
 
 
   //======= Iniciar sesión con correo y contraseña =======
   signIn(user: User) {
-    return signInWithEmailAndPassword(getAuth(), user.email, user.password);
+    return signInWithEmailAndPassword(this.auth, user.email, user.password);
   }
 
 
   //======= Registrar usuario =======
   signUp(user: User) : Promise<UserCredential> {
     
-    return createUserWithEmailAndPassword(getAuth(), user.email, user.password);
+    return createUserWithEmailAndPassword(this.auth, user.email, user.password);
     
   }
 
   //======= Actualizar datos del usuario =======
   updateUser(displayName: string) {
-    return updateProfile(getAuth().currentUser, { displayName });
+    return updateProfile(this.auth.currentUser, { displayName });
   } 
 
 
   //======= Enviar correo de recuperación de contraseña =======
   sendRecoverEmail(email: string) {
-    return sendPasswordResetEmail(getAuth(), email);  }
+    return sendPasswordResetEmail(this.auth, email);  }
 
 
   //======= Iniciar sesión Google =======  
   signInGoogle() {
-    return signInWithPopup(getAuth(), new GoogleAuthProvider());
+    const provider = new GoogleAuthProvider();
+    provider.addScope('profile');
+    provider.addScope('email');
+    return signInWithPopup(this.auth, provider);
   }
 
 
-  //======= Cerrar sesión =======
- async signOutAndWait(): Promise<void> {
+   //======= Cerrar sesión y esperar =======
+  async signOutAndWait(): Promise<void> {
     const waitForNull = new Promise<void>((resolve) => {
-      const unsub = onAuthStateChanged(getAuth(), (user) => {
+      const unsub = onAuthStateChanged(this.auth, (user) => {
         if (!user) {
           unsub();
           resolve();
@@ -68,13 +67,13 @@ export class Firebase {
       });
     });
 
-    await signOut(getAuth()); // dispara onAuthStateChanged(null)
-    await waitForNull;        // esperamos confirmación
+    await signOut(this.auth);
+    await waitForNull;
   }
 
-  async signOut(){
-  await signOut(getAuth())
-}
+  async signOut() {
+    await signOut(this.auth);
+  }
 
 
 

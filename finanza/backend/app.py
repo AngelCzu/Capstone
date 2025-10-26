@@ -132,25 +132,27 @@ def create_user_profile():
         }
         ref_user.set(data, merge=True)
 
-        # 🔹 Categorías base de movimientos
+        # Categorías base de movimientos
         categorias_mov = [
-            {"tipo": "movimiento", "nombre": "Comida", "icono": "🍽️", "color": "#2ecc71"},
-            {"tipo": "movimiento", "nombre": "Servicios", "icono": "💡", "color": "#3498db"},
-            {"tipo": "movimiento", "nombre": "Transporte", "icono": "🚌", "color": "#e67e22"},
-            {"tipo": "movimiento", "nombre": "Ocio / Personal", "icono": "🎮", "color": "#9b59b6"},
-            {"tipo": "movimiento", "nombre": "Salud / Educación", "icono": "🏥", "color": "#e74c3c"},
+            {"tipo": "movimiento", "nombre": "Comida", "icono": "🍽️", "color": "#2dd36f"},          # Verde - éxito
+            {"tipo": "movimiento", "nombre": "Servicios", "icono": "💡", "color": "#3880ff"},        # Azul - primario
+            {"tipo": "movimiento", "nombre": "Transporte", "icono": "🚌", "color": "#e67e22"},       # Naranja - clásico
+            {"tipo": "movimiento", "nombre": "Ocio / Personal", "icono": "🎮", "color": "#9b59b6"},  # Violeta - recreación
+            {"tipo": "movimiento", "nombre": "Salud / Educación", "icono": "🏥", "color": "#f04141"} # Rojo - alerta/gasto fuerte
+        ]   
+
+
+        # Categorías base de objetivos
+        categorias_obj = [
+            {"tipo": "objetivo", "nombre": "Vacaciones / Verano", "icono": "😎", "color": "#ffce00"},        # Amarillo - energía
+            {"tipo": "objetivo", "nombre": "Estudio / Educación", "icono": "📘", "color": "#3171e0"},       # Azul oscuro - conocimiento
+            {"tipo": "objetivo", "nombre": "Transporte / Vehículo", "icono": "🚗", "color": "#e67e22"},     # Naranja - movimiento
+            {"tipo": "objetivo", "nombre": "Hogar / Vivienda", "icono": "🏠", "color": "#27ae60"},          # Verde profundo - estabilidad
+            {"tipo": "objetivo", "nombre": "Personal / Especial", "icono": "💍", "color": "#8e44ad"},       # Púrpura - deseo/personal
+            {"tipo": "objetivo", "nombre": "Tecnología / Trabajo", "icono": "💻", "color": "#16a085"},      # Verde azulado - profesional
+            {"tipo": "objetivo", "nombre": "Viaje / Experiencia", "icono": "🧳", "color": "#d35400"}        # Naranja oscuro - aventura
         ]
 
-        # 🔹 Categorías base de objetivos
-        categorias_obj = [
-            {"tipo": "objetivo", "nombre": "Vacaciones / Verano", "icono": "😎", "color": "#f1c40f"},
-            {"tipo": "objetivo", "nombre": "Estudio / Educación", "icono": "📘", "color": "#2980b9"},
-            {"tipo": "objetivo", "nombre": "Transporte / Vehículo", "icono": "🚗", "color": "#e67e22"},
-            {"tipo": "objetivo", "nombre": "Hogar / Vivienda", "icono": "🏠", "color": "#27ae60"},
-            {"tipo": "objetivo", "nombre": "Personal / Especial", "icono": "💍", "color": "#8e44ad"},
-            {"tipo": "objetivo", "nombre": "Tecnología / Trabajo", "icono": "💻", "color": "#16a085"},
-            {"tipo": "objetivo", "nombre": "Viaje / Experiencia", "icono": "🧳", "color": "#d35400"},
-        ]
 
         batch = db.batch()
         col_ref = ref_user.collection("categorias")
@@ -651,6 +653,47 @@ def cancel_pin():
 #===================================================== AGREGAR MOVIMIENTOS =========================================================#
 #===================================================================================================================================#
 
+#========= Agregar categorias =============
+@api.post("/users/me/categorias")
+@require_auth
+def add_categoria():
+    body = request.get_json() or {}
+
+    nombre = body.get("nombre")
+    tipo = body.get("tipo", "movimiento")
+    color = body.get("color", "#e67e22")
+    icono = body.get("icono", "📦")
+
+    if not nombre:
+        return {"error": "El campo 'nombre' es obligatorio"}, 400
+
+    data = {
+        "nombre": nombre,
+        "tipo": tipo,
+        "color": color,
+        "icono": icono,
+        "createdAt": firestore.SERVER_TIMESTAMP,
+    }
+
+    cat_ref = (
+        db.collection("users")
+        .document(request.uid)
+        .collection("categorias")
+        .document()
+    )
+
+    # Agregar id al documento antes de guardarlo
+    data["id"] = cat_ref.id
+
+    # Guardar la categoría en Firestore
+    cat_ref.set(data)
+
+    # Responder igual que tus otros endpoints (sin devolver el sentinel)
+    return {"ok": True, "id": cat_ref.id}, 201
+
+
+
+
 #=========== Obtener categorías ===============#
 @api.get("/users/me/categorias")
 @require_auth
@@ -754,16 +797,25 @@ def add_gasto():
     now = datetime.utcnow()
     año, mes, semestre = now.year, now.month, obtener_semestre(now.month)
 
+    # Normalización del valor UF
+    valorUF = None
+    if body.get("moneda") == "UF":
+        try:
+            valorUF = round(float(body.get("valorUF", 0)), 2)
+        except Exception:
+            valorUF = None
+
     data = {
         "tipo": "gasto",
         "origen": body.get("origen"),
-        "monto": float(body.get("monto", 0)),        # Valor en CLP ya calculado
+        "monto": round(float(body.get("monto", 0)), 0),        # Valor en CLP ya calculado
         "montoUF": body.get("montoUF") or None,              # Solo si el gasto fue en UF
-        "valorRealUF": body.get("valorUF") or None,              # Valor de la UF usada
+        "valorUF":valorUF or None,              # Valor de la UF usada
         "moneda": body.get("moneda", "CLP"),         # "CLP" o "UF"
         "categoria": body.get("categoria"),
         "frecuencia": body.get("frecuencia", "unica"),
         "compartido": body.get("compartido", False),
+        "modoDivision": body.get("modoDivision") or None,  # agregado
         "participantes": body.get("participantes", []),
         "fecha": now.isoformat(),
         "año": año,
@@ -794,16 +846,25 @@ def add_deuda():
     now = datetime.utcnow()
     año, mes, semestre = now.year, now.month, obtener_semestre(now.month)
 
+    # Normalización del valor UF
+    valorUF = None
+    if body.get("moneda") == "UF":
+        try:
+            valorUF = round(float(body.get("valorUF", 0)), 2)
+        except Exception:
+            valorUF = None
+
     data = {
         "tipo": "deuda",
         "origen": body.get("origen"),
-        "monto": float(body.get("monto", 0)),         # Valor en CLP (calculado en el front)
+        "monto": round(float(body.get("monto", 0)), 0),         # Valor en CLP (calculado en el front)
         "montoUF": body.get("montoUF") or None,               # Solo si fue en UF
-        "valorRealUF": body.get("valorUF") or None,               # Valor de la UF usada
+        "valorUF": valorUF or None,               # Valor de la UF usada
         "moneda": body.get("moneda", "CLP"),          # "CLP" o "UF"
         "cuotas": body.get("cuotas"),                 # Número de cuotas
         "fechaPago": body.get("fechaPago"),           # Fecha de pago elegida
         "compartido": body.get("compartido", False),
+        "modoDivision": body.get("modoDivision") or None,  # agregado
         "participantes": body.get("participantes", []),
         "fecha": now.isoformat(),
         "año": año,
@@ -834,16 +895,26 @@ def add_objetivo():
     now = datetime.utcnow()
     año, mes, semestre = now.year, now.month, obtener_semestre(now.month)
 
+    # Normalización del valor UF
+    valorUF = None
+    if body.get("moneda") == "UF":
+        try:
+            valorUF = round(float(body.get("valorUF", 0)), 2)
+        except Exception:
+            valorUF = None
+
+
     data = {
         "tipo": "objetivo",
         "nombre": body.get("nombre"),
-        "monto": float(body.get("monto", 0)),          # Valor en CLP calculado por el front
+        "monto": round(float(body.get("monto", 0)), 0),          # Valor en CLP calculado por el front
         "montoUF": body.get("montoUF") or None,                # Solo si se ingresó en UF
-        "valorUF": body.get("valorUF") or None,                # Valor de la UF usada
+        "valorUF": valorUF or None,                # Valor de la UF usada
         "moneda": body.get("moneda", "CLP"),           # "CLP" o "UF"
         "categoria": body.get("categoria"),
         "tiempo": body.get("tiempo") or None,                  # Plazo del objetivo
         "compartido": body.get("compartido", False),
+        "modoDivision": body.get("modoDivision") or None,  # agregado
         "participantes": body.get("participantes", []),
         "fecha": now.isoformat(),
         "año": año,

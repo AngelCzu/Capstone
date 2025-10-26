@@ -30,42 +30,42 @@ export class GenericModalComponent implements OnInit {
 
   // 🎨 Paleta extendida de colores Ionic (27 tonos)
   ionicColorsExtended = [
-  // PRIMARY
-  { name: 'primary', value: 'var(--ion-color-primary)' },
-  { name: 'primary-shade', value: 'var(--ion-color-primary-shade)' },
-  { name: 'primary-tint', value: 'var(--ion-color-primary-tint)' },
+  // PRIMARY (azul Ionic)
+  { name: 'primary', value: '#3880ff' },
+  { name: 'primary-shade', value: '#3171e0' },
+  { name: 'primary-tint', value: '#4c8dff' },
 
-  // SECONDARY
-  { name: 'secondary', value: 'var(--ion-color-secondary)' },
-  { name: 'secondary-shade', value: 'var(--ion-color-secondary-shade)' },
-  { name: 'secondary-tint', value: 'var(--ion-color-secondary-tint)' },
+  // SECONDARY (morado claro)
+  { name: 'secondary', value: '#5260ff' },
+  { name: 'secondary-shade', value: '#4854e0' },
+  { name: 'secondary-tint', value: '#6370ff' },
 
-  // TERTIARY
-  { name: 'tertiary', value: 'var(--ion-color-tertiary)' },
-  { name: 'tertiary-shade', value: 'var(--ion-color-tertiary-shade)' },
-  { name: 'tertiary-tint', value: 'var(--ion-color-tertiary-tint)' },
+  // TERTIARY (turquesa)
+  { name: 'tertiary', value: '#2dd36f' },
+  { name: 'tertiary-shade', value: '#28ba62' },
+  { name: 'tertiary-tint', value: '#42d77d' },
 
-  // SUCCESS
-  { name: 'success', value: 'var(--ion-color-success)' },
-  { name: 'success-shade', value: 'var(--ion-color-success-shade)' },
-  { name: 'success-tint', value: 'var(--ion-color-success-tint)' },
+  // SUCCESS (verde)
+  { name: 'success', value: '#10dc60' },
+  { name: 'success-shade', value: '#0ec254' },
+  { name: 'success-tint', value: '#28e070' },
 
-  // WARNING
-  { name: 'warning', value: 'var(--ion-color-warning)' },
-  { name: 'warning-shade', value: 'var(--ion-color-warning-shade)' },
-  { name: 'warning-tint', value: 'var(--ion-color-warning-tint)' },
+  // WARNING (amarillo)
+  { name: 'warning', value: '#ffce00' },
+  { name: 'warning-shade', value: '#e0b500' },
+  { name: 'warning-tint', value: '#ffd31a' },
 
-  // DANGER
-  { name: 'danger', value: 'var(--ion-color-danger)' },
-  { name: 'danger-shade', value: 'var(--ion-color-danger-shade)' },
-  { name: 'danger-tint', value: 'var(--ion-color-danger-tint)' },
+  // DANGER (rojo)
+  { name: 'danger', value: '#f04141' },
+  { name: 'danger-shade', value: '#d33939' },
+  { name: 'danger-tint', value: '#f25454' },
 
-  // MEDIUM (neutro y gris usable)
-  { name: 'medium', value: 'var(--ion-color-medium)' },
-  { name: 'medium-shade', value: 'var(--ion-color-medium-shade)' },
-  { name: 'medium-tint', value: 'var(--ion-color-medium-tint)' },
-
+  // MEDIUM (gris neutro)
+  { name: 'medium', value: '#92949c' },
+  { name: 'medium-shade', value: '#808289' },
+  { name: 'medium-tint', value: '#9d9fa6' }
 ];
+
 
 
   constructor(
@@ -95,4 +95,19 @@ export class GenericModalComponent implements OnInit {
   cancelar() {
     this.modalCtrl.dismiss(null, 'cancel');
   }
+
+colorDisabled(colorValue: string, usados: any[] = []): boolean {
+  const normalize = (c: string) => c.toLowerCase().replace(/\s/g, '');
+
+  // Extrae los valores correctos según el tipo de datos
+  const usadosNormalizados = usados.map((u: any) => {
+    if (typeof u === 'string') return normalize(u);
+    if (u && typeof u.value === 'string') return normalize(u.value);
+    return '';
+  });
+
+  return usadosNormalizados.includes(normalize(colorValue));
+}
+
+
 }

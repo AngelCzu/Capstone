@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import {
   HttpInterceptor,
   HttpRequest,
@@ -13,8 +13,11 @@ import { Utils } from './utils';
 
 @Injectable()
 export class AuthTokenInterceptor implements HttpInterceptor {
-  constructor(private utilsSvc: Utils) {}
+  constructor() {}
 
+  // Inyeccion
+  
+  utilsSvc = inject(Utils)
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     const auth = getAuth();
     const user = auth.currentUser;

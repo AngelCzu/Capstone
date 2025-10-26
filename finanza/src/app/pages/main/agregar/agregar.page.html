@@ -56,7 +56,7 @@
         </app-custom-input>
 
         <app-custom-currency-input
-          [formControl]="formIngreso.controls.monto"
+          [control]="formIngreso.controls.monto"
           label="Monto (CLP)"
         ></app-custom-currency-input>
 
@@ -108,24 +108,21 @@
         </ion-item>
 
         <!-- Monto -->
-        <app-custom-input
+         <app-custom-currency-input
           *ngIf="formGasto.value.moneda === 'CLP'"
-          icon="cash-outline"
           [control]="formGasto.controls.monto"
-          type="number"
           label="Monto (CLP)"
-        >
-        </app-custom-input>
+        ></app-custom-currency-input>
+        
 
-        <app-custom-input
+         <app-custom-currency-input
           *ngIf="formGasto.value.moneda === 'UF'"
-          icon="stats-chart-outline"
           [control]="formGasto.controls.montoUF"
-          type="number"
-          label="Monto (UF)"
+          icon="stats-chart-outline"
+          label="Monto Total (UF)"
           (ionChange)="onCambioMoneda(formGasto)"
-        >
-        </app-custom-input>
+        ></app-custom-currency-input>
+        
 
         <!-- Previsualización CLP -->
         <ion-item
@@ -163,7 +160,7 @@
             </ion-select-option>
           </ion-select>
 
-          <!-- 🔹 Botón para agregar nueva categoría -->
+          <!-- Botón para agregar nueva categoría -->
           <ion-button
             slot="end"
             fill="clear"
@@ -342,24 +339,23 @@
         </ion-item>
 
         <!-- ====================== MONTOS ====================== -->
-        <app-custom-input
-          *ngIf="formDeuda.value.moneda === 'CLP'"
-          icon="cash-outline"
-          [control]="formDeuda.controls.monto"
-          type="number"
-          label="Monto total (CLP)"
-        >
-        </app-custom-input>
 
-        <app-custom-input
+        <app-custom-currency-input
+          *ngIf="formDeuda.value.moneda === 'CLP'"
+          [control]="formDeuda.controls.monto"
+          label="Monto (CLP)"
+        ></app-custom-currency-input>
+        
+
+         <app-custom-currency-input
           *ngIf="formDeuda.value.moneda === 'UF'"
-          icon="stats-chart-outline"
           [control]="formDeuda.controls.montoUF"
-          type="number"
-          label="Monto total (UF)"
+          icon="stats-chart-outline"
+          label="Monto Total (UF)"
           (ionChange)="onCambioMoneda(formDeuda)"
-        >
-        </app-custom-input>
+        ></app-custom-currency-input>
+
+
 
         <!-- Previsualización CLP -->
         <ion-item
@@ -548,25 +544,23 @@
         </ion-item>
 
         <!-- Monto -->
-        <app-custom-input
+        <app-custom-currency-input
           *ngIf="formObjetivo.value.moneda === 'CLP'"
-          icon="cash-outline"
           [control]="formObjetivo.controls.monto"
-          type="number"
-          label="Monto meta (CLP)"
-          
-        >
-        </app-custom-input>
+          label="Monto (CLP)"
+        ></app-custom-currency-input>
+        
 
-        <app-custom-input
+         <app-custom-currency-input
           *ngIf="formObjetivo.value.moneda === 'UF'"
-          icon="stats-chart-outline"
           [control]="formObjetivo.controls.montoUF"
-          type="number"
-          label="Monto meta (UF)"
+          icon="stats-chart-outline"
+          label="Monto Total (UF)"
           (ionChange)="onCambioMoneda(formObjetivo)"
-        >
-        </app-custom-input>
+        ></app-custom-currency-input>
+
+
+       
 
         <!-- Previsualización CLP -->
         <ion-item

@@ -7,7 +7,7 @@ import { Utils } from 'src/app/services/utils';
 
 import { SharedModule } from 'src/app/shared/shared-module';
 
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { getAuth } from 'firebase/auth';
 
 import { firstValueFrom } from 'rxjs';
@@ -33,10 +33,11 @@ export class SignUpPage implements OnInit {
 
   });
 
-  constructor(private http: HttpClient) { }
+  constructor() { }
 
 
   // Inyectar servicios 
+  http = inject(HttpClient)
   firebaseSvc = inject(Firebase);
   utilsSvc = inject(Utils);
 
@@ -54,7 +55,7 @@ export class SignUpPage implements OnInit {
       this.firebaseSvc.signUp(this.form.value as User).then(async res => {
 
         const auth = getAuth();
-        const idToken = await auth.currentUser.getIdToken();
+        const idToken = await res.user.getIdToken();
 
 
 
@@ -73,7 +74,7 @@ export class SignUpPage implements OnInit {
         
         
         // actualizar usuario en firebase
-        this.setUserInfo();
+        this.setUserInfo(idToken);
 
 
       }).catch(error => {
@@ -92,23 +93,22 @@ export class SignUpPage implements OnInit {
     }
   }
 
-  async setUserInfo(): Promise<void> {
-  // Mostrar el loading
+async setUserInfo(idToken: string): Promise<void> {
   const loading = await this.utilsSvc.loading();
   await loading.present();
 
   try {
-    if (!this.form.valid) {
-      throw new Error('Formulario inválido.');
-    }
+    if (!this.form.valid) throw new Error('Formulario inválido.');
 
-    // Llamada al backend (el interceptor agregará Authorization con el token fresco)
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${idToken}`,
+      'Content-Type': 'application/json'
+    });
+
     const res = await firstValueFrom(
-      this.http.post('/api/v1/users/me', this.form.value)
+      this.http.post('/api/v1/users/me', this.form.value, { headers })
     );
 
-
-    // Feedback + navegación
     await this.utilsSvc.presentToast({
       message: 'Perfil creado correctamente.',
       duration: 2000,
@@ -125,11 +125,11 @@ export class SignUpPage implements OnInit {
 
     const message =
       err?.status === 401
-        ? 'No autorizado: tu sesión expiró o el token no es válido.'
+        ? 'No autorizado: el token no es válido o expiró.'
         : (err?.error?.message ?? 'No se pudo guardar el usuario.');
 
     await this.utilsSvc.presentToast({
-      message: message,
+      message,
       duration: 3000,
       color: 'danger',
       position: 'bottom',

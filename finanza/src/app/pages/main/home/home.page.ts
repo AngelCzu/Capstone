@@ -1,7 +1,7 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IonicModule } from '@ionic/angular';
+
 import { Firebase } from 'src/app/services/firebase';
 import { Utils } from 'src/app/services/utils';
 import { SharedModule } from 'src/app/shared/shared-module';

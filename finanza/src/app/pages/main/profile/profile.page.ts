@@ -225,8 +225,6 @@ async signOutConfirm(): Promise<void> {
     localStorage.clear();
     sessionStorage.clear();
 
-    // Redirigir directamente al login
-    this.utilsSvc.routerLink('/login');
 
   } catch (error) {
     this.utilsSvc.presentToast({

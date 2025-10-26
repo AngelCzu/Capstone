@@ -1,8 +1,5 @@
-import { HttpClient } from '@angular/common/http';
-import { Component, inject } from '@angular/core';
-import { Auth } from '@angular/fire/auth';
-import { Router } from '@angular/router';
-
+import { Component, inject, NgZone, Injector, runInInjectionContext } from '@angular/core';
+import { Auth, authState } from '@angular/fire/auth';
 import { Utils } from './services/utils';
 import { PushService } from './services/push.service';
 import { IndicadoresService } from './services/indicadores.service';
@@ -15,33 +12,34 @@ import { IndicadoresService } from './services/indicadores.service';
 })
 export class AppComponent {
   private auth = inject(Auth);
+  private injector = inject(Injector);
+  private ngZone = inject(NgZone);
   utilsSvc = inject(Utils);
-  pushService =  inject(PushService);
+  pushService = inject(PushService);
   indicadoresSvc = inject(IndicadoresService);
-  constructor() { }
 
+  constructor() {}
 
-ngOnInit(): void {
+  ngOnInit(): void {
+    this.precargarUF();
 
-  this.precargarUF(); // precarga UF al iniciar la app
-  
-  this.auth.onAuthStateChanged(async (user) => {
-    if (user) {
-      await user.getIdToken(true); // 👈 asegura token fresco
-      this.pushService.init();
-      console.log('[APP] Sesión restaurada');
-      
-      // ya puedes llamar a /users/me o redirigir a home
-    } else {
-      console.log('[APP] No hay sesión activa');
-      this.utilsSvc.routerLink('/login');
-    }
-  });
-}
+    // ✅ Ejecutamos authState dentro de un contexto de inyección válido
+    runInInjectionContext(this.injector, () => {
+      authState(this.auth).subscribe(async (user) => {
+        this.ngZone.run(async () => {
+          if (user) {
+            await user.getIdToken(true);
+            this.pushService.init();
+            console.log('[APP] Sesión restaurada');
+          } else {
+            console.log('[APP] No hay sesión activa');
+            this.utilsSvc.routerLink('/login');
+          }
+        });
+      });
+    });
+  }
 
-  // ===========================
-  // Función separada (más limpio)
-  // ===========================
   private async precargarUF() {
     try {
       const valor = await this.indicadoresSvc.getUF();

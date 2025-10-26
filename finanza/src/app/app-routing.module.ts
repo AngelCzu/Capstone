@@ -4,10 +4,7 @@ import { noAuthGuard } from './guards/no-auth-guard';
 import { authGuard } from './guards/auth-guard';
 
 const routes: Routes = [
-  {
-    path: 'home',
-    loadChildren: () => import('./home/home.module').then( m => m.HomePageModule)
-  },
+
   {
     path: '',
     redirectTo: 'login',
