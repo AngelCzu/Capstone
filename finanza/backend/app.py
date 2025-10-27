@@ -694,9 +694,6 @@ def add_categoria():
         .document()
     )
 
-    # Agregar id al documento antes de guardarlo
-    data["id"] = cat_ref.id
-
     # Guardar la categoría en Firestore
     cat_ref.set(data)
 

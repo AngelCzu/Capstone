@@ -78,14 +78,15 @@ async obtenerDatosCompletosUsuario() {
     // 4️⃣ Separar el perfil y settings
     const { settings = {}, ...perfilSinSettings } = perfil;
 
+    localStorage.removeItem('userData'); 
+    localStorage.removeItem('userSettings'); 
+    localStorage.removeItem('userCategorias'); 
+
     // 5️⃣ Guardar por separado en localStorage
     localStorage.setItem('userData', JSON.stringify(perfilSinSettings));
     localStorage.setItem('userSettings', JSON.stringify(settings));
     localStorage.setItem('userCategorias', JSON.stringify(categorias));
 
-    console.log('✅ Perfil guardado:', perfilSinSettings);
-    console.log('✅ Settings guardados:', settings);
-    console.log('✅ Categorías guardadas:', categorias);
 
     // 6️⃣ Retornar los tres objetos combinados
     return { ...perfilSinSettings, settings, categorias };

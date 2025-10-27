@@ -3,6 +3,7 @@ import { Auth, authState } from '@angular/fire/auth';
 import { Utils } from './services/utils';
 import { PushService } from './services/push.service';
 import { IndicadoresService } from './services/indicadores.service';
+import { UserApi } from './services/apis/user.api';
 
 @Component({
   selector: 'app-root',
@@ -17,18 +18,20 @@ export class AppComponent {
   utilsSvc = inject(Utils);
   pushService = inject(PushService);
   indicadoresSvc = inject(IndicadoresService);
+  userApi = inject(UserApi);
 
   constructor() {}
 
   ngOnInit(): void {
-    this.precargarUF();
 
-    // ✅ Ejecutamos authState dentro de un contexto de inyección válido
+    // Ejecutamos authState dentro de un contexto de inyección válido
     runInInjectionContext(this.injector, () => {
       authState(this.auth).subscribe(async (user) => {
         this.ngZone.run(async () => {
           if (user) {
             await user.getIdToken(true);
+            await this.indicadoresSvc.getUF();
+             await this.userApi.obtenerDatosCompletosUsuario();
             this.pushService.init();
             console.log('[APP] Sesión restaurada');
           } else {
@@ -40,12 +43,6 @@ export class AppComponent {
     });
   }
 
-  private async precargarUF() {
-    try {
-      const valor = await this.indicadoresSvc.getUF();
-      console.log('💾 UF precargada globalmente:', valor);
-    } catch (error) {
-      console.warn('⚠️ No se pudo obtener UF inicial:', error);
-    }
-  }
+
+
 }

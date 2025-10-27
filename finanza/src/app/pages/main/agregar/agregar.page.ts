@@ -291,35 +291,62 @@ objetivoCompartidoChanged() {
 // ================ FUNCIONES PARTICIPANTES ==============
 // ======================================================
 
-async agregarCategoria() {
-  const coloresUsados = this.categoriasGasto.map(c => c.color);
+async agregarCategoria(tipoCategoria: 'movimiento' | 'objetivo' = 'movimiento') {
+  // 🔹 Evita colores repetidos según el tipo
+  const coloresUsados =
+    tipoCategoria === 'movimiento'
+      ? this.categoriasGasto.map(c => c.color)
+      : this.categoriasObjetivo.map(c => c.color);
+
+  // 🔹 Abrir modal genérico
   const data = await this.utilsSvc.presentGenericModal({
-    
-    title: 'Agregar categoría',
+    title: `Agregar categoría de ${tipoCategoria}`,
     fields: [
       { name: 'nombre', label: 'Nombre de categoría', type: 'text', required: true },
       { name: 'color', label: 'Color de categoría', type: 'color', required: true, options: coloresUsados }
     ],
-    confirmText: 'Guardar categoría', 
+    confirmText: 'Guardar categoría',
     color: 'success',
     breakpoints: [0.7],
     initialBreakpoint: 0.7
   });
 
-  if (!data) return; // usuario canceló
+  if (!data) return; // Usuario canceló
 
   try {
-    const body = { ...data, tipo: 'movimiento', icono: '📦' };
-    const res: any = await firstValueFrom(this.userApi.agregarCategoria(body));
-    if (res.ok) this.cargarCategorias();
+    // 🧱 Crear nueva categoría
+    const nuevaCategoria = {
+      ...data,
+      tipo: tipoCategoria, // 👈 el tipo viene directamente del parámetro
+      icono: tipoCategoria === 'movimiento' ? '💸' : '🎯',
+      createdAt: new Date().toISOString()
+    };
 
+    // 1️⃣ Guardar en backend
+    const res: any = await firstValueFrom(this.userApi.agregarCategoria(nuevaCategoria));
+    if (!res.ok) throw new Error('No se pudo guardar en Firestore');
+
+    // 2️⃣ Actualizar localStorage
+    const stored = localStorage.getItem('userCategorias');
+    const categorias = stored ? JSON.parse(stored) : [];
+    categorias.push(nuevaCategoria);
+    localStorage.setItem('userCategorias', JSON.stringify(categorias));
+
+    // 3️⃣ Actualizar arrays locales
+    if (tipoCategoria === 'movimiento') {
+      this.categoriasGasto.push(nuevaCategoria);
+    } else {
+      this.categoriasObjetivo.push(nuevaCategoria);
+    }
+
+    // 4️⃣ Confirmar visualmente
     this.utilsSvc.presentToast({
-      message: 'Categoría agregada correctamente.',
+      message: `Categoría de ${tipoCategoria} agregada correctamente.`,
       color: 'success',
       duration: 1500
     });
-
   } catch (err) {
+    console.error('❌ Error al guardar categoría:', err);
     this.utilsSvc.presentToast({
       message: 'Error al guardar categoría',
       color: 'danger',
@@ -327,6 +354,10 @@ async agregarCategoria() {
     });
   }
 }
+
+
+
+
 
 // Getters
 get participantesGasto() { return this.formGasto.get('participantes') as FormArray; }
