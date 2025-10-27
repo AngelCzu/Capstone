@@ -591,44 +591,34 @@
         >
         </app-custom-input>
 
-        <!-- Categoría -->
+       <!-- Categoría  -->
         <ion-item>
           <ion-label>Categoría</ion-label>
           <ion-select
-            [formControl]="formObjetivo.controls.categoria"
+            formControlName="categoria"
             interface="action-sheet"
             placeholder="Seleccionar categoría"
           >
-            <ion-select-option value="verano">
-              <ion-icon
-                name="sunny-outline"
-                class="option-icon verano"
-              ></ion-icon>
-              Verano
-            </ion-select-option>
-            <ion-select-option value="estudio">
-              <ion-icon
-                name="book-outline"
-                class="option-icon estudio"
-              ></ion-icon>
-              Estudio
-            </ion-select-option>
-            <ion-select-option value="viaje">
-              <ion-icon
-                name="airplane-outline"
-                class="option-icon viaje"
-              ></ion-icon>
-              Viaje
-            </ion-select-option>
-            <ion-select-option value="ahorro">
-              <ion-icon
-                name="wallet-outline"
-                class="option-icon ahorro"
-              ></ion-icon>
-              Ahorro
+            <ion-select-option
+              *ngFor="let c of categoriasObjetivo"
+              [value]="c.nombre"
+            >
+              {{ c.icono }} {{ c.nombre }}
             </ion-select-option>
           </ion-select>
+
+          <!-- Botón para agregar nueva categoría -->
+          <ion-button
+            slot="end"
+            fill="clear"
+            color="success"
+            (click)="agregarCategoria()"
+          >
+            <ion-icon name="add-circle-outline"></ion-icon>
+          </ion-button>
         </ion-item>
+
+
 
 
 

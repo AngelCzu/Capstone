@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { User } from '../../models/user.model';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom  } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -10,8 +10,17 @@ export class UserApi {
   constructor(private http: HttpClient) {}
   private baseUrl = '/api/v1/users/me';
 
+
+//============================================= PERFIL  ============================================================//
+
+  // Crear perfil de usuario
+  createUser(data: Partial<User>) {
+    return this.http.post<{ ok: boolean; message: string }>(this.baseUrl, data);
+  }
+
+
   // Obtener perfil del usuario
-  getMe() {
+  getMe():  Observable<User> {
     return this.http.get<User>(this.baseUrl);
   }
 
@@ -20,7 +29,6 @@ export class UserApi {
     return this.http.patch<User>(this.baseUrl, data);
   }
 
-  
   // Subir foto de perfil
   uploadProfilePhoto(data: FormData) {
   return this.http.post<{ photoURL: string }>(`${this.baseUrl}/photo`, data);
@@ -37,6 +45,59 @@ export class UserApi {
       body: { token }
     });
   }
+
+// ========================================================== CATEGORIAS =========================================================
+
+  //======= Obtener Categorias =======
+  obtenerCategorias(tipo: string): Observable<{ ok: boolean; categorias: any[] }> {
+    return this.http.get<{ ok: boolean; categorias: any[] }>(
+      `${this.baseUrl}/categorias?tipo=${tipo}`
+    );
+  }
+
+  //======= Agregar Categorias =======  
+  agregarCategoria(data: any): Observable<{ ok: boolean; id: string }> {
+    return this.http.post<{ ok: boolean; id: string }>(`${this.baseUrl}/categorias`, data);
+  }
+
+
+// ========================================================== OBTENER TODO =========================================================
+
+async obtenerDatosCompletosUsuario() {
+  try {
+    // 1️⃣ Obtener perfil
+    const perfil = await firstValueFrom(this.getMe());
+
+    // 2️⃣ Obtener categorías por tipo
+    const movCats = await firstValueFrom(this.obtenerCategorias('movimiento'));
+    const objCats = await firstValueFrom(this.obtenerCategorias('objetivo'));
+
+    // 3️⃣ Combinar categorías
+    const categorias = [...movCats.categorias, ...objCats.categorias];
+
+    // 4️⃣ Separar el perfil y settings
+    const { settings = {}, ...perfilSinSettings } = perfil;
+
+    // 5️⃣ Guardar por separado en localStorage
+    localStorage.setItem('userData', JSON.stringify(perfilSinSettings));
+    localStorage.setItem('userSettings', JSON.stringify(settings));
+    localStorage.setItem('userCategorias', JSON.stringify(categorias));
+
+    console.log('✅ Perfil guardado:', perfilSinSettings);
+    console.log('✅ Settings guardados:', settings);
+    console.log('✅ Categorías guardadas:', categorias);
+
+    // 6️⃣ Retornar los tres objetos combinados
+    return { ...perfilSinSettings, settings, categorias };
+
+  } catch (error) {
+    console.error('❌ Error obteniendo datos del usuario:', error);
+    throw error;
+  }
+}
+
+
+// ========================================================== NOTIFICACIONES =========================================================
 
   // Notificación de prueba
   sendTestPush() {

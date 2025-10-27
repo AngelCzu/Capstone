@@ -609,18 +609,30 @@ def confirm_pin():
             auth.update_user(request.uid, email=target)
             db.collection("users").document(request.uid).set({"email": target}, merge=True)
         elif action == "delete-account":
-            db.collection("users").document(request.uid).delete()
+            user_ref = db.collection("users").document(request.uid)
+
+            # Borrar todas las subcolecciones del usuario
+            subcollections = user_ref.collections()
+            for sub in subcollections:
+                for doc in sub.stream():
+                    doc.reference.delete()
+
+            # Borrar el documento raíz del usuario
+            user_ref.delete()
+
+            # Eliminar el usuario de Firebase Auth
             auth.delete_user(request.uid)
+
         else:
             return {"error": "Acción no soportada"}, 400
     except Exception as e:
         return {"error": f"No se pudo completar la acción: {e}"}, 500
     finally:
         ref.delete()
-        try:
-            auth.revoke_refresh_tokens(request.uid)
-        except Exception as e:
-            print("[WARN] revoke_refresh_tokens:", e)
+       # try:
+       #     auth.revoke_refresh_tokens(request.uid)
+       # except Exception as e:
+       #     print("[WARN] revoke_refresh_tokens:", e)
 
     return {"ok": True, "action": action}, 200
 

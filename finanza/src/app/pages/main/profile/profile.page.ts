@@ -54,92 +54,161 @@ export class ProfilePage implements OnInit {
     
   }
 
-  async loadProfile() {
-    const loading = await this.utilsSvc.loading();
-    await loading.present();
-    
+async loadProfile() {
+  const loading = await this.utilsSvc.loading();
+  await loading.present();
 
-    this.userApi.getMe().subscribe({
-      next: (user) => {
-        this.form.patchValue({
-          ...user, 
-          settings: {
-            recordatoriosGastos: user.settings?.recordatoriosGastos ?? true,
-            recordatoriosPagos: user.settings?.recordatoriosPagos ?? true
-          }});
-        this.avatarUrl = user.photoURL || '';
-        loading.dismiss();
-        this.initialEmail = user.email;
-        console.log(user);
-        
+  try {
+    // 1️⃣ Intentar cargar desde localStorage
+    const storedData = localStorage.getItem('userData');
+    if (storedData) {
+      const user = JSON.parse(storedData);
+      console.log('📦 Datos cargados desde localStorage:', user);
 
-        
-        
-        
-      },
-      error: async (err) => {
-        loading.dismiss();
-        this.utilsSvc.presentToast({
-          message: `Error al cargar perfil: ${err.message}`,
-          duration: 1500,
-          color: 'danger',
-          position: 'bottom',
-          icon: 'warning-outline'
-        });
+      this.form.patchValue({
+        ...user,
+        settings: {
+          recordatoriosGastos: user.settings?.recordatoriosGastos ?? true,
+          recordatoriosPagos: user.settings?.recordatoriosPagos ?? true,
+        },
+      });
+
+      this.avatarUrl = user.photoURL || '';
+      this.initialEmail = user.email;
+      loading.dismiss();
+      return; // ⛔ no hace falta pedir al backend si ya tenemos datos
+    }
+
+    // 2️⃣ Si no hay datos locales, cargar desde backend
+    const userFromApi = await firstValueFrom(this.userApi.getMe());
+    this.form.patchValue({
+      ...userFromApi,
+      settings: {
+        recordatoriosGastos: userFromApi.settings?.recordatoriosGastos ?? true,
+        recordatoriosPagos: userFromApi.settings?.recordatoriosPagos ?? true,
       },
     });
+
+    this.avatarUrl = userFromApi.photoURL || '';
+    this.initialEmail = userFromApi.email;
+
+    // Guardar en localStorage para futuras cargas rápidas
+    localStorage.setItem('userData', JSON.stringify(userFromApi));
+
+  } catch (err: any) {
+    console.error('Error al cargar perfil:', err);
+    this.utilsSvc.presentToast({
+      message: `Error al cargar perfil: ${err.message || 'Error desconocido'}`,
+      duration: 1500,
+      color: 'danger',
+      position: 'bottom',
+      icon: 'warning-outline',
+    });
+  } finally {
+    loading.dismiss();
   }
+}
+
 
 async onSubmit() {
-  const loading = await this.utilsSvc.loading(); 
+  const loading = await this.utilsSvc.loading();
   await loading.present();
+
   try {
     const email = this.form.controls.email.value!;
     const name = this.form.controls.name.value!;
     const lastName = this.form.controls.lastName.value!;
     const photoURL = this.form.controls.photoURL.value || '';
 
-    // 1) Si cambió el correo → pedir PIN
-    if (email && email !== this.initialEmail) {
-      await firstValueFrom(this.http.post('/api/v1/users/me/pin/request', {
-        action: 'email-change',
-        target: email
-     }));
-      loading.dismiss();
-      // 👇 Usamos utilsSvc en vez de crear modal aquí
-      const pin = await this.utilsSvc.presentPinSheet({
-        email,
-        action: 'email-change',
-        title: 'Cambio de correo',
-        message: 'Introduce el código de 6 dígitos que enviamos a tu nuevo correo /n',
-        ttlSec: 300, // 5 minutos para que caduque el PIN
-        
-      });
-      
-      
-    }else {
-      // 2) Si NO cambió el email → actualizar perfil normal
-      await firstValueFrom(this.http.patch('/api/v1/users/me', { name, lastName, photoURL }));
-      await this.utilsSvc.presentToast({ 
-        message: 'Perfil actualizado', 
-        color: 'success',
-        position: 'bottom',
+    // 1️⃣ Obtener datos actuales
+    const storedUser = JSON.parse(localStorage.getItem('userData') || '{}');
+    const cambios: any = {};
+
+    if (email && email !== storedUser.email) cambios.email = email;
+    if (name && name !== storedUser.name) cambios.name = name;
+    if (lastName && lastName !== storedUser.lastName) cambios.lastName = lastName;
+    if (photoURL && photoURL !== storedUser.photoURL) cambios.photoURL = photoURL;
+
+    if (Object.keys(cambios).length === 0) {
+      await this.utilsSvc.presentToast({
+        message: 'No hay cambios para guardar',
         duration: 1500,
+        color: 'medium',
+        position: 'bottom',
       });
+      loading.dismiss();
+      return;
     }
 
-    
+    // 2️⃣ Si cambió el correo → flujo de PIN
+    if (cambios.email) {
+      await firstValueFrom(
+        this.http.post('/api/v1/users/me/pin/request', {
+          action: 'email-change',
+          target: cambios.email,
+        })
+      );
+
+      loading.dismiss();
+
+      const pin = await this.utilsSvc.presentPinSheet({
+        email: cambios.email,
+        action: 'email-change',
+        title: 'Cambio de correo',
+        message: 'Introduce el código de 6 dígitos que enviamos a tu nuevo correo',
+        ttlSec: 300,
+      });
+
+      // Actualizar email en localStorage
+      storedUser.email = cambios.email;
+      localStorage.setItem('userData', JSON.stringify(storedUser));
+
+      await this.utilsSvc.presentToast({
+        message: 'Correo actualizado correctamente',
+        duration: 2000,
+        color: 'success',
+        position: 'bottom',
+      });
+
+      return;
+    }
+
+    // 3️⃣ Actualizar perfil en Firestore
+    await firstValueFrom(this.userApi.updateProfile(cambios));
+
+    // 4️⃣ Actualizar localStorage.userData
+    const mergedUser = {
+      ...storedUser,
+      ...cambios,
+      updatedAt: new Date().toISOString(),
+    };
+    localStorage.setItem('userData', JSON.stringify(mergedUser));
+
+    await this.utilsSvc.presentToast({
+      message: 'Perfil actualizado correctamente',
+      color: 'success',
+      duration: 1500,
+      position: 'bottom',
+    });
 
   } catch (err: any) {
+    console.error('❌ Error al actualizar perfil:', err);
     await this.utilsSvc.presentToast({
-      message: err?.message || 'Error', 
-      color: 'danger', 
+      message: err?.message || 'Error al actualizar perfil',
+      color: 'danger',
       duration: 1500,
-      position:"bottom"});
+      position: 'bottom',
+    });
   } finally {
     loading.dismiss();
   }
 }
+
+
+
+
+
+
 
 
 
@@ -216,13 +285,13 @@ async signOutConfirm(): Promise<void> {
    loading.present();
   try {
     // Revocar en el backend
-    await firstValueFrom(this.http.post('/api/v1/users/me/revoke', {}));
+    //await firstValueFrom(this.http.post('/api/v1/users/me/revoke', {}));
 
     // Cerrar sesión en Firebase
     await this.firebaseSvc.signOutAndWait();
 
     // Limpiar storage local
-    localStorage.clear();
+    localStorage.removeItem('userData'); 
     sessionStorage.clear();
 
 
@@ -273,7 +342,7 @@ async deleteAccountConfirm(): Promise<void> {
       });
 
       // Limpiar storage local
-      localStorage.clear();
+      localStorage.removeItem('userData'); 
       sessionStorage.clear();
 
     
@@ -317,31 +386,39 @@ async probarNotificacion() {
     }
   }
 
-    async onToggleChange(key: 'recordatoriosGastos' | 'recordatoriosPagos', value: boolean) {
-    const loading = await this.utilsSvc.loading();
-    try {
-      await firstValueFrom(this.userApi.updateProfile({ settings: { [key]: value } as any }));
-      if (this.user) {
-        this.user = {
-          ...this.user,
-          settings: { ...(this.user.settings || {}), [key]: value }
-        };
-      }
-      this.utilsSvc.presentToast({ 
-        message:'Configuración actualizada',
-        duration: 1500
-      });
-    } catch (err) {
-      console.error('Error guardando configuración:', err);
-      this.utilsSvc.presentToast({
-        message:'No se pudo guardar la configuración',
-        duration: 1500
+async onToggleChange(key: 'recordatoriosGastos' | 'recordatoriosPagos', value: boolean) {
 
-        });
-    } finally {
-      loading.dismiss();
+
+  try {
+    // 🔹 Actualizar en Firestore mediante tu API
+    await firstValueFrom(this.userApi.updateProfile({ settings: { [key]: value } as any }));
+
+    // 🔹 Actualizar datos locales (si tenés el usuario en memoria)
+    if (this.user) {
+      this.user = {
+        ...this.user,
+        settings: { ...(this.user.settings || {}), [key]: value },
+      };
     }
+
+    // 🔹 Actualizar localStorage separado
+    const storedSettings = JSON.parse(localStorage.getItem('userSettings') || '{}');
+    const updatedSettings = { ...storedSettings, [key]: value };
+    localStorage.setItem('userSettings', JSON.stringify(updatedSettings));
+
+
+
+  } catch (err) {
+    console.error('❌ Error guardando configuración:', err);
+    this.utilsSvc.presentToast({
+      message: 'No se pudo guardar la configuración',
+      duration: 1500,
+      color: 'danger',
+      position: 'bottom',
+    });
   }
+}
+
 
 
 }

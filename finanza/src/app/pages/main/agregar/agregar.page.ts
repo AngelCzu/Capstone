@@ -103,6 +103,7 @@ export class AgregarPage {
 
   // Listado de categorías de gasto
   categoriasGasto: any[] = [];
+  categoriasObjetivo: any[] = [];
 
 
 // ======================================================
@@ -126,30 +127,72 @@ export class AgregarPage {
 
 // Obtener perfil del usuario actual
 getUserProfile() {
-  this.userApi.getMe().subscribe({
-    next: (res) => {
-      this.currentUser = res;
-      this.currentUserName = `${res.name} ${res.lastName}`;
-    },
-    error: (err) => {
-      console.error('Error al obtener perfil:', err);
-      this.currentUser = null;
+  try {
+    const storedUser = localStorage.getItem('userData');
+
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      this.currentUser = user;
+      this.currentUserName = `${user.name || ''} ${user.lastName || ''}`.trim();
+    } else {
+      // Si no hay datos locales, hacer fallback al backend
+      this.userApi.getMe().subscribe({
+        next: (res) => {
+          this.currentUser = res;
+          this.currentUserName = `${res.name} ${res.lastName}`;
+          localStorage.setItem('userData', JSON.stringify(res));
+        },
+        error: (err) => {
+          console.error('Error al obtener perfil:', err);
+          this.currentUser = null;
+        }
+      });
     }
-  });
+  } catch (err) {
+    console.error('❌ Error al cargar perfil local:', err);
+    this.currentUser = null;
+  }
 }
 
 // Cargar categorías de gasto
 async cargarCategorias() {
   try {
-    const res: any = await firstValueFrom(this.movApi.obtenerCategorias('movimiento'));
-    if (res.ok) {
-      this.categoriasGasto = res.categorias;
-      console.log('✅ Categorías cargadas:', this.categoriasGasto);
+    const storedCats = localStorage.getItem('userCategorias');
+
+    if (storedCats) {
+      const categorias = JSON.parse(storedCats);
+
+      // ✅ Separar automáticamente según tipo
+      this.categoriasGasto = categorias.filter((cat: any) => cat.tipo === 'movimiento');
+      this.categoriasObjetivo = categorias.filter((cat: any) => cat.tipo === 'objetivo');
+
+      console.log('📦 Categorías cargadas desde localStorage:');
+      console.log('➡️ Gastos:', this.categoriasGasto);
+      console.log('➡️ Objetivos:', this.categoriasObjetivo);
+      return;
     }
+
+    // 🔁 Si no hay categorías guardadas localmente, obtener ambas del backend
+    const movRes: any = await firstValueFrom(this.userApi.obtenerCategorias('movimiento'));
+    const objRes: any = await firstValueFrom(this.userApi.obtenerCategorias('objetivo'));
+
+    if (movRes.ok && objRes.ok) {
+      this.categoriasGasto = movRes.categorias;
+      this.categoriasObjetivo = objRes.categorias;
+
+      // 🔹 Guardar todas las categorías combinadas en localStorage
+      const todas = [...movRes.categorias, ...objRes.categorias];
+      localStorage.setItem('userCategorias', JSON.stringify(todas));
+
+      console.log('🌐 Categorías cargadas desde backend y guardadas localmente');
+    }
+
   } catch (err) {
-    console.error('Error cargando categorías', err);
+    console.error('❌ Error cargando categorías:', err);
   }
 }
+
+
 
 // Obtener valor UF actual (con cache localStorage)
 async obtenerValorUF() {
@@ -267,7 +310,7 @@ async agregarCategoria() {
 
   try {
     const body = { ...data, tipo: 'movimiento', icono: '📦' };
-    const res: any = await firstValueFrom(this.movApi.agregarCategoria(body));
+    const res: any = await firstValueFrom(this.userApi.agregarCategoria(body));
     if (res.ok) this.cargarCategorias();
 
     this.utilsSvc.presentToast({

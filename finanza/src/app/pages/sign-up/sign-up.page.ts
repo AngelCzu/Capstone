@@ -11,6 +11,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { getAuth } from 'firebase/auth';
 
 import { firstValueFrom } from 'rxjs';
+import { UserApi } from 'src/app/services/apis/user.api';
 
 
 @Component({
@@ -37,108 +38,76 @@ export class SignUpPage implements OnInit {
 
 
   // Inyectar servicios 
-  http = inject(HttpClient)
+  userApi = inject(UserApi)
   firebaseSvc = inject(Firebase);
   utilsSvc = inject(Utils);
 
   ngOnInit() {
   }
 
-  async submit() {
-    if (this.form.valid) {
 
-      // Mostrar el loading
-      const loading = await this.utilsSvc.loading();
-      await loading.present();
+// =============== REGISTRO DE USUARIO ===================
 
-      // Registro de usuario
-      this.firebaseSvc.signUp(this.form.value as User).then(async res => {
+async submit() {
+  if (!this.form.valid) return;
 
-        const auth = getAuth();
-        const idToken = await res.user.getIdToken();
-
-
-
-        //guardar uid en formulario
-        let uid = res.user.uid;
-        this.form.controls.uid.setValue(uid);
-
-        // por defecto el usuario no es premium
-        let premium = false;
-        this.form.controls['premium'].setValue(premium);
-
-        // por defecto la foto es vacía
-        let photoURL = '';
-        this.form.controls['photoURL'].setValue(photoURL);
-
-        
-        
-        // actualizar usuario en firebase
-        this.setUserInfo(idToken);
-
-
-      }).catch(error => {
-
-        this.utilsSvc.presentToast({
-          message: error.message,
-          duration: 2500,
-          color: 'primary',
-          position: 'bottom',
-          icon: 'alert-circle-outline'
-        });
-
-      }).finally(() => {
-        loading.dismiss();
-      });
-    }
-  }
-
-async setUserInfo(idToken: string): Promise<void> {
   const loading = await this.utilsSvc.loading();
   await loading.present();
 
   try {
-    if (!this.form.valid) throw new Error('Formulario inválido.');
+    // 1️⃣ Registrar usuario en Firebase Auth
+    const res = await this.firebaseSvc.signUp(this.form.value as User);
+    const token = await res.user.getIdToken();
 
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${idToken}`,
-      'Content-Type': 'application/json'
+    // 2️⃣ Preparar datos iniciales del perfil
+    const uid = res.user.uid;
+    const photoURL = res.user.photoURL || '';
+    const premium = false;
+
+    // 3️⃣ Completar el formulario con valores por defecto
+    this.form.patchValue({
+      uid,
+      premium,
+      photoURL
     });
 
-    const res = await firstValueFrom(
-      this.http.post('/api/v1/users/me', this.form.value, { headers })
-    );
+    // 4️⃣ Crear el perfil en backend
+    await firstValueFrom(this.userApi.createUser(this.form.value));
 
-    await this.utilsSvc.presentToast({
-      message: 'Perfil creado correctamente.',
+    // 5️⃣ Obtener todos los datos del usuario (perfil + categorías)
+    const userData = await this.userApi.obtenerDatosCompletosUsuario();
+
+    // 7️⃣ Redirigir y mostrar mensaje
+    this.utilsSvc.routerLink('/main/home');
+    this.utilsSvc.presentToast({
+      message: `Registro exitoso ${userData.name || ''}`,
       duration: 2000,
       color: 'success',
       position: 'bottom',
       icon: 'checkmark-circle-outline'
     });
 
-    this.form.reset();
-    this.utilsSvc.routerLink('/main/home');
-
-  } catch (err: any) {
-    console.error('Error guardando usuario', err);
+  } catch (error: any) {
+    console.error('❌ Error en registro:', error);
 
     const message =
-      err?.status === 401
-        ? 'No autorizado: el token no es válido o expiró.'
-        : (err?.error?.message ?? 'No se pudo guardar el usuario.');
+      error?.status === 401
+        ? 'Token inválido o expirado.'
+        : error.message || 'Error al registrar usuario.';
 
-    await this.utilsSvc.presentToast({
+    this.utilsSvc.presentToast({
       message,
-      duration: 3000,
-      color: 'danger',
+      duration: 2500,
+      color: 'primary',
       position: 'bottom',
       icon: 'alert-circle-outline'
     });
 
   } finally {
-    await loading.dismiss();
+    loading.dismiss();
+    this.form.reset();
   }
 }
+
 
 }

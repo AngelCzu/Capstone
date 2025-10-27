@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Auth,  UserCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup, signOut } from '@angular/fire/auth';
 import { User } from '../models/user.model';
-import { onAuthStateChanged } from 'firebase/auth';
+import { fetchSignInMethodsForEmail, linkWithCredential, linkWithPopup, onAuthStateChanged } from 'firebase/auth';
 import { Firestore, getFirestore, setDoc, doc, getDoc } from '@angular/fire/firestore';
 import { Utils } from './utils';
 
@@ -48,12 +48,58 @@ export class Firebase {
 
 
   //======= Iniciar sesión Google =======  
-  signInGoogle() {
+  async signInGoogle(): Promise<UserCredential> {
     const provider = new GoogleAuthProvider();
     provider.addScope('profile');
     provider.addScope('email');
-    return signInWithPopup(this.auth, provider);
+
+    try {
+      // Intento normal
+      const result = await signInWithPopup(this.auth, provider);
+      return result;
+
+    } catch (error: any) {
+      console.warn('⚠️ Google Sign-In error:', error);
+
+      // Caso: la cuenta ya existe con otro proveedor (password)
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        const email = error.customData?.email;
+        const pendingCred = GoogleAuthProvider.credentialFromError(error);
+
+        if (email && pendingCred) {
+          const methods = await fetchSignInMethodsForEmail(this.auth, email);
+
+          if (methods.includes('password')) {
+            // 🔑 Pedir contraseña al usuario
+            const pass = prompt(`Tu cuenta ${email} ya existe. Ingresá tu contraseña para vincular con Google:`);
+
+            if (!pass) throw new Error('Operación cancelada');
+
+            // Iniciar sesión con email/password
+            const emailUser = await signInWithEmailAndPassword(this.auth, email, pass);
+
+            // 🔗 Vincular credencial Google a la cuenta existente
+            const linked = await linkWithCredential(emailUser.user, pendingCred);
+            console.log('✅ Cuentas fusionadas correctamente:', linked.user);
+
+            await this.utilsSvc.presentToast({
+              message: 'Cuenta Google vinculada correctamente',
+              color: 'success',
+              duration: 2000,
+              position: 'bottom'
+            });
+
+            return linked;
+          } else {
+            throw new Error('La cuenta ya existe con otro método no compatible.');
+          }
+        }
+      }
+
+      throw error;
+    }
   }
+
 
 
    //======= Cerrar sesión y esperar =======

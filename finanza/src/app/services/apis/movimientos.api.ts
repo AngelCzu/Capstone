@@ -1,6 +1,5 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -27,14 +26,5 @@ export class MovimientosApi {
   }
 
 
-  //============================================= CATEGORIAS ============================================================//
-  obtenerCategorias(tipo: string): Observable<{ ok: boolean; categorias: any[] }> {
-    return this.http.get<{ ok: boolean; categorias: any[] }>(
-      `${this.baseUrl}/categorias?tipo=${tipo}`
-    );
-  }
 
-  agregarCategoria(data: any): Observable<{ ok: boolean; id: string }> {
-    return this.http.post<{ ok: boolean; id: string }>(`${this.baseUrl}/categorias`, data);
-  }
 }
