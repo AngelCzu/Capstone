@@ -132,26 +132,27 @@ def create_user_profile():
         }
         ref_user.set(data, merge=True)
 
-        # Categorías base de movimientos
+        # Categorías base de movimientos (usando paleta Ionic)
         categorias_mov = [
-            {"tipo": "movimiento", "nombre": "Comida", "icono": "🍽️", "color": "#2dd36f"},          # Verde - éxito
-            {"tipo": "movimiento", "nombre": "Servicios", "icono": "💡", "color": "#3880ff"},        # Azul - primario
-            {"tipo": "movimiento", "nombre": "Transporte", "icono": "🚌", "color": "#e67e22"},       # Naranja - clásico
-            {"tipo": "movimiento", "nombre": "Ocio / Personal", "icono": "🎮", "color": "#9b59b6"},  # Violeta - recreación
-            {"tipo": "movimiento", "nombre": "Salud / Educación", "icono": "🏥", "color": "#f04141"} # Rojo - alerta/gasto fuerte
-        ]   
-
-
-        # Categorías base de objetivos
-        categorias_obj = [
-            {"tipo": "objetivo", "nombre": "Vacaciones / Verano", "icono": "😎", "color": "#ffce00"},        # Amarillo - energía
-            {"tipo": "objetivo", "nombre": "Estudio / Educación", "icono": "📘", "color": "#3171e0"},       # Azul oscuro - conocimiento
-            {"tipo": "objetivo", "nombre": "Transporte / Vehículo", "icono": "🚗", "color": "#e67e22"},     # Naranja - movimiento
-            {"tipo": "objetivo", "nombre": "Hogar / Vivienda", "icono": "🏠", "color": "#27ae60"},          # Verde profundo - estabilidad
-            {"tipo": "objetivo", "nombre": "Personal / Especial", "icono": "💍", "color": "#8e44ad"},       # Púrpura - deseo/personal
-            {"tipo": "objetivo", "nombre": "Tecnología / Trabajo", "icono": "💻", "color": "#16a085"},      # Verde azulado - profesional
-            {"tipo": "objetivo", "nombre": "Viaje / Experiencia", "icono": "🧳", "color": "#d35400"}        # Naranja oscuro - aventura
+            {"tipo": "movimiento", "nombre": "Comida", "icono": "🍽️", "color": "#10dc60"},          # Success - verde
+            {"tipo": "movimiento", "nombre": "Servicios", "icono": "💡", "color": "#ffd31a"},        # Warning-tint - amarillo cálido
+            {"tipo": "movimiento", "nombre": "Transporte", "icono": "🚌", "color": "#3880ff"},       # Primary - azul puro
+            {"tipo": "movimiento", "nombre": "Ocio / Personal", "icono": "🎮", "color": "#9b59b6"},  # Violeta fuerte (fuera de Ionic pero complementario)
+            {"tipo": "movimiento", "nombre": "Salud / Educación", "icono": "🏥", "color": "#f04141"} # Danger - rojo
         ]
+
+
+        # Categorías base de objetivos (usando paleta Ionic)
+        categorias_obj = [
+            {"tipo": "objetivo", "nombre": "Vacaciones / Verano", "icono": "😎", "color": "#ffce00"},        # Warning
+            {"tipo": "objetivo", "nombre": "Estudio / Educación", "icono": "📘", "color": "#3171e0"},       # Primary-shade
+            {"tipo": "objetivo", "nombre": "Transporte / Vehículo", "icono": "🚗", "color": "#ffd31a"},     # Warning-tint
+            {"tipo": "objetivo", "nombre": "Hogar / Vivienda", "icono": "🏠", "color": "#28ba62"},          # Tertiary-shade
+            {"tipo": "objetivo", "nombre": "Personal / Especial", "icono": "💍", "color": "#4854e0"},       # Secondary-shade
+            {"tipo": "objetivo", "nombre": "Tecnología / Trabajo", "icono": "💻", "color": "#0ec254"},      # Success-shade
+            {"tipo": "objetivo", "nombre": "Viaje / Experiencia", "icono": "🧳", "color": "#f25454"}        # Danger-tint
+        ]
+
 
 
         batch = db.batch()
@@ -941,6 +942,94 @@ def add_objetivo():
     mov_ref.set(data)
 
     return {"ok": True, "id": mov_ref.id}, 201
+
+
+
+# ========== OBTENER RESUMEN MENSUAL ==========
+@api.get("/users/me/resumen")
+@require_auth
+def get_resumen_mensual():
+    """
+    Devuelve un resumen del mes actual para el usuario:
+    - Total de ingresos, gastos, deudas (solo cuotas del mes), restante.
+    - Desglose por categoría (solo de los que restan dinero).
+    """
+    try:
+        uid = request.uid
+        now = datetime.utcnow()
+        año, mes = now.year, now.month
+
+        print(f"📆 Resumen solicitado para UID={uid}, año={año}, mes={mes}")
+
+        movs_ref = db.collection("users").document(uid).collection("movimientos")
+
+        # ⚙️ Query solo de este mes y año
+        query_ref = (
+            movs_ref.where("`año`", "==", año)
+                    .where("mes", "==", mes)
+        )
+
+        docs = list(query_ref.stream())
+
+        if not docs:
+            print("⚠️ No se encontraron movimientos este mes.")
+            return {
+                "ok": True,
+                "ingresos": 0,
+                "gastos": 0,
+                "deudas": 0,
+                "restante": 0,
+                "porCategoria": {},
+            }, 200
+
+        # ========= Inicialización del resumen =========
+        resumen = {
+            "ingresos": 0,
+            "gastos": 0,
+            "deudas": 0,          # cuotas mensuales calculadas
+            "restante": 0,
+            "porCategoria": {},
+        }
+
+        # ========= Recorrer movimientos =========
+        for doc in docs:
+            data = doc.to_dict()
+            tipo = data.get("tipo")
+            monto = float(data.get("monto", 0))
+            categoria = data.get("categoria")
+
+            # 💰 Ingresos
+            if tipo == "ingreso":
+                resumen["ingresos"] += monto
+
+            # 💸 Gastos (se descuentan completos)
+            elif tipo == "gasto":
+                resumen["gastos"] += monto
+                if categoria:
+                    resumen["porCategoria"].setdefault(categoria, 0)
+                    resumen["porCategoria"][categoria] += monto
+
+            # 🧾 Deudas (solo cuota mensual)
+            elif tipo == "deuda":
+                cuotas = int(data.get("cuotas") or 1)
+                if cuotas > 0:
+                    cuota_mensual = monto / cuotas
+                else:
+                    cuota_mensual = monto
+
+                resumen["deudas"] += cuota_mensual
+
+        # ========= Calcular restante =========
+        resumen["restante"] = resumen["ingresos"] - (resumen["gastos"] + resumen["deudas"])
+
+        print(f"📊 Resumen generado → Ingresos: {resumen['ingresos']}, Gastos: {resumen['gastos']}, Deudas: {resumen['deudas']}, Restante: {resumen['restante']}")
+
+        return {"ok": True, **resumen}, 200
+
+    except Exception as e:
+        print("❌ Error obteniendo resumen:", e)
+        return {"ok": False, "error": str(e)}, 500
+
 
 
 

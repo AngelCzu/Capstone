@@ -1,106 +1,156 @@
-import { Component, ElementRef, Input, ViewChild, OnChanges, SimpleChanges, HostListener } from '@angular/core';
-
-type ExpenseSeg = { label: string; value: number; color: string; muted?: boolean };
+import { Component, OnInit, inject } from '@angular/core';
+import { Auth } from '@angular/fire/auth';
+import { Utils } from 'src/app/services/utils';
+import { HttpClient } from '@angular/common/http';
+import { UserApi } from 'src/app/services/apis/user.api';
 
 @Component({
   selector: 'app-storage-bar',
   templateUrl: './storage-bar.component.html',
   styleUrls: ['./storage-bar.component.scss'],
-  standalone: false,
+  standalone: false
 })
-export class StorageBarComponent implements OnChanges {
-  @Input() expenses: { label: string; value: number; color: string; muted?: boolean }[] = [];
-  @Input() totalIncome = 0;
-  @Input() heightPx = 28;
-  @Input() rounded = 14;
-  @Input() decimals = 2;
-  @Input() showLegend = true;
+export class StorageBarComponent implements OnInit {
+  auth = inject(Auth);
+  utilsSvc = inject(Utils);
+  http = inject(HttpClient);
+  userApi = inject(UserApi);
 
-  @ViewChild('barRef', { static: true }) barRef!: ElementRef<HTMLDivElement>;
+  ingresos = 0;
+  gastos = 0;
+  deudas = 0;
+  restante = 0;
+  porcentajeGastos = 0;
+  porcentajeDeudas = 0;
+  porcentajeOcupado = 0;
 
-  selectedIndex: number | null = null;  // clic/tap
-  hoveredIndex: number | null = null;   // hover/focus
+  categorias: { nombre: string; monto: number; color: string }[] = [];
+  categoriasUsuario: any[] = [];
 
-  centersPct: number[] = [];
-  widthsPct: number[] = [];
-  calloutLeftPx = 0;
-
-  get totalExpenses(): number {
-    return this.expenses.reduce((a, s) => a + (s.value || 0), 0);
+  async ngOnInit() {
+    await this.cargarDatosFinancieros();
   }
 
-  get usedPct(): number {
-    if (this.totalIncome <= 0) return 0;
-    return Math.min(100, (this.totalExpenses / this.totalIncome) * 100);
-  }
+async cargarDatosFinancieros() {
+  const user = this.auth.currentUser;
+  if (!user) return;
 
-  /** índice “activo” para UI (seleccionado si existe, si no el hovered) */
-  get currentIndex(): number | null {
-    return this.selectedIndex !== null ? this.selectedIndex : this.hoveredIndex;
-  }
+  try {
+    console.log('✅ Sesión activa, obteniendo resumen financiero...');
+    // 1️⃣ Traer resumen mensual desde backend Flask
+    const resumen: any = await this.http.get('/api/v1/users/me/resumen').toPromise();
 
-  private recompute(): void {
-    const income = this.totalIncome > 0 ? this.totalIncome : 1;
-    let acc = 0;
-    this.widthsPct = this.expenses.map(seg => Math.max(0, (seg.value / income) * 100));
-    this.centersPct = this.widthsPct.map(w => {
-      const c = acc + w / 2;
-      acc += w;
-      return c;
+    // 2️⃣ Obtener categorías del usuario (ya guardadas en Firestore)
+    const catMovs = await this.userApi.obtenerCategorias('movimiento').toPromise();
+    this.categoriasUsuario = catMovs?.categorias || [];
+
+    // 3️⃣ Calcular totales generales
+    this.ingresos = resumen.ingresos || 0;
+    this.gastos = resumen.gastos || 0;
+    this.deudas = resumen.deudas || 0; // ahora es el total de las cuotas mensuales
+    this.restante = resumen.restante || 0;
+    this.categorias = resumen.porCategoria || [];
+
+    const total = this.ingresos || 1;
+    const ocupados = this.gastos + this.deudas;
+
+    this.porcentajeGastos = (this.gastos / total) * 100;
+    this.porcentajeDeudas = (this.deudas / total) * 100;
+    this.porcentajeOcupado = (ocupados / total) * 100;
+
+    // 4️⃣ Generar array de categorías con color
+    this.categorias = Object.entries(resumen.porCategoria || {}).map(([nombre, monto]) => {
+      const cleanName = nombre.trim().toLowerCase();
+      const catColor =
+        this.categoriasUsuario.find(
+          c => c.nombre.trim().toLowerCase() === cleanName
+        )?.color || '#888';
+      return { nombre, monto: Number(monto), color: catColor };
     });
-    this.updateCallout();
-  }
 
-  ngOnChanges(_: SimpleChanges): void {
-    this.recompute();
-  }
+    console.log('📊 Categorías encontradas:', this.categorias);
 
-  select(i: number) {
-    this.selectedIndex = this.selectedIndex === i ? null : i;
-    this.updateCallout();
-  }
+    // 5️⃣ Crear gradiente dinámico según proporción de gasto
+    this.aplicarGradienteCategorias();
 
-  hover(i: number | null) {
-    this.hoveredIndex = i;
-    // si no hay seleccionado, mueve el callout al hovered
-    if (this.selectedIndex === null) this.updateCallout();
+  } catch (error) {
+    console.error('❌ Error al cargar resumen:', error);
+    this.utilsSvc.presentToast({
+      message: 'Error al cargar tus datos financieros',
+      duration: 3000,
+      color: 'danger'
+    });
   }
+}
 
-  updateCallout() {
-    const idx = this.currentIndex;
-    if (idx == null || !this.barRef) return;
-    const centerPct = this.centersPct[idx] ?? 0;
-    const rect = this.barRef.nativeElement.getBoundingClientRect();
-    const x = (centerPct / 100) * rect.width;
-    const pad = 8;
-    this.calloutLeftPx = Math.max(pad, Math.min(rect.width - pad, x));
-  }
+// 🎨 Generar gradiente dinámico para la barra según las categorías
+aplicarGradienteCategorias() {
+  const totalGastos = this.categorias.reduce((sum, c) => sum + c.monto, 0);
+  const totalDeudas = this.deudas || 0; // 💰 Total de deudas
+  const totalIngresos = this.ingresos || 1;
 
-  /** helpers de clase */
-  isActive(i: number) {
-    const idx = this.currentIndex;
-    return idx !== null && idx === i;
-  }
-  isDim(i: number) {
-    const idx = this.currentIndex;
-    return idx !== null && idx !== i;
-  }
-  
-  @HostListener('document:click', ['$event'])
-  handleClickOutside(event: MouseEvent) {
-    const barEl = this.barRef?.nativeElement;
-    if (!barEl) return;
+  // Total combinado para el porcentaje de ocupación
+  const totalConsumido = totalGastos + totalDeudas;
+  const porcentajeOcupado = (totalConsumido / totalIngresos) * 100;
 
-    // Si el click fue dentro de la barra o de la leyenda, no cierres
-    if (barEl.contains(event.target as Node) || 
-        (this.host.nativeElement as HTMLElement).contains(event.target as Node)) {
-      return;
+  // 🟢 Generar gradiente de colores de las categorías
+  let gradienteCategorias = '';
+  if (totalGastos > 0 || totalDeudas > 0) {
+    let acumulado = 0;
+    const stops: string[] = [];
+
+    // 🔹 Ordenamos las categorías por monto (de menor a mayor)
+    const categoriasOrdenadas = [...this.categorias].sort((a, b) => a.monto - b.monto);
+
+    // 🔹 Construimos el gradiente en proporción al total de gastos
+    categoriasOrdenadas.forEach(cat => {
+      const porcentajeCategoria = (cat.monto / totalConsumido) * 100;
+      const inicio = acumulado;
+      const fin = acumulado + porcentajeCategoria;
+      stops.push(`${cat.color} ${inicio}%`, `${cat.color} ${fin}%`);
+      acumulado = fin;
+    });
+
+    // 🔹 Si hay deudas, añadimos un bloque al final (gris rojizo)
+    if (totalDeudas > 0) {
+      const porcentajeDeudas = (totalDeudas / totalConsumido) * 100;
+      const inicio = acumulado;
+      const fin = acumulado + porcentajeDeudas;
+      stops.push(`#7e3d3d ${inicio}%`, `#7e3d3d ${fin}%`);
+      acumulado = fin;
     }
 
-    // Click fuera → limpia selección
-    this.selectedIndex = null;
+    gradienteCategorias = `linear-gradient(to top, ${stops.join(', ')})`;
+  } else {
+    gradienteCategorias = 'linear-gradient(to top, #333 0%, #1c1c1c 100%)';
   }
 
-  constructor(private host: ElementRef) {}
-  
+  // 🎯 Combinar capas: colores debajo + saldo encima desde el punto ocupado
+  const barra = document.querySelector('.storage-bar') as HTMLElement;
+  if (barra) {
+    const alturaOcupada = Math.min(porcentajeOcupado, 100);
+
+    barra.style.backgroundColor = '#1c1c1c';
+    barra.style.backgroundRepeat = 'no-repeat';
+    barra.style.backgroundPosition = 'bottom';
+    barra.style.boxShadow =
+      'inset 0 0 12px rgba(255, 255, 255, 0.08), 0 4px 15px rgba(0, 0, 0, 0.5)';
+
+    // 🟢 Inicialmente vacía
+    barra.style.backgroundSize = '100% 0%';
+    barra.style.backgroundImage = gradienteCategorias;
+
+    // 🎬 Activar animación de llenado (de abajo hacia arriba)
+    setTimeout(() => {
+      barra.style.transition = 'background-size 1.2s ease-out';
+      barra.style.backgroundSize = `100% ${alturaOcupada}%`;
+    }, 100);
+  }
+}
+
+
+
+
+
+
 }

@@ -108,6 +108,22 @@ async obtenerDatosCompletosUsuario() {
     );
   }
 
+
+
+  // ========================================================== RESUMEN MENSUAL =========================================================
+
+getResumenMensual() {
+  return this.http.get<{
+    ok: boolean;
+    ingresos: number;
+    gastos: number;
+    deudas: number;
+    restante: number;
+    porCategoria?: { nombre: string; monto: number; color: string }[];
+  }>(`${this.baseUrl}/resumen`);
+}
+
+
 }
 
 

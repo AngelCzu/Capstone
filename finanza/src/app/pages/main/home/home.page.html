@@ -2,32 +2,7 @@
 
 <ion-content class="dashboard-page" fullscreen>
 
-
-
-  <!-- Tarjeta: Donut -->
-  <div class="cream-card donut-card">
-    <div class="donut" [style.--p]="donutDeg"></div>
-    <div class="donut-center">
-      <div class="amount">{{ amount | currency:'USD':'symbol':'1.0-0' }}</div>
-    </div>
-  </div>
-
-  <!-- Tarjeta: Área + Tabs -->
-  <div class="cream-card chart-card">
-    <svg viewBox="0 0 300 120" class="area">
-      <path class="area-fill"
-            d="M0,100 C30,40 70,80 110,60 C150,40 190,110 230,70 C260,50 300,100 300,100 L300,120 L0,120 Z"/>
-      <path class="area-line"
-            d="M0,100 C30,40 70,80 110,60 C150,40 190,110 230,70 C260,50 300,100 300,100"/>
-    </svg>
-
-<ion-segment class="bottom-2131">
-  <ion-segment-button value="15D"><ion-label>15D</ion-label></ion-segment-button>
-  <ion-segment-button value="1M"><ion-label>1M</ion-label></ion-segment-button>
-  <ion-segment-button value="1Y"><ion-label>1Y</ion-label></ion-segment-button>
-</ion-segment>
-
-  </div>
+<app-storage-bar></app-storage-bar>
 
 
 </ion-content>

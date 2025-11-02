@@ -1,82 +1,45 @@
-<div class="storage-widget">
-  <div class="header">
-    <div class="title">Gastos</div>
-    <div class="subtitle">
-      <strong>{{ totalExpenses | number:'1.0-2' }} GB</strong> gastados de
-      <strong>{{ totalIncome | number:'1.0-2' }} GB</strong>
-      ({{ usedPct | number:'1.0-2' }}%)
-    </div>
+<div class="storage-bar-wrapper">
+  <!-- Encabezado tipo resumen -->
+  <div class="summary">
+    <h2>Resumen mensual</h2>
+    <p *ngIf="ingresos > 0; else noData">
+      Tienes un <strong>{{ porcentajeOcupado | number:'1.0-1' }}%</strong> consumido de
+      <strong>{{ ingresos | currency:'CLP' }}</strong> totales
+    </p>
+    <p class="available" *ngIf="ingresos > 0">
+      Saldo disponible:
+      <strong>{{ restante | currency:'CLP' }}</strong>
+    </p>
+    <ng-template #noData>
+      <p>No tienes ingresos registrados este mes.</p>
+    </ng-template>
   </div>
 
-  <div class="bar-wrapper" [style.height.px]="heightPx" [style.borderRadius.px]="rounded">
-    <div
-      #barRef
-      class="bar"
-      [style.borderRadius.px]="rounded"
-      role="listbox"
-      aria-label="Distribución de gastos"
-      (mouseleave)="hover(null)"
-      (touchend)="hover(null)"
-    >
-      <button
-        *ngFor="let seg of expenses; let i = index"
-        class="seg"
-        type="button"
-        role="option"
-        [attr.aria-selected]="selectedIndex === i"
-        [title]="seg.label + ' • ' + (seg.value | number:'1.0-2') + ' GB'"
-        [style.width.%]="widthsPct[i]"
-        [style.background]="seg.color"
-        [class.active]="isActive(i)"
-        [class.dim]="isDim(i) || seg.muted"
-        (mouseenter)="hover(i)"
-        (focus)="hover(i)"
-        (mouseleave)="hover(null)"
-        (blur)="hover(null)"
-        (click)="select(i)"
-      ></button>
-
-
-      <!-- Callout -->
-      <div
-        *ngIf="currentIndex !== null"
-        class="callout"
-        [style.left.px]="calloutLeftPx"
-        [style.bottom.px]="heightPx + 12"
-        style="transform: translateX(-50%);"
-        role="status" aria-live="polite"
-      >
-        <div class="bubble">
-          <div class="label">{{ expenses[currentIndex!].label }}</div>
-          <div class="value">{{ expenses[currentIndex!].value | number:'1.0-'+decimals }} GB</div>
-        </div>
-        <div class="arrow"></div>
-      </div>
-    </div>
-
-    <div class="track-overlay"></div>
+ <!-- Contenido principal (barra + leyendas) -->
+<div class="content">
+  <div class="storage-bar">
+    <div class="segment deudas" [style.height.%]="porcentajeDeudas"></div>
+    <div class="segment gastos" [style.height.%]="porcentajeGastos"></div>
   </div>
 
-  <!-- Leyenda sincronizada -->
-  <ul *ngIf="showLegend" class="legend">
-    <li
-      *ngFor="let seg of expenses; let i = index"
-      (mouseenter)="hover(i)" (mouseleave)="hover(null)" (click)="select(i)"
-      [class.active]="isActive(i)" [class.dim]="isDim(i) || seg.muted"
-    >
-      <span class="dot" [style.background]="seg.color"></span>
-      <span class="name">{{ seg.label }}</span>
-      <span class="amount">{{ seg.value | number:'1.0-2' }} GB</span>
-    </li>
-  </ul>
+  <div class="legend">
+    <div class="item" *ngFor="let cat of categorias">
+      <span class="dot" [ngStyle]="{ background: cat.color }"></span>
+      <span>{{ cat.nombre }}:</span>
+      <strong>{{ cat.monto | currency:'CLP' }}</strong>
+    </div>
+    <!-- 🔴 Bloque de Deudas (solo si existen) -->
+    <div class="item" *ngIf="deudas > 0">
+      <span class="dot" style="background:#7e3d3d"></span>
+      <span>Deudas:</span>
+      <strong>{{ deudas | currency:'CLP' }}</strong>
+    </div>
+
+    <div class="item" *ngIf="categorias.length === 0">
+      <span class="dot" style="background:#888"></span>
+      <span>Sin categorías registradas este mes</span>
+    </div>
+  </div>
 </div>
-<!--
-  Componente StorageBar
-  Muestra una barra de progreso con segmentos que representan gastos.
-  Permite interacción para ver detalles de cada segmento.
-  Inputs:
-    - expenses: Array de objetos { label, value, color, muted? }
-    - totalIncome: Número (total de ingresos)
-    - heightPx: Altura de la barra en píxeles (default: 24)
-    - rounded: Radio de borde en píxeles (default: 12)
-    - showLegend: Mostrar leyenda debajo (default: false)-->
+
+</div>
