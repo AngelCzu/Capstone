@@ -92,6 +92,9 @@
       gap: 6px;
     }
 
+    
+
+
     .dot {
       width: 10px;
       height: 10px;
@@ -100,5 +103,19 @@
       &.deudas { background: #42a5f5; }
     }
   }
+
+
+.item.clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.2s, background-color 0.2s;
+  border-radius: 10px;
+  padding: 4px 6px;
+
+  &:active {
+    transform: scale(0.97);
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+}
+
 }
 

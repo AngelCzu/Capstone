@@ -1,0 +1,45 @@
+<app-header 
+  [backButton]="'/main/home'" 
+  [title]="esDeuda ? 'Deudas del mes' : categoria">
+</app-header>
+
+<ion-content class="ion-padding">
+
+  <!-- 📋 Lista de movimientos -->
+  <ion-list *ngIf="movimientos.length > 0; else noData">
+
+    <ion-item *ngFor="let mov of movimientos">
+      <ion-label>
+        <h2>{{ mov.origen }}</h2>
+
+        <!-- Si es deuda, mostrar texto aclaratorio -->
+        <p *ngIf="esDeuda">
+          {{ mov.descripcion || 'Cuota mensual' }} — 
+          Total: {{ mov.monto_original | currency:'CLP':'symbol':'1.0-0' }}
+          ({{ mov.cuotas }} cuotas)
+        </p>
+
+        <!-- Si es gasto normal -->
+        <p *ngIf="!esDeuda">
+          {{ mov.fecha | date: 'dd/MM/yyyy' }}
+        </p>
+      </ion-label>
+
+      <ion-note slot="end" color="danger">
+        -{{ mov.monto | currency:'CLP':'symbol':'1.0-0' }}
+      </ion-note>
+    </ion-item>
+
+  </ion-list>
+
+  <!-- 🕳️ Sin datos -->
+  <ng-template #noData>
+    <ion-text color="medium">
+      <p *ngIf="esDeuda">No hay cuotas de deudas registradas este mes.</p>
+      <p *ngIf="!esDeuda">No hay movimientos registrados en esta categoría.</p>
+    </ion-text>
+  </ng-template>
+
+</ion-content>
+
+<app-navbar></app-navbar>

@@ -30,6 +30,10 @@ const routes: Routes = [
   {
     path: 'analizar',
     loadChildren: () => import('./analizar/analizar.module').then( m => m.AnalizarPageModule)
+  },
+  {
+    path: 'detalle-categoria',
+    loadChildren: () => import('./detalle-categoria/detalle-categoria.module').then( m => m.DetalleCategoriaPageModule)
   }
 
 ];

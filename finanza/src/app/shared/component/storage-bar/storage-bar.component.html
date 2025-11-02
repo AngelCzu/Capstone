@@ -23,17 +23,26 @@
   </div>
 
   <div class="legend">
-    <div class="item" *ngFor="let cat of categorias">
+    <div 
+      class="item clickable" 
+      *ngFor="let cat of categorias"
+      (click)="verDetalleCategoria(cat.nombre)">
       <span class="dot" [ngStyle]="{ background: cat.color }"></span>
       <span>{{ cat.nombre }}:</span>
       <strong>{{ cat.monto | currency:'CLP' }}</strong>
     </div>
+
     <!-- 🔴 Bloque de Deudas (solo si existen) -->
-    <div class="item" *ngIf="deudas > 0">
+    <div 
+      class="item clickable" 
+      *ngIf="deudas > 0"
+      (click)="verDetalleCategoria('Deudas')"
+    >
       <span class="dot" style="background:#7e3d3d"></span>
-      <span>Deudas:</span>
+      <span>Deudas (cuotas mensuales):</span>
       <strong>{{ deudas | currency:'CLP' }}</strong>
     </div>
+
 
     <div class="item" *ngIf="categorias.length === 0">
       <span class="dot" style="background:#888"></span>

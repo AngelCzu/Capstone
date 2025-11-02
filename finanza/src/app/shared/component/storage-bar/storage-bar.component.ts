@@ -4,6 +4,7 @@ import { Utils } from 'src/app/services/utils';
 import { HttpClient } from '@angular/common/http';
 import { UserApi } from 'src/app/services/apis/user.api';
 
+
 @Component({
   selector: 'app-storage-bar',
   templateUrl: './storage-bar.component.html',
@@ -150,6 +151,15 @@ aplicarGradienteCategorias() {
 
 
 
+verDetalleCategoria(nombreCategoria: string) {
+  if (!nombreCategoria) return;
+
+  // ✅ Construimos la URL con query param
+  const url = `/main/detalle-categoria?cat=${encodeURIComponent(nombreCategoria)}`;
+
+  // ✅ Navegamos usando tu helper de Utils
+  this.utilsSvc.routerLink(url);
+}
 
 
 

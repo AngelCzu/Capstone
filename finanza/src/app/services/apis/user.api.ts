@@ -124,6 +124,12 @@ getResumenMensual() {
 }
 
 
+
+obtenerPorCategoria(categoria: string) {
+  return this.http.get<any[]>(`${this.baseUrl}/movimientos?categoria=${encodeURIComponent(categoria)}`);
+}
+
+
 }
 
 

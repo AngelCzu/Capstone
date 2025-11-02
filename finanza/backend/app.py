@@ -1035,6 +1035,72 @@ def get_resumen_mensual():
 
 
 
+@api.get("/users/me/movimientos")
+@require_auth
+def obtener_movimientos_por_categoria():
+    categoria = request.args.get("categoria")
+    if not categoria:
+        return {"error": "Falta la categoría"}, 400
+
+    try:
+        uid = request.uid
+        now = datetime.utcnow()
+        año, mes = now.year, now.month
+
+        print(f"📆 Solicitando movimientos para '{categoria}' ({año}-{mes})")
+
+        movs_ref = db.collection("users").document(uid).collection("movimientos")
+        movimientos = []
+
+        # 🟥 Caso especial: deudas → tipo == "deuda"
+        if categoria.lower() == "deudas":
+            query_ref = (
+                movs_ref
+                .where("tipo", "==", "deuda")
+                .where("`año`", "==", año)
+                .where("mes", "==", mes)
+            )
+            docs = list(query_ref.stream())
+
+            for doc in docs:
+                data = doc.to_dict()
+                monto = float(data.get("monto", 0) or 0)
+                cuotas = int(data.get("cuotas") or 1)
+                cuota_mensual = monto / cuotas if cuotas > 0 else monto
+
+                movimientos.append({
+                    **data,
+                    "monto_original": monto,
+                    "monto": round(cuota_mensual, 2),
+                    "descripcion": f"Cuota mensual ({cuotas} cuotas)"
+                })
+
+        # 🟢 Caso normal: categoría → tipo == "gasto"
+        else:
+            query_ref = (
+                movs_ref
+                .where("tipo", "==", "gasto")     # 👈 esto faltaba
+                .where("categoria", "==", categoria)
+                .where("`año`", "==", año)
+                .where("mes", "==", mes)
+            )
+            docs = list(query_ref.stream())
+            movimientos = [doc.to_dict() for doc in docs]
+
+        # 🔁 Ordenar por fecha descendente
+        movimientos.sort(key=lambda x: x.get("fecha"), reverse=True)
+
+        print(f"✅ {len(movimientos)} movimientos encontrados para '{categoria}'")
+        return movimientos, 200
+
+    except Exception as e:
+        print("❌ Error en obtener_movimientos_por_categoria:", e)
+        return {"error": str(e)}, 500
+
+
+
+
+
 
 # --- Registrar blueprint ---
 app.register_blueprint(api)
