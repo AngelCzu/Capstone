@@ -268,49 +268,6 @@ onAvatarChange(event: Event) {
 }
 
 
-
-async signOutConfirm(): Promise<void> {
-  const confirmed = await this.utilsSvc.presentConfirmSheet({
-  title: 'Cerrar Sesión',
-  message: '¿Seguro que deseas cerrar sesión?',
-  confirmText: 'Cerrar Sesión',
-  cancelText: 'Cancelar',
-  color: 'danger',
-  icon: 'alert-circle-outline'
-});
-
-  if (!confirmed) return;
-
-   const loading = await this.utilsSvc.loading();
-   loading.present();
-  try {
-    // Revocar en el backend
-    //await firstValueFrom(this.http.post('/api/v1/users/me/revoke', {}));
-
-    // Cerrar sesión en Firebase
-    await this.firebaseSvc.signOutAndWait();
-
-    // Limpiar storage local
-    localStorage.removeItem('userData'); 
-    sessionStorage.clear();
-
-
-  } catch (error) {
-    this.utilsSvc.presentToast({
-      message: 'Error cerrando sesión',
-      color: 'danger',
-      position: "bottom",
-      duration: 1500
-    });
-    loading.dismiss();  
-  } finally {
-   // Cierra el loading antes del redirect
-    await loading.dismiss();
-
-    
-  }
-}
-
 async deleteAccountConfirm(): Promise<void> {
   const confirmed = await this.utilsSvc.presentConfirmSheet({
   title: 'Eliminar Cuenta',

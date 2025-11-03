@@ -1,0 +1,188 @@
+/* ===========================================================
+   MENÚ LATERAL FINANZA (FONDO #0f2733 + DESENFOQUE SUAVE)
+   =========================================================== */
+
+ion-menu {
+  --width: 280px;
+  --background: transparent; /* importante para ver el blur real */
+  backdrop-filter: blur(6px);
+}
+
+/* === BACKDROP (borroso) === */
+ion-menu::part(backdrop) {
+  background: rgba(15, 39, 51, 0.7) !important; /* tu color base con transparencia */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: backdrop-filter 0.3s ease, background 0.3s ease;
+}
+
+/* === CONTENEDOR DEL MENÚ === */
+ion-menu::part(container) {
+  border-radius: 0 20px 20px 0;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+/* === ENCABEZADO === */
+.menu-toolbar {
+  --background: #0f2733;
+  --color: #eafdf9;
+  text-align: center;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* === CONTENIDO GENERAL === */
+.menu-content {
+  --background: #0f2733;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  height: 100%;
+  color: #eafdf9;
+}
+
+/* === BLOQUE DE USUARIO === */
+/* ======== AVATAR SECCIÓN (en menú lateral) ======== */
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.avatar-section {
+  flex-shrink: 0;
+  position: relative;
+  margin-bottom: 10px;
+
+  .avatar,
+  .initials {
+    width: 85px;
+    height: 85px;
+    border-radius: 16px;
+    object-fit: cover;
+    border: 3px solid #06d6a0;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s ease;
+  }
+
+  .initials {
+    background: #06d6a0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: #fff;
+  }
+
+  &:hover .avatar,
+  &:hover .initials {
+    transform: scale(1.03);
+  }
+}
+
+/* Nombre y correo */
+.user-info h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 4px 0 2px;
+  color: #eafdf9;
+}
+
+.user-info p {
+  font-size: 13px;
+  color: #a8d4cf;
+  margin: 0;
+}
+yy
+
+/* === LISTA PRINCIPAL === */
+.menu-list,
+ion-list {
+  --background: transparent !important;
+  background: transparent !important;
+  margin-top: 10px;
+  padding: 0;
+}
+
+/* === ÍTEMS (planos, sin relieve) === */
+ion-item::part(native) {
+  background: #0f2733 !important;
+  color: #eafdf9 !important;
+  border: none !important;
+  box-shadow: none !important;
+  --inner-border-width: 0 !important;
+  --border-width: 0 !important;
+  --background-activated: rgba(11, 191, 169, 0.1);
+  --background-hover: rgba(11, 191, 169, 0.08);
+  transition: background 0.15s ease-in-out;
+}
+
+ion-item::part(native):hover {
+  background: rgba(11, 191, 169, 0.1) !important;
+}
+
+ion-item ion-label {
+  color: #eafdf9 !important;
+  font-weight: 500;
+  font-size: 15px;
+}
+
+ion-item ion-icon {
+  color: #0bbfa8 !important;
+  opacity: 0.9;
+  transition: color 0.2s ease-in-out;
+  font-size: 20px;
+  margin-right: 8px;
+}
+
+ion-item::part(container) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* === ÍTEM ACTIVO === */
+ion-item.item-active::part(native),
+ion-item.router-link-active::part(native),
+ion-item.selected::part(native) {
+  background: rgba(11, 191, 169, 0.18) !important;
+}
+
+ion-item.item-active ion-icon,
+ion-item.router-link-active ion-icon {
+  color: #14d2b8 !important;
+}
+
+ion-item.item-active ion-label,
+ion-item.router-link-active ion-label {
+  color: #ffffff !important;
+}
+
+/* === SEPARADOR VISUAL === */
+.menu-separator {
+  height: 1px;
+  margin: 15px 0;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* === SECCIÓN INFERIOR === */
+ion-list:last-of-type ion-item::part(native) {
+  background: #0f2733 !important;
+}
+
+ion-list:last-of-type ion-item ion-icon {
+  color: #98c7c0 !important;
+  opacity: 0.8;
+}
+
+ion-list:last-of-type ion-item:hover::part(native) {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+ion-list:last-of-type ion-item:hover ion-icon {
+  color: #b8e7e0 !important;
+}

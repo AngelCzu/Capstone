@@ -1,9 +1,14 @@
 import { Component, inject, NgZone, Injector, runInInjectionContext } from '@angular/core';
 import { Auth, authState } from '@angular/fire/auth';
+import { MenuController } from '@ionic/angular';
+import { Router } from '@angular/router';
 import { Utils } from './services/utils';
 import { PushService } from './services/push.service';
 import { IndicadoresService } from './services/indicadores.service';
 import { UserApi } from './services/apis/user.api';
+import { User } from './models/user.model';
+import { Firebase } from './services/firebase';
+
 
 @Component({
   selector: 'app-root',
@@ -12,28 +17,47 @@ import { UserApi } from './services/apis/user.api';
   standalone: false,
 })
 export class AppComponent {
-  private auth = inject(Auth);
-  private injector = inject(Injector);
-  private ngZone = inject(NgZone);
-  utilsSvc = inject(Utils);
-  pushService = inject(PushService);
-  indicadoresSvc = inject(IndicadoresService);
-  userApi = inject(UserApi);
+  // 🔹 Inyección de dependencias (como ya lo tienes)
+  private auth      = inject(Auth);
+  private injector  = inject(Injector);
+  private ngZone    = inject(NgZone);
+  private router    = inject(Router);
+  private menuCtrl  = inject(MenuController);
+
+  utilsSvc          = inject(Utils);
+  pushService       = inject(PushService);
+  indicadoresSvc    = inject(IndicadoresService);
+  userApi           = inject(UserApi);
+  firebaseSvc       = inject(Firebase)
+
+  // 🔹 Datos del usuario para el menú lateral
+  user: Partial<User> = {};
 
   constructor() {}
 
   ngOnInit(): void {
+    
+    // Cargar datos locales del usuario (si existen)
+    this.loadUserFromLocalStorage();
+    
 
-    // Ejecutamos authState dentro de un contexto de inyección válido
+    // Escuchar cambios de localStorage o eventos globales
+    window.addEventListener('userDataUpdated', () => this.loadUserFromLocalStorage());
+    window.addEventListener('storage', () => this.loadUserFromLocalStorage());
+
+    // Ejecutar la lógica de authState dentro del contexto de inyección
     runInInjectionContext(this.injector, () => {
       authState(this.auth).subscribe(async (user) => {
         this.ngZone.run(async () => {
           if (user) {
             await user.getIdToken(true);
             await this.indicadoresSvc.getUF();
-             await this.userApi.obtenerDatosCompletosUsuario();
+            await this.userApi.obtenerDatosCompletosUsuario();
             this.pushService.init();
             console.log('[APP] Sesión restaurada');
+
+            // 🔹 Actualizar menú cuando se restaura sesión
+            this.loadUserFromLocalStorage();
           } else {
             console.log('[APP] No hay sesión activa');
             this.utilsSvc.routerLink('/login');
@@ -43,6 +67,99 @@ export class AppComponent {
     });
   }
 
+  // ====================================================
+  // 🧠 Métodos del menú lateral
+  // ====================================================
+
+  /** Cargar los datos del usuario desde localStorage */
+  loadUserFromLocalStorage() {
+  try {
+    const stored = localStorage.getItem('userData');
+
+    if (stored) {
+      const parsed = JSON.parse(stored);
+
+      // ✅ Estructura base si faltan datos
+      this.user = {
+        name: parsed.name || 'Usuario',
+        lastName: parsed.lastName || '',
+        email: parsed.email || 'usuario@email.com',
+        photoURL: parsed.photoURL || '',
+      };
+
+    } else {
+      // ⚠️ Si no hay userData guardado
+      this.user = {
+        name: 'Usuario',
+        lastName: '',
+        email: 'usuario@email.com',
+        photoURL: 'assets/icon/favicon.png',
+      };
+    }
+
+  } catch (err) {
+    console.error('❌ Error cargando userData:', err);
+    this.user = {
+      name: 'Usuario',
+      lastName: '',
+      email: 'usuario@email.com',
+      photoURL: 'assets/icon/favicon.png',
+    };
+  }
+}
 
 
+  getInitials(name?: string, lastName?: string): string {
+    return (name?.[0] || '') + (lastName?.[0] || '');
+  }
+
+
+  /** Navegar al perfil al hacer click en el bloque de usuario */
+  async goToProfile() {
+    await this.menuCtrl.close();
+    this.router.navigate(['/main/profile']);
+  }
+
+  /** Cerrar sesión: limpia storage y redirige */
+async signOutConfirm(): Promise<void> {
+  const confirmed = await this.utilsSvc.presentConfirmSheet({
+  title: 'Cerrar Sesión',
+  message: '¿Seguro que deseas cerrar sesión?',
+  confirmText: 'Cerrar Sesión',
+  cancelText: 'Cancelar',
+  color: 'danger',
+  icon: 'alert-circle-outline'
+});
+
+  if (!confirmed) return;
+
+   const loading = await this.utilsSvc.loading();
+   loading.present();
+  try {
+    // Revocar en el backend
+    //await firstValueFrom(this.http.post('/api/v1/users/me/revoke', {}));
+
+    // Cerrar sesión en Firebase
+    await this.firebaseSvc.signOutAndWait();
+
+    // Limpiar storage local
+    localStorage.removeItem('userData'); 
+    sessionStorage.clear();
+
+
+  } catch (error) {
+    this.utilsSvc.presentToast({
+      message: 'Error cerrando sesión',
+      color: 'danger',
+      position: "bottom",
+      duration: 1500
+    });
+    loading.dismiss();  
+  } finally {
+   // Cierra el loading antes del redirect
+    await loading.dismiss();
+
+    
+  }
+}
 }
