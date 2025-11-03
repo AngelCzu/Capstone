@@ -31,7 +31,11 @@ const routes: Routes = [
   {
     path: 'detalle-categoria',
     loadChildren: () => import('./detalle-categoria/detalle-categoria.module').then( m => m.DetalleCategoriaPageModule)
+  },  {
+    path: 'historico',
+    loadChildren: () => import('./historico/historico.module').then( m => m.HistoricoPageModule)
   }
+
 
 ];
 

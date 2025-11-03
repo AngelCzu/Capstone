@@ -1,0 +1,112 @@
+.historico-page {
+  --background: rgba(3, 33, 42, 0.95);
+  color: #e9f5f5;
+  padding-bottom: 80px;
+
+  ion-content {
+    --background: rgba(3, 33, 42, 0.95);
+  }
+
+  // === Quita fondo de las tarjetas (filtros) ===
+  ion-card.filter-card {
+    background: transparent !important;
+    box-shadow: none !important;
+    margin: 8px 12px;
+    color: #e9f5f5;
+
+    ion-item {
+      --background: transparent !important;
+      --color: #e9f5f5;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 4px 6px;
+
+      ion-icon {
+        color: #00bcd4;
+      }
+    }
+
+    .filters-body {
+      background: transparent;
+      margin-top: 8px;
+      ion-item {
+        --background: transparent !important;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        margin-bottom: 10px;
+      }
+
+      ion-input,
+      ion-select,
+      ion-label {
+        color: #fff;
+      }
+
+      ion-button {
+        --background: #00bcd4;
+        color: #021a22;
+        font-weight: 600;
+        margin-top: 10px;
+      }
+    }
+  }
+
+  // === Lista de movimientos ===
+  ion-list {
+    background: transparent !important;
+  }
+
+  ion-item.mov-item {
+    --background: transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    --color: #e9f5f5;
+    align-items: center;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    ion-avatar.tipo-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.08);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      ion-icon { font-size: 20px; }
+
+      &.ingreso { color: #00e676; }
+      &.gasto { color: #ff5252; }
+      &.deuda { color: #ffb300; }
+      &.objetivo { color: #42a5f5; }
+    }
+
+    ion-label {
+      margin-left: 6px;
+      h2 { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+      p { font-size: 13px; color: #c0d6d6; }
+    }
+
+    ion-note {
+      font-weight: bold;
+      font-size: 14px;
+      margin-right: 6px;
+      width: 120px;
+    }
+
+    ion-button {
+      margin-left: 2px;
+      --padding-start: 0;
+      --padding-end: 0;
+    }
+  }
+
+  .no-data-text {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 14px;
+    color: #9fc9c9;
+  }
+}

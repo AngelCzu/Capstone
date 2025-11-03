@@ -28,7 +28,7 @@
           </ng-template>
         </div>
 
-        <h2>{{ user?.name || 'Usuario' }}</h2>
+        <h2>{{ user?.name || 'Usuario' }} {{ user?.lastName || 'Usuario'  }}</h2>
         <p>{{ user?.email || 'usuario@email.com' }}</p>
       </div>
 
@@ -40,7 +40,7 @@
           <ion-label>Inicio</ion-label>
         </ion-item>
 
-        <ion-item routerLink="/main/movimientos">
+        <ion-item routerLink="/main/historico">
           <ion-icon name="swap-horizontal-outline" slot="start"></ion-icon>
           <ion-label>Movimientos</ion-label>
         </ion-item>

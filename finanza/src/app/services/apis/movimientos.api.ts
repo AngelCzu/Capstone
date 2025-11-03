@@ -27,4 +27,17 @@ export class MovimientosApi {
 
 
 
+
+eliminarMovimiento(id: string, tipo: string) {
+  return this.http.delete<{ ok: boolean; message: string }>(`${this.baseUrl}/movimientos/${id}`);
+}
+
+
+obtenerMovimientos() {
+  return this.http.get<any[]>(`${this.baseUrl}/movimientos/historico`);
+}
+
+
+
+
 }

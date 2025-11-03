@@ -1034,7 +1034,7 @@ def get_resumen_mensual():
 
 
 
-
+# ========== OBTENER MOVIMIENTOS POR CATEGORIA (BARRA HOME) ==========
 @api.get("/users/me/movimientos")
 @require_auth
 def obtener_movimientos_por_categoria():
@@ -1098,7 +1098,100 @@ def obtener_movimientos_por_categoria():
         return {"error": str(e)}, 500
 
 
+# ===================== Movimientos Históricos =====================
+@api.get("/users/me/movimientos/historico")
+@require_auth
+def get_movimientos_historico():
+    """
+    Devuelve todos los movimientos del usuario autenticado desde la subcolección 'movimientos'.
+    """
+    try:
+        uid = request.uid
+        if not uid:
+            return jsonify({"error": "UID no proporcionado"}), 400
 
+        user_ref = db.collection("users").document(uid)
+        mov_ref = user_ref.collection("movimientos")
+
+        docs = mov_ref.stream()
+        movimientos = []
+
+        for doc in docs:
+            mov = doc.to_dict() or {}
+            mov["id"] = doc.id
+            mov["categoria"] = mov.get("categoria", "Sin categoría")
+            mov["tipo"] = mov.get("tipo", "sin-tipo")
+            mov["origen"] = mov.get("origen", "Sin origen")
+            mov["monto"] = mov.get("monto", 0)
+            mov["moneda"] = mov.get("moneda", "CLP")
+            mov["fecha"] = mov.get("fecha")
+            movimientos.append(mov)
+
+        movimientos.sort(key=lambda x: x.get("fecha") or "", reverse=True)
+        return jsonify(movimientos), 200
+
+    except Exception as e:
+        print("❌ Error en /users/me/movimientos/historico:", e)
+        return jsonify({"error": str(e)}), 500
+
+
+
+# ========== ELIMINAR MOVIMIENTO ==========
+@api.delete("/users/me/movimientos/<mov_id>")
+@require_auth
+def eliminar_movimiento(mov_id):
+    """
+    Elimina un movimiento específico (gasto, ingreso, deuda u objetivo)
+    y actualiza los valores del resumen mensual correspondiente.
+    """
+    try:
+        uid = request.uid
+        user_ref = db.collection("users").document(uid)
+        mov_ref = user_ref.collection("movimientos").document(mov_id)
+        mov_doc = mov_ref.get()
+
+        if not mov_doc.exists:
+            return {"error": "Movimiento no encontrado"}, 404
+
+        mov_data = mov_doc.to_dict()
+        tipo = mov_data.get("tipo")
+        monto = float(mov_data.get("monto", 0))
+        año = mov_data.get("año")
+        mes = mov_data.get("mes")
+
+        # Eliminar el movimiento
+        mov_ref.delete()
+
+        # Actualizar resumen (inverso)
+        resumen_ref = user_ref.collection("resumenes").document(f"{año}-{mes}")
+        resumen_doc = resumen_ref.get()
+
+        if resumen_doc.exists:
+            resumen_data = resumen_doc.to_dict()
+
+            # Ajustar según tipo
+            if tipo == "ingreso":
+                resumen_data["ingresos"] = resumen_data.get("ingresos", 0) - monto
+            elif tipo == "gasto":
+                resumen_data["gastos"] = resumen_data.get("gastos", 0) - monto
+            elif tipo == "deuda":
+                resumen_data["deudas"] = resumen_data.get("deudas", 0) - monto
+            elif tipo == "objetivo":
+                resumen_data["gastos"] = resumen_data.get("gastos", 0) - monto  # opcional: metas pueden ir como gasto
+
+            # Recalcular ahorro (ingresos - gastos - deudas)
+            ingresos = resumen_data.get("ingresos", 0)
+            gastos = resumen_data.get("gastos", 0)
+            deudas = resumen_data.get("deudas", 0)
+            resumen_data["ahorro"] = ingresos - gastos - deudas
+
+            resumen_ref.set(resumen_data, merge=True)
+
+        return {"ok": True, "message": "Movimiento eliminado y resumen actualizado"}, 200
+
+    except Exception as e:
+        print("❌ Error en eliminar_movimiento:", e)
+        return {"error": str(e)}, 500
 
 
 

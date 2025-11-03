@@ -1,0 +1,89 @@
+<app-header backButton="/main/home" title="Histórico de Movimientos"></app-header>
+
+<ion-content class="historico-page">
+
+  <!-- ======= FILTROS EXPANDIBLES ======= -->
+  <ion-card class="filter-card">
+    <ion-item (click)="toggleFiltros()" lines="none">
+      <ion-icon slot="start" [name]="filtrosAbiertos ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+      <ion-label>Filtros y búsqueda</ion-label>
+    </ion-item>
+
+    <div *ngIf="filtrosAbiertos" class="filters-body">
+      <form [formGroup]="form">
+
+        <!-- 🔍 Barra de búsqueda -->
+        <ion-item lines="none" class="search-item">
+          <ion-icon slot="start" name="search-outline"></ion-icon>
+          <ion-input
+            formControlName="busqueda"
+            placeholder="Buscar movimiento, categoría o tipo..."
+            type="text"
+            clearInput
+          ></ion-input>
+        </ion-item>
+
+        <ion-item lines="none">
+          <ion-label>Tipo</ion-label>
+          <ion-select formControlName="tipo" interface="popover">
+            <ion-select-option value="todos">Todos</ion-select-option>
+            <ion-select-option value="ingreso">Ingresos</ion-select-option>
+            <ion-select-option value="gasto">Gastos</ion-select-option>
+            <ion-select-option value="deuda">Deudas</ion-select-option>
+            <ion-select-option value="objetivo">Objetivos</ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-item lines="none">
+          <ion-label>Categoría</ion-label>
+          <ion-select formControlName="categoria" interface="popover">
+            <ion-select-option value="todas">Todas</ion-select-option>
+            <ion-select-option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-button expand="block" color="primary" (click)="aplicarFiltrosManual()">
+          <ion-icon slot="start" name="funnel-outline"></ion-icon>
+          Aplicar filtros
+        </ion-button>
+      </form>
+    </div>
+  </ion-card>
+
+  <!-- ======= LISTA DE MOVIMIENTOS ======= -->
+  <ion-list *ngIf="movimientosFiltrados.length > 0; else sinDatos">
+    <ion-item *ngFor="let mov of movimientosFiltrados" class="mov-item" lines="none">
+      <ion-avatar slot="start" class="tipo-icon" [ngClass]="mov.tipo">
+        <ion-icon [name]="getIconoTipo(mov.tipo)"></ion-icon>
+      </ion-avatar>
+
+      <ion-label>
+        <h2>{{ mov.origen }}</h2>
+        <p>
+          {{ mov.tipo | titlecase }}
+          <ng-container *ngIf="mov.categoria && mov.categoria !== 'Sin categoría'">
+            • {{ mov.categoria }}
+          </ng-container>
+          • {{ mov.fecha | date:'dd/MM/yyyy' }}
+        </p>
+
+      </ion-label>
+
+      <ion-note slot="end" [color]="mov.tipo === 'ingreso' ? 'success' : 'danger'">
+        {{ mov.tipo === 'ingreso' ? '+' : '-' }}
+        {{ mov.monto | currency:mov.moneda:'symbol':'1.0-0' }}
+      </ion-note>
+
+      <ion-button fill="clear" size="small" color="medium" slot="end" (click)="eliminarMovimiento(mov)">
+        <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+      </ion-button>
+    </ion-item>
+  </ion-list>
+
+  <ng-template #sinDatos>
+    <ion-text color="medium" class="no-data-text">
+      <p>No hay movimientos registrados.</p>
+    </ion-text>
+  </ng-template>
+
+</ion-content>
