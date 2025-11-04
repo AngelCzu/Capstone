@@ -4,16 +4,19 @@
 </app-header>
 
 <ion-content class="detalle-categoria-page">
-  <!-- 🔍 Barra de búsqueda -->
-  <ion-item lines="none" class="search-item">
-    <ion-icon slot="start" name="search-outline"></ion-icon>
-    <ion-input
-      formControlName="busqueda"
-      placeholder="Buscar movimiento, descripción u origen..."
-      type="text"
-      clearInput
-    ></ion-input>
-  </ion-item>
+   <!-- 🔍 Barra de búsqueda -->
+  <form [formGroup]="form">
+    <ion-item lines="none" class="search-item">
+      <ion-icon slot="start" name="search-outline"></ion-icon>
+      <ion-input
+        formControlName="busqueda"
+        placeholder="Buscar movimiento, categoría o tipo..."
+        type="text"
+        clearInput
+      ></ion-input>
+    </ion-item>
+  </form>
+
 
   <!-- 📋 Lista de movimientos -->
   <ion-list *ngIf="movimientos.length > 0; else noData">

@@ -114,10 +114,20 @@ export class AppComponent {
   }
 
 
-  /** Navegar al perfil al hacer click en el bloque de usuario */
+  // Navegar al perfil
   async goToProfile() {
     await this.menuCtrl.close();
     this.router.navigate(['/main/profile']);
+  }
+
+    async goToHome() {
+    await this.menuCtrl.close();
+    this.router.navigate(['/main/home']);
+  }
+
+  async goToMov() {
+    await this.menuCtrl.close();
+    this.router.navigate(['/main/historico']);
   }
 
   /** Cerrar sesión: limpia storage y redirige */
