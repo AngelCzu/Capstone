@@ -3,23 +3,35 @@
   [title]="esDeuda ? 'Deudas del mes' : categoria">
 </app-header>
 
-<ion-content class="ion-padding">
+<ion-content class="detalle-categoria-page">
+  <!-- 🔍 Barra de búsqueda -->
+  <ion-item lines="none" class="search-item">
+    <ion-icon slot="start" name="search-outline"></ion-icon>
+    <ion-input
+      formControlName="busqueda"
+      placeholder="Buscar movimiento, descripción u origen..."
+      type="text"
+      clearInput
+    ></ion-input>
+  </ion-item>
 
   <!-- 📋 Lista de movimientos -->
   <ion-list *ngIf="movimientos.length > 0; else noData">
 
-    <ion-item *ngFor="let mov of movimientos">
+    <ion-item *ngFor="let mov of movimientos" class="mov-item" lines="none">
+      <ion-avatar slot="start" class="tipo-icon">
+        <ion-icon [name]="esDeuda ? 'card-outline' : 'cart-outline'"></ion-icon>
+      </ion-avatar>
+
       <ion-label>
         <h2>{{ mov.origen }}</h2>
 
-        <!-- Si es deuda, mostrar texto aclaratorio -->
         <p *ngIf="esDeuda">
           {{ mov.descripcion || 'Cuota mensual' }} — 
           Total: {{ mov.monto_original | currency:'CLP':'symbol':'1.0-0' }}
           ({{ mov.cuotas }} cuotas)
         </p>
 
-        <!-- Si es gasto normal -->
         <p *ngIf="!esDeuda">
           {{ mov.fecha | date: 'dd/MM/yyyy' }}
         </p>
@@ -34,7 +46,7 @@
 
   <!-- 🕳️ Sin datos -->
   <ng-template #noData>
-    <ion-text color="medium">
+    <ion-text color="medium" class="no-data-text">
       <p *ngIf="esDeuda">No hay cuotas de deudas registradas este mes.</p>
       <p *ngIf="!esDeuda">No hay movimientos registrados en esta categoría.</p>
     </ion-text>
