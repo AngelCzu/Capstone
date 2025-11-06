@@ -1035,6 +1035,27 @@ def get_objetivos():
         print("Error al obtener objetivos:", e)
         return {"ok": False, "error": str(e)}, 500
 
+# ======== ACTUALIZAR OBJETIVO ========
+@api.patch("/users/me/objetivos/<obj_id>")
+@require_auth
+def update_objetivo(obj_id):
+    body = request.get_json() or {}
+    uid = request.uid
+    ref = db.collection("users").document(uid).collection("movimientos").document(obj_id)
+
+    ref.update(body)
+    return jsonify({"ok": True, "message": "Objetivo actualizado"}), 200
+
+
+# ======== ELIMINAR OBJETIVO ========
+@api.delete("/users/me/objetivos/<obj_id>")
+@require_auth
+def delete_objetivo(obj_id):
+    uid = request.uid
+    ref = db.collection("users").document(uid).collection("movimientos").document(obj_id)
+    ref.delete()
+    return jsonify({"ok": True, "message": "Objetivo eliminado"}), 200
+
 
 # ========== OBTENER RESUMEN MENSUAL ==========
 @api.get("/users/me/resumen")

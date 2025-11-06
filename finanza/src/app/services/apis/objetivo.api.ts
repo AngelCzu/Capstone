@@ -10,10 +10,27 @@ export class ObjetivoApi {
 
 
   http      = inject(HttpClient)
+
+  private baseUrl = '/api/v1/users/me';
   constructor() {}
 
-getObjetivos(): Observable<any> {
-    return this.http.get('/api/v1/users/me/objetivos');
+  // Obtener Objetivos
+  getObjetivos(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/objetivos`);
   }
   
+
+  // Actualizar un objetivo
+  updateObjetivo(id: string, data: any): Observable<{ ok: boolean; message: string }> {
+    return this.http.patch<{ ok: boolean; message: string }>(
+      `${this.baseUrl}/movimientos/${id}`,
+      data
+    );
+  }
+
+
+  // Eliminar un objetivo
+  deleteObjetivo(id: string): Observable<{ ok: boolean; message: string }> {
+    return this.http.delete<{ ok: boolean; message: string }>(`${this.baseUrl}/${id}`);
+  }
 }

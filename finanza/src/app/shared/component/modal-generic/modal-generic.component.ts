@@ -89,7 +89,8 @@ export class GenericModalComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
-    this.modalCtrl.dismiss(this.form.value);
+    this.modalCtrl.dismiss(this.form.value, 'confirm');
+
   }
 
   cancelar() {

@@ -145,3 +145,22 @@
     transform: translate(-50%, 0) scale(1);
   }
 }
+
+.acciones {
+  display: flex;
+  gap: 12px;
+  ion-icon {
+    font-size: 1.4rem;
+    color: #b7d8d8;
+    transition: 0.2s ease;
+    &:hover {
+      color: #00bcd4;
+      transform: scale(1.1);
+    }
+    &:active {
+      opacity: 0.6;
+    }
+  }
+}
+
+
