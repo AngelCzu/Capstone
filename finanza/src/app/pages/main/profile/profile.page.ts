@@ -343,38 +343,6 @@ async probarNotificacion() {
     }
   }
 
-async onToggleChange(key: 'recordatoriosGastos' | 'recordatoriosPagos', value: boolean) {
-
-
-  try {
-    // 🔹 Actualizar en Firestore mediante tu API
-    await firstValueFrom(this.userApi.updateProfile({ settings: { [key]: value } as any }));
-
-    // 🔹 Actualizar datos locales (si tenés el usuario en memoria)
-    if (this.user) {
-      this.user = {
-        ...this.user,
-        settings: { ...(this.user.settings || {}), [key]: value },
-      };
-    }
-
-    // 🔹 Actualizar localStorage separado
-    const storedSettings = JSON.parse(localStorage.getItem('userSettings') || '{}');
-    const updatedSettings = { ...storedSettings, [key]: value };
-    localStorage.setItem('userSettings', JSON.stringify(updatedSettings));
-
-
-
-  } catch (err) {
-    console.error('❌ Error guardando configuración:', err);
-    this.utilsSvc.presentToast({
-      message: 'No se pudo guardar la configuración',
-      duration: 1500,
-      color: 'danger',
-      position: 'bottom',
-    });
-  }
-}
 
 
 

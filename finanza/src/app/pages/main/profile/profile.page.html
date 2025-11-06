@@ -93,34 +93,10 @@
     </ion-button>
 
 
-
-
-    <!-- Pruebas notificaciones -->
-   
-
-    <ion-list formGroupName="settings">
-      <ion-item>
-        <ion-label>Recordatorios diarios de gastos</ion-label>
-        <ion-toggle
-          formControlName="recordatoriosGastos"
-          (ionChange)="onToggleChange('recordatoriosGastos', $event.detail.checked)">
-        </ion-toggle>
-      </ion-item>
-
-      <ion-item>
-        <ion-label>Recordatorios de pagos</ion-label>
-        <ion-toggle
-          formControlName="recordatoriosPagos"
-          (ionChange)="onToggleChange('recordatoriosPagos', $event.detail.checked)">
-        </ion-toggle>
-      </ion-item>
-    </ion-list>
-
-
   <!-- 👇 botón para probar push -->
-  <ion-button expand="block" (click)="probarNotificacion()">
+  <!-- <ion-button expand="block" (click)="probarNotificacion()">
     Probar notificación push
-  </ion-button>
+  </ion-button> -->
   </form>
 
 

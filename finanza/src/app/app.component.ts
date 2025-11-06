@@ -8,6 +8,8 @@ import { IndicadoresService } from './services/indicadores.service';
 import { UserApi } from './services/apis/user.api';
 import { User } from './models/user.model';
 import { Firebase } from './services/firebase';
+import { firstValueFrom } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 
 
 @Component({
@@ -28,10 +30,13 @@ export class AppComponent {
   pushService       = inject(PushService);
   indicadoresSvc    = inject(IndicadoresService);
   userApi           = inject(UserApi);
-  firebaseSvc       = inject(Firebase)
+  firebaseSvc       = inject(Firebase);
+  http              = inject(HttpClient)
 
   // 🔹 Datos del usuario para el menú lateral
   user: Partial<User> = {};
+  
+  
 
   constructor() {}
 
@@ -135,6 +140,11 @@ export class AppComponent {
     this.router.navigate(['/main/categorias']);
   }
 
+  async goToConfig() {
+    await this.menuCtrl.close();
+    this.router.navigate(['/main/settings']);
+  }
+
   /** Cerrar sesión: limpia storage y redirige */
 async signOutConfirm(): Promise<void> {
   const confirmed = await this.utilsSvc.presentConfirmSheet({
@@ -156,6 +166,7 @@ async signOutConfirm(): Promise<void> {
 
     // Cerrar sesión en Firebase
     await this.firebaseSvc.signOutAndWait();
+    await this.menuCtrl.close();
 
     // Limpiar storage local
     localStorage.removeItem('userData'); 
@@ -165,6 +176,64 @@ async signOutConfirm(): Promise<void> {
   } catch (error) {
     this.utilsSvc.presentToast({
       message: 'Error cerrando sesión',
+      color: 'danger',
+      position: "bottom",
+      duration: 1500
+    });
+    loading.dismiss();  
+  } finally {
+   // Cierra el loading antes del redirect
+    await loading.dismiss();
+
+    
+  }
+}
+
+// Borrar cuenta
+async deleteAccountConfirm(): Promise<void> {
+  const confirmed = await this.utilsSvc.presentConfirmSheet({
+  title: 'Eliminar Cuenta',
+  message: '¿Seguro que deseas eliminar tú cuenta? \n Sí la eliminas perderás permanentemente toda información',
+  confirmText: 'Eliminar Cuenta',
+  cancelText: 'Cancelar',
+  color: 'danger',
+  icon: 'alert-circle-outline'
+});
+
+  if (!confirmed) return;
+
+   const loading = await this.utilsSvc.loading();
+   loading.present();
+   console.log(this.user.email);
+   
+  try {
+    
+      await firstValueFrom(this.http.post('/api/v1/users/me/pin/request', {
+        action: 'delete-account'
+      }));
+      loading.dismiss();
+      // 👇 Usamos utilsSvc en vez de crear modal aquí
+      const pin = await this.utilsSvc.presentPinSheet({
+        email: this.user.email,
+        action: 'delete-account',
+        title: 'Eliminar cuenta',
+        message: 'Introduce el código de 6 dígitos que enviamos a tu correo para confirma la eliminación de la cuenta /n',
+        ttlSec: 300, // 5 minutos para que caduque el PIN
+        
+      });
+      await this.menuCtrl.close();
+      // Limpiar storage local
+      localStorage.removeItem('userData'); 
+      localStorage.removeItem('userCategorias'); 
+      localStorage.removeItem('userSettings'); 
+      sessionStorage.clear();
+
+    
+
+
+  } catch (error) {
+    this.utilsSvc.presentToast({
+      message: error.message || 'Error al borrar la cuenta',
       color: 'danger',
       position: "bottom",
       duration: 1500

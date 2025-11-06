@@ -183,11 +183,25 @@ export class CategoriasPage implements OnInit {
         loading.dismiss();
 
         if (res.ok) {
+          
+          // 🔹 Solo si el backend confirma éxito:
+          // Actualizamos la categoría en memoria local
+          this.categorias = this.categorias.map(cat =>
+            cat.id === id ? { ...cat, ...nuevosDatos } : cat
+          );
+
+          // 🔹 Guardamos en localStorage (solo tras éxito real)
+          localStorage.setItem('userCategorias', JSON.stringify(this.categorias));
+
+          // 🔹 Refrescamos la vista actual
+          this.filtrarPorTipo(this.tipoSeleccionado);
+
           this.utilsSvc.presentToast({
             message: 'Categoría actualizada correctamente',
             color: 'success',
             duration: 2000,
           });
+
           this.cargarCategorias();
         } else {
           this.utilsSvc.presentToast({
@@ -214,9 +228,7 @@ export class CategoriasPage implements OnInit {
 async agregarCategoria(tipoCategoria: 'movimiento' | 'objetivo' = 'movimiento'): Promise<void> {
   try {
     // 🔹 Evita colores repetidos según el tipo
-    const coloresUsados = this.categorias
-      .filter(c => c.tipo === tipoCategoria)
-      .map(c => c.color);
+    const coloresUsados = this.categorias.map(c => c.color);
 
     // 🔹 Abrir modal genérico usando tu utilitario (sin modificarlo)
     // ✅ Modal normal (Inline Modal)

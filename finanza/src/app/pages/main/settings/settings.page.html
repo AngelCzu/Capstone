@@ -1,0 +1,38 @@
+<app-header title="Ajustes" backButton="/main/home"></app-header>
+
+<ion-content class="settings-page ion-padding">
+
+  <ion-card class="settings-card">
+    <ion-card-header>
+      <ion-card-title>Notificaciones</ion-card-title>
+      <ion-card-subtitle>Controla tus recordatorios y avisos</ion-card-subtitle>
+    </ion-card-header>
+
+    <ion-card-content>
+      <form [formGroup]="form">
+        <ion-list formGroupName="settings" lines="inset">
+          <ion-item>
+            <ion-icon name="wallet-outline" slot="start" color="primary"></ion-icon>
+            <ion-label>Recordatorios diarios de gastos</ion-label>
+            <ion-toggle
+              slot="end"
+              formControlName="recordatoriosGastos"
+              (ionChange)="onToggleChange('recordatoriosGastos', $event.detail.checked)">
+            </ion-toggle>
+          </ion-item>
+
+          <ion-item>
+            <ion-icon name="calendar-outline" slot="start" color="tertiary"></ion-icon>
+            <ion-label>Recordatorios de pagos</ion-label>
+            <ion-toggle
+              slot="end"
+              formControlName="recordatoriosPagos"
+              (ionChange)="onToggleChange('recordatoriosPagos', $event.detail.checked)">
+            </ion-toggle>
+          </ion-item>
+        </ion-list>
+      </form>
+    </ion-card-content>
+  </ion-card>
+
+</ion-content>
