@@ -130,6 +130,11 @@ export class AppComponent {
     this.router.navigate(['/main/historico']);
   }
 
+  async goToCat() {
+    await this.menuCtrl.close();
+    this.router.navigate(['/main/categorias']);
+  }
+
   /** Cerrar sesión: limpia storage y redirige */
 async signOutConfirm(): Promise<void> {
   const confirmed = await this.utilsSvc.presentConfirmSheet({

@@ -1,0 +1,164 @@
+.categorias-page {
+  --background: rgba(3, 33, 42, 0.95);
+  color: #e9f5f5;
+  padding-bottom: 80px;
+
+  ion-content {
+    --background: rgba(3, 33, 42, 0.95);
+  }
+
+  ion-segment {
+    margin: 12px 0px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    backdrop-filter: blur(6px);
+
+    ion-segment-button {
+      --color: #b7d8d8;
+      --color-checked: #00bcd4;
+      --indicator-color: #00bcd4;
+      font-weight: 600;
+      text-transform: capitalize;
+      transition: 0.2s;
+
+      &::part(indicator-background) {
+        background: rgba(0, 188, 212, 0.2);
+      }
+
+      &.segment-button-checked {
+        color: #00bcd4;
+      }
+    }
+  }
+
+  ion-list {
+    background: transparent !important;
+    margin: 0 10px;
+  }
+
+  ion-item {
+    --background: transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    --color: #e9f5f5;
+    align-items: center;
+    transition: background 0.2s ease;
+    border-radius: 10px;
+    margin-bottom: 6px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    ion-label {
+      margin-left: 6px;
+
+      h2 {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 2px;
+        color: #ffffff;
+      }
+
+      p {
+        font-size: 13px;
+        color: #9fc9c9;
+      }
+    }
+  }
+
+  ion-avatar.cat-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    color: #fff;
+    text-align: center;
+    line-height: 1;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
+
+  .no-data-text,
+  ion-text {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 14px;
+    color: #9fc9c9;
+  }
+}
+
+
+//============== MODAL ======================
+/* ==================== FORZAR ESTILO SOBRE EL MODAL GENÉRICO ==================== */
+::ng-deep .modal-editar-categoria app-modal-generic {
+  ion-content {
+    --background: rgba(4, 43, 55, 0.95) !important;
+    --color: #e9f5f5 !important;
+    backdrop-filter: blur(10px) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.6) !important;
+  }
+
+  .modal-body {
+    background: rgba(4, 43, 55, 0.95) !important;
+    color: #e9f5f5 !important;
+    border-radius: 20px !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.6) !important;
+  }
+
+  h2 {
+    color: #00bcd4 !important;
+  }
+
+  ion-button[color='primary'] {
+    --background: #00bcd4 !important;
+    color: #021a22 !important;
+  }
+
+  ion-button[color='medium'] {
+    --background: rgba(255, 255, 255, 0.1) !important;
+    color: #e9f5f5 !important;
+  }
+}
+
+
+// ==================== BOTÓN FLOTANTE ====================
+ion-fab {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+
+  ion-fab-button {
+    --background: #00bcd4;
+    --color: #021a22;
+    --border-radius: 50%;
+    --box-shadow: 0 6px 16px rgba(0, 188, 212, 0.4);
+    transition: all 0.25s ease;
+    width: 58px;
+    height: 58px;
+
+    ion-icon {
+      font-size: 28px;
+      font-weight: 600;
+    }
+
+    &:hover,
+    &:active {
+      transform: scale(1.08);
+      filter: brightness(1.15);
+      --background: #04c8e1;
+    }
+  }
+}
+

@@ -48,17 +48,43 @@ export class UserApi {
 
 // ========================================================== CATEGORIAS =========================================================
 
-  //======= Obtener Categorias =======
+  //======= Obtener Categorias por tipo=======
   obtenerCategorias(tipo: string): Observable<{ ok: boolean; categorias: any[] }> {
     return this.http.get<{ ok: boolean; categorias: any[] }>(
       `${this.baseUrl}/categorias?tipo=${tipo}`
     );
   }
 
+  // ======= Obtener todas las Categorías =======
+  obtenerTodasCategorias(): Observable<{ ok: boolean; categorias: any[] }> {
+    return this.http.get<{ ok: boolean; categorias: any[] }>(
+      `${this.baseUrl}/categorias`
+    );
+  }
+
+
   //======= Agregar Categorias =======  
   agregarCategoria(data: any): Observable<{ ok: boolean; id: string }> {
     return this.http.post<{ ok: boolean; id: string }>(`${this.baseUrl}/categorias`, data);
   }
+
+
+  // ======= Actualizar Categoría =======
+  actualizarCategoria(catId: string, data: any): Observable<{ ok: boolean; mensaje?: string }> {
+    return this.http.patch<{ ok: boolean; mensaje?: string }>(
+      `${this.baseUrl}/categorias/${catId}`,
+      data
+    );
+  }
+
+// ======== Eliminar Categoría ========
+eliminarCategoria(id: string): Observable<{ ok: boolean; message: string }> {
+  return this.http.delete<{ ok: boolean; message: string }>(
+    `${this.baseUrl}/categorias/${id}`
+  );
+}
+
+
 
 
 // ========================================================== OBTENER TODO =========================================================

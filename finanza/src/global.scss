@@ -39,12 +39,179 @@
   white-space: pre-line; /* respeta los \n como saltos */
 }
 
+/* ==============================
+   Confirm Sheet Global Style (Finanza)
+   Se aplica a todos los modales tipo sheet
+============================== */
 .confirm-sheet-modal {
-    white-space: pre-line; /* respeta los \n como saltos */
-  --border-radius: 24px;
-  --box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(6px);
+  white-space: pre-line;
+  --border-radius: 22px 22px 0 0;
+  --background: transparent;
+  --box-shadow: none;
+
+  ion-modal::part(backdrop) {
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+  }
+
+  ion-content {
+    --background: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-body {
+    background: rgba(4, 43, 55, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 22px 22px 0 0;
+    padding: 24px 20px 40px;
+    color: #e9f5f5;
+    text-align: center;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+
+    /* 🔹 Handle visual */
+    &::before {
+      content: '';
+      display: block;
+      width: 36px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 10px;
+      margin: 0 auto 14px;
+    }
+
+    ion-icon.modal-icon {
+      font-size: 36px;
+      color: #00bcd4;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #00bcd4;
+      margin-bottom: 6px;
+    }
+
+    p {
+      font-size: 14px;
+      color: #b7d8d8;
+      margin-bottom: 18px;
+    }
+
+    /* 🔹 Campos de formulario */
+    form ion-item {
+      --background: rgba(255, 255, 255, 0.05);
+      --color: #e9f5f5;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      transition: 0.2s;
+
+      &:focus-within {
+        --background: rgba(0, 188, 212, 0.08);
+        border: 1px solid #00bcd4;
+      }
+
+      ion-label {
+        font-size: 13px;
+        color: #9fc9c9;
+      }
+
+      ion-input,
+      ion-select {
+        font-size: 14px;
+        color: #fff;
+      }
+    }
+
+    /* 🔹 Paleta de colores */
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+      gap: 10px;
+      justify-items: center;
+      margin-top: 12px;
+      margin-bottom: 8px;
+
+      .color-circle {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.2s;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+
+        &.selected {
+          border: 2px solid #00bcd4;
+          transform: scale(1.1);
+        }
+
+        ion-icon {
+          font-size: 18px;
+          color: #fff;
+        }
+
+        &:hover:not(.disabled) {
+          transform: scale(1.1);
+        }
+
+        &.disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    /* 🔹 Botones */
+    .buttons {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+
+      ion-button {
+        font-weight: 600;
+        border-radius: 12px;
+        --border-radius: 12px;
+        --padding-top: 12px;
+        --padding-bottom: 12px;
+
+        &[color='medium'] {
+          --background: rgba(255, 255, 255, 0.1);
+          color: #e9f5f5;
+        }
+
+        &[color='primary'],
+        &[color='success'] {
+          --background: #00bcd4;
+          color: #021a22;
+        }
+      }
+    }
+  }
+
+  @keyframes slideUpSheet {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
 }
+
 
 
 

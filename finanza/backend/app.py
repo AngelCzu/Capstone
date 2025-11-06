@@ -724,6 +724,42 @@ def get_categorias():
 
     return {"ok": True, "categorias": categorias}, 200
 
+#=========== Actualizar categoría ===============#
+@api.patch("/users/me/categorias/<cat_id>")
+@require_auth
+def update_categoria(cat_id):
+    try:
+        data = request.get_json()
+
+        if not data:
+            return {"ok": False, "error": "Datos vacíos"}, 400
+
+        campos_permitidos = ["nombre", "icono", "color"]
+        actualizacion = {k: v for k, v in data.items() if k in campos_permitidos}
+
+        if not actualizacion:
+            return {"ok": False, "error": "Nada que actualizar"}, 400
+
+        ref = (
+            db.collection("users")
+            .document(request.uid)
+            .collection("categorias")
+            .document(cat_id)
+        )
+
+        doc = ref.get()
+        if not doc.exists:
+            return {"ok": False, "error": "Categoría no encontrada"}, 404
+
+        ref.update(actualizacion)
+
+        return {"ok": True, "mensaje": "Categoría actualizada correctamente"}, 200
+
+    except Exception as e:
+        print(f"❌ Error al actualizar categoría: {e}")
+        return {"ok": False, "error": str(e)}, 500
+
+
 
 
 #========ELIMINAR CATEGORÍAS========#
@@ -1096,6 +1132,10 @@ def obtener_movimientos_por_categoria():
     except Exception as e:
         print("❌ Error en obtener_movimientos_por_categoria:", e)
         return {"error": str(e)}, 500
+
+
+
+
 
 
 # ===================== Movimientos Históricos =====================

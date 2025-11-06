@@ -1,83 +1,112 @@
 :host {
   ion-content {
-    --background: rgba(25, 25, 25, 0.85);
-    --color: #fff;
-    backdrop-filter: blur(20px);
-    border-top-left-radius: 24px;
-    border-top-right-radius: 24px;
-    box-shadow: 0 -6px 25px rgba(0, 0, 0, 0.45);
-    padding: 1.2rem;
+    --background: rgba(4, 43, 55, 0.95);
+    --color: #e9f5f5;
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.6);
+    padding: 1.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 
   .modal-body {
     display: flex;
     flex-direction: column;
     text-align: center;
-    gap: 1rem;
+    gap: 1.2rem;
+    color: #e9f5f5;
 
     ion-icon.modal-icon {
       font-size: 3rem;
-      color: var(--ion-color-primary);
+      color: #00c896;
       margin-bottom: 0.5rem;
-      filter: drop-shadow(0 0 6px rgba(0, 255, 255, 0.3));
+      filter: drop-shadow(0 0 8px rgba(0, 200, 150, 0.3));
     }
 
     h2 {
-      font-size: 1.3rem;
+      font-size: 1.4rem;
       font-weight: 700;
-      color: #fff;
-
+      color: #00c896;
     }
 
     p {
       font-size: 0.95rem;
-      color: #cfcfcf;
+      color: #a8c9c9;
       margin-bottom: 0.5rem;
     }
 
+    /* =============== INPUTS MEJORADOS =============== */
     form {
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 1rem;
 
       ion-item {
         --background: rgba(255, 255, 255, 0.05);
         --inner-padding-end: 0.75rem;
         --border-color: rgba(255, 255, 255, 0.08);
         border-radius: 12px;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+
+        &:focus-within {
+          border: 1px solid #00c896;
+          box-shadow: 0 0 6px rgba(0, 200, 150, 0.4);
+        }
+
         ion-label {
-          color: #bdbdbd;
+          color: #9fc9c9;
           font-weight: 500;
           font-size: 0.9rem;
         }
 
         ion-input,
         ion-select {
-          color: #fff;
           font-size: 0.95rem;
+          color: #fff;
         }
 
-        ion-note {
-          font-size: 0.8rem;
-          margin-top: 0.2rem;
+        /* Estado inválido */
+        &.ng-invalid.ng-touched {
+          border-color: #ff5c5c;
+          box-shadow: 0 0 6px rgba(255, 92, 92, 0.4);
+
+          ion-label {
+            color: #ff5c5c;
+          }
+        }
+
+        /* Estado válido */
+        &.ng-valid.ng-touched {
+          border-color: #00e676;
+          box-shadow: 0 0 6px rgba(0, 230, 118, 0.4);
+
+          ion-label {
+            color: #00e676;
+          }
         }
       }
     }
 
+    /* =============== COLORES =============== */
     .color-grid {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 0.8rem;
-      margin: 1rem;
+      margin: 1.2rem 0;
 
       .color-circle {
-        width: 38px;
-        height: 38px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
         cursor: pointer;
-        border: 2px solid transparent;
+        border: 1px solid rgba(255, 255, 255, 0.1);
         transition: all 0.25s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 
         &:hover {
           transform: scale(1.1);
@@ -85,34 +114,68 @@
         }
 
         &.selected {
-          box-shadow: 0 0 10px rgba(255, 255, 255, 0.855);
-          transform: scale(1.05);
+          border: 2px solid #00c896;
+          box-shadow: 0 0 10px rgba(0, 200, 150, 0.8);
+          transform: scale(1.1);
+        }
+
+        &.disabled {
+          opacity: 0.35;
+          cursor: not-allowed;
+        }
+
+        ion-icon {
+          font-size: 18px;
+          color: #fff;
         }
       }
     }
 
+    /* =============== BOTONES =============== */
     .buttons {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      margin-top: 0.75rem;
+      margin-top: 1rem;
 
       ion-button {
         --border-radius: 14px;
         font-weight: 600;
         letter-spacing: 0.5px;
-        height: 44px;
+        height: 46px;
+        text-transform: uppercase;
+        transition: all 0.25s ease;
       }
 
-      ion-button[color="medium"] {
-        --background: rgba(255, 255, 255, 0.08);
-        --color: #ccc;
+      ion-button[color='primary'],
+      ion-button[color='success'] {
+        --background: #00c896;
+        color: #021a22;
+
+        &:hover {
+          filter: brightness(1.1);
+          transform: scale(1.02);
+        }
+      }
+
+      ion-button[color='medium'] {
+        --background: rgba(255, 255, 255, 0.12);
+        color: #e9f5f5;
         border: 1px solid rgba(255, 255, 255, 0.2);
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.18);
+        }
       }
     }
   }
 
-  /* Animación de entrada */
+  /* Fondo del modal */
+  ::ng-deep ion-modal::part(backdrop) {
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+  }
+
   ::ng-deep ion-modal::part(content) {
     animation: modalFadeIn 0.25s ease;
   }
@@ -120,11 +183,11 @@
   @keyframes modalFadeIn {
     from {
       opacity: 0;
-      transform: translateY(15px);
+      transform: scale(0.95);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      transform: scale(1);
     }
   }
 }

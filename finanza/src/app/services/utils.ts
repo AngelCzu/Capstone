@@ -164,7 +164,7 @@ async presentGenericModal(opts: {
       color: opts.color || 'primary'
     },
     breakpoints: opts.breakpoints || [0.55],
-    initialBreakpoint: opts.initialBreakpoint || 0.55,
+    initialBreakpoint: opts.initialBreakpoint || 1,
     handle: true,
     backdropDismiss: true,
     cssClass: 'confirm-sheet-modal modal-generic'

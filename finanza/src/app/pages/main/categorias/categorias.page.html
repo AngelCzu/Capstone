@@ -1,0 +1,53 @@
+<app-header title="Categorías" backButton="/main/home"></app-header>
+
+<ion-content class="categorias-page ion-padding">
+
+  <form [formGroup]="formTipo">
+    <ion-segment formControlName="tipo" (ionChange)="filtrarPorTipo(formTipo.get('tipo')?.value)">
+      <ion-segment-button value="movimiento">
+        <ion-label>Movimientos</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="objetivo">
+        <ion-label>Objetivos</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </form>
+
+  <ion-list>
+    <ion-item *ngFor="let cat of categoriasFiltradas" (click)="editarCategoria(cat)" button detail>
+      <ion-avatar slot="start" [style.background]="cat.color" class="cat-avatar">
+        {{ cat.icono }}
+      </ion-avatar>
+      <ion-label>
+        <h2>{{ cat.nombre }}</h2>
+        <p>{{ cat.tipo | titlecase }}</p>
+      </ion-label>
+      <!-- Botón eliminar -->
+      <ion-button
+        slot="end"
+        fill="clear"
+        color="danger"
+        (click)="eliminarCategoria(cat); $event.stopPropagation()"
+      >
+        <ion-icon name="trash-outline"></ion-icon>
+      </ion-button>
+    </ion-item>
+  </ion-list>
+
+  <ng-container *ngIf="categoriasFiltradas.length === 0">
+    <ion-text color="medium" class="ion-text-center">
+      <p>No hay categorías registradas.</p>
+    </ion-text>
+  </ng-container>
+
+  <!-- 🔹 FAB flotante (para crear nueva categoría) -->
+  <ion-fab slot="fixed" vertical="bottom" horizontal="end">
+    <ion-fab-button
+      [color]="tipoSeleccionado === 'movimiento' ? 'success' : 'primary'"
+      (click)="agregarCategoria(tipoSeleccionado)">
+      <ion-icon name="add-outline"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+
+</ion-content>
