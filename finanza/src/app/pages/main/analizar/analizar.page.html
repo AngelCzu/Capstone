@@ -1,6 +1,25 @@
-<app-header backButton="/login" title="Analizar"></app-header>
+<app-header profile="profile" title="Analizar"></app-header>
 
-<ion-content class="ion-padding">
+<ion-content class="analizar-page ion-padding" fullscreen>
+
+  <!-- ======= SEGMENTO DE OPCIONES ======= -->
+  <form [formGroup]="formSegment">
+    <ion-segment formControlName="tipo" (ionChange)="cambiarVista()">
+      <ion-segment-button value="objetivos">
+        <ion-label>Objetivos</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="anual">
+        <ion-label>Resumen anual</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </form>
+
+  <!-- ======= CONTENIDO SEGMENTADO ======= -->
+  <div class="segment-content">
+    <app-analizar-objetivos *ngIf="segmento === 'objetivos'"></app-analizar-objetivos>
+    <app-analizar-anual *ngIf="segmento === 'anual'"></app-analizar-anual>
+  </div>
+
 </ion-content>
 
 <app-navbar></app-navbar>

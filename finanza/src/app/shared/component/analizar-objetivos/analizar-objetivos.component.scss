@@ -1,0 +1,147 @@
+.analizar-objetivos {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0.5rem;
+
+  h2 {
+    text-align: center;
+    color: #e9f5f5;
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+
+  .objetivo-card {
+    background: rgba(4, 43, 55, 0.85);
+    border-radius: 16px;
+    padding: 1rem 1.2rem 1.4rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    position: relative;
+    transition: transform 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+    }
+
+    .objetivo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.8rem;
+
+      h3 {
+        color: #e9f5f5;
+        font-size: 1.05rem;
+        font-weight: 600;
+      }
+
+      .monto {
+        color: #00bcd4;
+        font-size: 0.95rem;
+      }
+    }
+
+    .barra-container {
+      position: relative;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      overflow: visible;
+
+      .barra-fondo {
+        width: 100%;
+        height: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        position: relative;
+        overflow: visible;
+        z-index: 1;
+
+        .barra-progreso {
+          height: 100%;
+          border-radius: 12px;
+          transform-origin: left;
+          width: 0%;
+          transition: width 2.5s cubic-bezier(0.65, 0, 0.35, 1);
+          position: relative;
+          z-index: 2;
+        }
+
+        &.animar .barra-progreso {
+          /* Se llena suavemente */
+        }
+
+        /* 💡 BRILLO FIJO Y SUTIL CUANDO COMPLETO */
+        .barra-progreso.completo {
+          position: relative;
+          box-shadow:
+            0 0 15px var(--color),
+            0 0 30px var(--color);
+          filter: brightness(1.2) saturate(1.1);
+          z-index: 3;
+        }
+
+        /* ======== ICONO ======== */
+        .icono {
+          position: absolute;
+          top: -18px;
+          transform: translate(-50%, 0);
+          font-size: 1.6rem;
+          transition: left 2.5s cubic-bezier(0.65, 0, 0.35, 1);
+          pointer-events: none;
+          filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.6));
+          z-index: 5;
+
+          &.balanceo {
+            animation: balancear 0.8s ease-in-out infinite alternate;
+          }
+
+          &.completo {
+            animation: celebrar 3.6s ease-in-out 2.5s infinite;
+          }
+
+          img {
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+          }
+        }
+      }
+    }
+  }
+}
+
+/* ======== ANIMACIONES ======== */
+
+/* 🔸 Movimiento suave del icono (mientras progresa) */
+@keyframes balancear {
+  0% {
+    transform: translate(-50%, 0) rotate(-5deg);
+  }
+  100% {
+    transform: translate(-50%, 0) rotate(5deg);
+  }
+}
+
+/* 🔸 Rebote del icono cuando completa la barra */
+@keyframes celebrar {
+  0% {
+    transform: translate(-50%, 0) scale(1);
+  }
+  5% {
+    transform: translate(-50%, -10px) scale(1.15);
+  }
+  10% {
+    transform: translate(-50%, 0) scale(1);
+  }
+  15% {
+    transform: translate(-50%, -5px) scale(1.08);
+  }
+  20% {
+    transform: translate(-50%, 0) scale(1);
+  }
+  100% {
+    transform: translate(-50%, 0) scale(1);
+  }
+}

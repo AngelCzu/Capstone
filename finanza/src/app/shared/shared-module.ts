@@ -12,6 +12,8 @@ import { ConfirmSheetComponent } from './component/confirm-sheet/confirm-sheet.c
 import { EmailPinModalComponent } from './component/email-pin-modal/email-pin-modal.component';
 import { VisualCurrencyDirective } from '../directives/visual-currency.directive';
 import { CustomCurrencyInputComponent } from './component/custom-currency-input/custom-currency-input.component';
+import { AnalizarObjetivosComponent } from './component/analizar-objetivos/analizar-objetivos.component';
+import { AnalizarAnualComponent } from './component/analizar-anual/analizar-anual.component';
 
 
 
@@ -26,7 +28,9 @@ import { CustomCurrencyInputComponent } from './component/custom-currency-input/
     ConfirmSheetComponent,
     EmailPinModalComponent,
     VisualCurrencyDirective,
-    CustomCurrencyInputComponent 
+    CustomCurrencyInputComponent,
+    AnalizarObjetivosComponent, 
+    AnalizarAnualComponent
 
   ],
   exports: [
@@ -43,6 +47,8 @@ import { CustomCurrencyInputComponent } from './component/custom-currency-input/
     ConfirmSheetComponent,
     EmailPinModalComponent,
     VisualCurrencyDirective,
+    AnalizarObjetivosComponent,
+    AnalizarAnualComponent
 
 
      

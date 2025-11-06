@@ -981,6 +981,61 @@ def add_objetivo():
 
 
 
+# ========= OBTENER OBJETIVOS (con datos de categoría) ========= #
+@api.get("/users/me/objetivos")
+@require_auth
+def get_objetivos():
+    """
+    Obtiene todos los objetivos (tipo='objetivo') desde movimientos
+    y los enriquece con los datos de su categoría (icono, color)
+    """
+    try:
+        # 1️⃣ Obtener todas las categorías del usuario
+        categorias_ref = (
+            db.collection("users")
+            .document(request.uid)
+            .collection("categorias")
+            .where("tipo", "==", "objetivo")
+            .stream()
+        )
+        categorias = {c.id: c.to_dict() for c in categorias_ref}
+
+        # 2️⃣ Obtener todos los movimientos de tipo objetivo
+        objetivos_ref = (
+            db.collection("users")
+            .document(request.uid)
+            .collection("movimientos")
+            .where("tipo", "==", "objetivo")
+            .stream()
+        )
+
+        objetivos = []
+        for doc in objetivos_ref:
+            data = doc.to_dict()
+            data["id"] = doc.id
+
+            # Buscar categoría asociada
+            categoria_id = data.get("categoria")
+            cat_data = categorias.get(categoria_id)
+
+            if cat_data:
+                data["color"] = cat_data.get("color")
+                data["icono"] = cat_data.get("icono")
+                data["categoriaNombre"] = cat_data.get("nombre")
+            else:
+                data["color"] = "#00bcd4"
+                data["icono"] = "🎯"
+                data["categoriaNombre"] = "Sin categoría"
+
+            objetivos.append(data)
+
+        return {"ok": True, "objetivos": objetivos}, 200
+
+    except Exception as e:
+        print("Error al obtener objetivos:", e)
+        return {"ok": False, "error": str(e)}, 500
+
+
 # ========== OBTENER RESUMEN MENSUAL ==========
 @api.get("/users/me/resumen")
 @require_auth

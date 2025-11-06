@@ -32,7 +32,7 @@ eliminarMovimiento(id: string, tipo: string) {
   return this.http.delete<{ ok: boolean; message: string }>(`${this.baseUrl}/movimientos/${id}`);
 }
 
-
+// Obtener movimientos historicos
 obtenerMovimientos() {
   return this.http.get<any[]>(`${this.baseUrl}/movimientos/historico`);
 }

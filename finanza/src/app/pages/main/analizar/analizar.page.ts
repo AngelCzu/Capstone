@@ -1,21 +1,26 @@
-import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { IonicModule } from '@ionic/angular';
+import { FormBuilder, FormGroup } from '@angular/forms';
 import { SharedModule } from 'src/app/shared/shared-module';
 
 @Component({
   selector: 'app-analizar',
   templateUrl: './analizar.page.html',
-  styleUrls: ['./analizar.page.scss'], 
-  standalone: true,
-  imports: [SharedModule, CommonModule, FormsModule, IonicModule],
+  styleUrls: ['./analizar.page.scss'],
+  imports: [SharedModule]
 })
 export class AnalizarPage implements OnInit {
+  formSegment: FormGroup;
+  segmento: 'objetivos' | 'anual' = 'objetivos';
 
-  constructor() { }
-
-  ngOnInit() {
+  constructor(private fb: FormBuilder) {
+    this.formSegment = this.fb.group({
+      tipo: ['objetivos'], // valor por defecto
+    });
   }
 
+  ngOnInit() {}
+
+  cambiarVista() {
+    this.segmento = this.formSegment.get('tipo')?.value;
+  }
 }

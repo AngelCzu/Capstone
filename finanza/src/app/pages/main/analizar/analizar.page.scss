@@ -1,0 +1,55 @@
+.analizar-page {
+  --background: rgba(3, 33, 42, 0.95);
+  color: #e9f5f5;
+  padding-bottom: 80px;
+
+  ion-content {
+    --background: rgba(3, 33, 42, 0.95);
+    --padding-bottom: 100px;
+    overflow-y: auto;
+  }
+
+  /* === Segmento estilo Categorías === */
+  ion-segment {
+    margin: 12px 0 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 0 10px rgba(0, 188, 212, 0.1);
+
+    ion-segment-button {
+      --color: #b7d8d8;
+      --color-checked: #00bcd4;
+      --indicator-color: #00bcd4;
+      font-weight: 600;
+      text-transform: capitalize;
+      transition: 0.2s ease-in-out;
+
+      &::part(indicator-background) {
+        background: rgba(0, 188, 212, 0.25);
+      }
+
+      &.segment-button-checked {
+        color: #00bcd4;
+        font-weight: 600;
+      }
+
+      ion-label {
+        font-size: 15px;
+      }
+    }
+  }
+
+  /* === Contenido debajo del segmento === */
+  .segment-content {
+    background: transparent;
+    padding-top: 10px;
+  }
+
+  /* === Texto o mensajes === */
+  h2,
+  p,
+  ion-text {
+    color: #e9f5f5;
+  }
+}

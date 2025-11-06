@@ -16,7 +16,6 @@ import { SharedModule } from 'src/app/shared/shared-module';
     IonicModule,
     SignUpPageRoutingModule,
     SignUpPage,
-    SharedModule,
   ],
 
 })

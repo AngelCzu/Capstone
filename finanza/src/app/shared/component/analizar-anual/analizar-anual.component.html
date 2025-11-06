@@ -1,0 +1,14 @@
+<div class="analizar-anual">
+  <h2>Resumen anual</h2>
+
+  <ion-card *ngFor="let mes of resumenAnual">
+    <ion-card-header>
+      <ion-card-title>{{ mes.nombre }}</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <p>Ingresos: {{ mes.ingresos | currency:'CLP':'symbol' }}</p>
+      <p>Gastos: {{ mes.gastos | currency:'CLP':'symbol' }}</p>
+      <p>Ahorro: {{ (mes.ingresos - mes.gastos) | currency:'CLP':'symbol' }}</p>
+    </ion-card-content>
+  </ion-card>
+</div>
