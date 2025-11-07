@@ -213,7 +213,7 @@ async editarObjetivo(obj: any) {
 
       // 🔹 Actualiza localmente
       Object.assign(obj, data);
-
+      await this.ngOnInit();
       this.utilsSvc.presentToast({
         message: 'Objetivo actualizado correctamente',
         color: 'success',

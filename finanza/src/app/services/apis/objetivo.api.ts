@@ -29,8 +29,11 @@ export class ObjetivoApi {
   }
 
 
-  // Eliminar un objetivo
-  deleteObjetivo(id: string): Observable<{ ok: boolean; message: string }> {
-    return this.http.delete<{ ok: boolean; message: string }>(`${this.baseUrl}/${id}`);
-  }
+// Eliminar un objetivo
+deleteObjetivo(id: string): Observable<{ ok: boolean; message: string }> {
+  return this.http.delete<{ ok: boolean; message: string }>(
+    `${this.baseUrl}/objetivos/${id}`
+  );
+}
+
 }

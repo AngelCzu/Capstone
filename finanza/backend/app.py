@@ -1035,16 +1035,27 @@ def get_objetivos():
         print("Error al obtener objetivos:", e)
         return {"ok": False, "error": str(e)}, 500
 
+
 # ======== ACTUALIZAR OBJETIVO ========
-@api.patch("/users/me/objetivos/<obj_id>")
+@api.patch("/users/me/movimientos/<obj_id>")
 @require_auth
 def update_objetivo(obj_id):
     body = request.get_json() or {}
     uid = request.uid
     ref = db.collection("users").document(uid).collection("movimientos").document(obj_id)
 
+    doc = ref.get()
+    if not doc.exists:
+        return jsonify({"ok": False, "message": "Objetivo no encontrado"}), 404
+
+    # Validar que efectivamente sea un objetivo
+    if doc.to_dict().get("tipo") != "objetivo":
+        return jsonify({"ok": False, "message": "El documento no es un objetivo"}), 400
+
     ref.update(body)
     return jsonify({"ok": True, "message": "Objetivo actualizado"}), 200
+
+
 
 
 # ======== ELIMINAR OBJETIVO ========
