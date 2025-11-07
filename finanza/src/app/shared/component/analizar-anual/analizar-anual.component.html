@@ -1,14 +1,141 @@
 <div class="analizar-anual">
+
   <h2>Resumen anual</h2>
 
-  <ion-card *ngFor="let mes of resumenAnual">
+  <!-- ======= FILTROS: Año, Meses múltiples, Tipos y Categoría ======= -->
+  <ion-card class="filter-card">
+    <ion-item (click)="toggleFiltros()" lines="none">
+      <ion-icon slot="start" [name]="filtrosAbiertos ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+      <ion-label>Filtros</ion-label>
+    </ion-item>
+
+    <div *ngIf="filtrosAbiertos" class="filters-body">
+      <form [formGroup]="form" class="filters-grid">
+
+        <!-- Año -->
+        <ion-item lines="none">
+          <ion-label>Año</ion-label>
+          <ion-select formControlName="anio" interface="popover">
+            <ion-select-option *ngFor="let y of aniosDisponibles" [value]="y">{{ y }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <!-- Meses múltiples -->
+        <ion-item lines="none">
+          <ion-label>Meses</ion-label>
+          <ion-select formControlName="meses" multiple="true" interface="popover" placeholder="Selecciona meses">
+            <ion-select-option *ngFor="let m of MESES; let i = index" [value]="i+1">
+              {{ m }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <!-- Tipos (chips) -->
+        <ion-item lines="none">
+          <ion-label position="stacked">Tipos</ion-label>
+          <div class="tipos-row">
+            <ion-chip [outline]="!form.value.tipos?.gasto" (click)="toggleTipo('gasto')">
+              <ion-label>Gastos</ion-label>
+            </ion-chip>
+            <ion-chip [outline]="!form.value.tipos?.deuda" (click)="toggleTipo('deuda')">
+              <ion-label>Deudas</ion-label>
+            </ion-chip>
+          </div>
+        </ion-item>
+
+        <!-- Categoría (opcional) -->
+        <ion-item lines="none">
+          <ion-label>Categoría</ion-label>
+          <ion-select formControlName="categoria" interface="popover">
+            <ion-select-option value="todas">Todas</ion-select-option>
+            <ion-select-option *ngFor="let cat of categorias" [value]="cat">
+              {{ cat }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <div class="actions">
+          <ion-button fill="outline" size="small" (click)="seleccionarUltimosMeses(2)">
+            Últimos 2 meses
+          </ion-button>
+          <ion-button fill="outline" size="small" (click)="seleccionarUltimosMeses(3)">
+            Últimos 3 meses
+          </ion-button>
+          <ion-button color="primary" (click)="aplicarFiltrosManual()">
+            Aplicar
+          </ion-button>
+        </div>
+      </form>
+    </div>
+  </ion-card>
+
+  <!-- ======= CARD DE COMPARACIÓN (solo si hay 2 meses) ======= -->
+  <ion-card *ngIf="comparacion" class="mes-card compare-card">
     <ion-card-header>
-      <ion-card-title>{{ mes.nombre }}</ion-card-title>
+      <ion-card-title>Comparación: {{ comparacion.label }}</ion-card-title>
+      <ion-card-subtitle>{{ comparacion.sub }}</ion-card-subtitle>
     </ion-card-header>
     <ion-card-content>
-      <p>Ingresos: {{ mes.ingresos | currency:'CLP':'symbol' }}</p>
-      <p>Gastos: {{ mes.gastos | currency:'CLP':'symbol' }}</p>
-      <p>Ahorro: {{ (mes.ingresos - mes.gastos) | currency:'CLP':'symbol' }}</p>
+      <div class="totales">
+        <div class="line">
+          <span>Gastos Δ</span>
+          <strong [class.positivo]="comparacion.gastos <= 0" [class.negativo]="comparacion.gastos > 0">
+            {{ comparacion.gastos | currency:'CLP':'symbol':'1.0-0' }}
+          </strong>
+        </div>
+        <div class="line">
+          <span>Deudas Δ</span>
+          <strong [class.positivo]="comparacion.deudas <= 0" [class.negativo]="comparacion.deudas > 0">
+            {{ comparacion.deudas | currency:'CLP':'symbol':'1.0-0' }}
+          </strong>
+        </div>
+        <div class="line total">
+          <span>Total (Gasto+Deuda) Δ</span>
+          <strong [class.positivo]="comparacion.total <= 0" [class.negativo]="comparacion.total > 0">
+            {{ comparacion.total | currency:'CLP':'symbol':'1.0-0' }}
+          </strong>
+        </div>
+      </div>
     </ion-card-content>
   </ion-card>
+
+  <!-- ======= CARDS POR MES ======= -->
+  <ion-grid class="cards-grid" *ngIf="resumenAnualFiltrado?.length; else sinDatos">
+    <ion-row>
+      <ion-col size="12" sizeMd="6" sizeLg="4" *ngFor="let mes of resumenAnualFiltrado">
+        <ion-card class="mes-card">
+          <ion-card-header>
+            <ion-card-title>{{ mes.nombre }}</ion-card-title>
+            <ion-card-subtitle>{{ mes.anio }}</ion-card-subtitle>
+          </ion-card-header>
+
+          <ion-card-content>
+            <div class="totales">
+              <div class="line">
+                <span>Gastos</span>
+                <strong class="gasto">{{ mes.gastos | currency:'CLP':'symbol' }}</strong>
+              </div>
+              <div class="line">
+                <span>Deudas (cuotas)</span>
+                <strong class="deuda">{{ mes.deudas | currency:'CLP':'symbol' }}</strong>
+              </div>
+            </div>
+
+            <div class="chips" *ngIf="mes.topCategorias?.length">
+              <ion-chip *ngFor="let c of mes.topCategorias" outline="true">
+                <ion-label>{{ c.nombre }}</ion-label>
+                <ion-badge>{{ c.monto | currency:'CLP':'symbol':'1.0-0' }}</ion-badge>
+              </ion-chip>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+
+  <ng-template #sinDatos>
+    <ion-text color="medium" class="no-data-text">
+      <p>No hay movimientos registrados.</p>
+    </ion-text>
+  </ng-template>
 </div>

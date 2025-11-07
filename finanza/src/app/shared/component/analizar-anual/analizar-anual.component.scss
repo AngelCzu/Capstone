@@ -1,14 +1,340 @@
+/* ===============================
+   Analizar Anual — Estilos
+   =============================== */
+
 .analizar-anual {
+  /* ---------- Título ---------- */
   h2 {
-    text-align: center;
-    color: #e9f5f5;
-    margin-bottom: 1rem;
+    margin: 8px 0 14px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+    color: #e8f5f7;
   }
 
-  ion-card {
+  /* ---------- Filtro con estilo de card ---------- */
+  .filter-card {
+    margin-bottom: 12px;
+    border-radius: 16px;
+    overflow: hidden;
     background: rgba(4, 43, 55, 0.85);
-    color: #e9f5f5;
-    border-radius: 14px;
-    margin-bottom: 1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+
+    /* Header clickable */
+    ion-item {
+      --background: rgba(4, 43, 55, 0.85);
+      --padding-start: 12px;
+      --inner-padding-end: 8px;
+      --min-height: 52px;
+      color: #e8f5f7;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+
+      ion-icon {
+        color: #e8f5f7;
+        opacity: 0.9;
+      }
+    }
+
+    /* Cuerpo */
+    .filters-body {
+      padding: 12px;
+      background: rgba(4, 43, 55, 0.85);
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+
+      @media (min-width: 640px) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      @media (min-width: 992px) {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .actions {
+        grid-column: 1 / -1;
+      }
+    }
+
+    ion-item[lines="none"] {
+      --background: transparent;
+      --inner-padding-end: 0;
+      padding: 0;
+    }
+
+    ion-label {
+      color: #e8f5f7;
+      opacity: 0.95;
+      font-weight: 600;
+    }
+
+    ion-select,
+    ion-input {
+      --background: rgba(255, 255, 255, 0.04);
+      --padding-start: 10px;
+      --min-height: 44px;
+      --color: #e8f5f7;
+      --placeholder-color: rgba(232, 245, 247, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 12px;
+      margin-top: 6px;
+    }
+
+    ion-select:focus-within,
+    ion-input:focus-within {
+      outline: 2px solid rgba(232, 245, 247, 0.35);
+      outline-offset: 0;
+    }
+
+    /* Chips de tipos */
+    .tipos-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 6px;
+
+      ion-chip {
+        cursor: pointer;
+        border-radius: 12px;
+        --background: rgba(255, 255, 255, 0.06);
+        --color: #e8f5f7;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+
+        &[outline="true"] {
+          --background: transparent;
+          border-color: rgba(255, 255, 255, 0.24);
+        }
+      }
+    }
+
+    /* Botones */
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+
+      ion-button {
+        height: 40px;
+        border-radius: 12px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+
+      ion-button[fill="outline"] {
+        --border-color: rgba(255, 255, 255, 0.35);
+        --color: #e8f5f7;
+      }
+
+      ion-button[color="primary"] {
+        --background: rgba(232, 245, 247, 0.12);
+        --color: #e8f5f7;
+      }
+    }
+
+    ion-item:hover {
+      filter: brightness(1.05);
+    }
+  }
+
+  /* ---------- Grid de cards ---------- */
+  .cards-grid {
+    background: rgba(4, 43, 55, 0.85);
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    position: relative;
+    transition: transform 0.3s ease;
+
+    .mes-card {
+      position: relative;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      transition: transform 160ms ease, box-shadow 160ms ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.10);
+      }
+
+      ion-card-header,
+      ion-card-title,
+      ion-card-subtitle,
+      ion-card-content {
+        background: rgba(4, 43, 55, 0.85);
+        color: #e8f5f7;
+      }
+
+      ion-card-title {
+        font-size: 1.05rem;
+        font-weight: 800;
+        letter-spacing: -0.2px;
+      }
+
+      ion-card-subtitle {
+        opacity: 0.65;
+        margin-top: 2px;
+      }
+
+      /* Totales (gastos y deudas) */
+      .totales {
+        .line {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 7px 0;
+          font-size: 0.95rem;
+
+          span {
+            opacity: 0.8;
+          }
+
+          strong {
+            font-variation-settings: "wght" 700;
+          }
+
+          &.total {
+            padding-top: 10px;
+          }
+
+          .gasto { color: var(--ion-color-danger); }
+          .deuda { color: var(--ion-color-warning-shade); }
+          .positivo { color: var(--ion-color-success); }
+          .negativo { color: var(--ion-color-danger); }
+        }
+      }
+
+      /* Chips */
+      .chips {
+        margin-top: 10px;
+
+        ion-chip {
+          margin-right: 6px;
+          margin-bottom: 6px;
+          border-radius: 12px;
+          --background: var(--ion-color-light);
+          --color: var(--ion-text-color);
+
+          ion-badge {
+            margin-left: 6px;
+            border-radius: 10px;
+            font-weight: 700;
+          }
+        }
+      }
+    }
+  }
+
+  /* ---------- Card de comparación ---------- */
+  .compare-card {
+    border: 1px dashed rgba(255,255,255,0.25);
+    margin-bottom: 12px;
+
+    ion-card-header,
+    ion-card-title,
+    ion-card-subtitle,
+    ion-card-content {
+      background: rgba(4, 43, 55, 0.85);
+      color: #e8f5f7;
+    }
+
+    .totales .line.total {
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+  }
+
+  /* ---------- Sin datos ---------- */
+  .no-data-text {
+    display: block;
+    text-align: center;
+    margin: 28px 0 8px;
+
+    p {
+      opacity: 0.75;
+      margin: 0;
+      color: #e8f5f7;
+    }
+  }
+}
+
+/* ===============================
+   Utilidades globales
+   =============================== */
+:host ::ng-deep ion-card.mes-card,
+:host ::ng-deep .filter-card {
+  --background: var(--ion-background-color);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+:host ::ng-deep .filter-card ion-select:focus-within,
+:host ::ng-deep .filter-card ion-input:focus-within {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+/* ===============================
+   Modo oscuro
+   =============================== */
+@media (prefers-color-scheme: dark) {
+  .analizar-anual {
+    .filter-card {
+      .filters-body {
+        border-top-color: rgba(255, 255, 255, 0.06);
+      }
+      ion-select,
+      ion-input {
+        border-color: rgba(255, 255, 255, 0.18);
+      }
+    }
+
+    .cards-grid .mes-card {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+      .totales .line.total {
+        border-top-color: rgba(255, 255, 255, 0.06);
+      }
+    }
+  }
+
+  :host ::ng-deep ion-card.mes-card,
+  :host ::ng-deep .filter-card {
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* ===============================
+   Responsivo
+   =============================== */
+@media (min-width: 768px) {
+  .analizar-anual {
+    h2 {
+      margin: 10px 0 16px;
+    }
+    .cards-grid .mes-card ion-card-content {
+      padding-bottom: 16px;
+    }
+  }
+}
+
+@media (min-width: 992px) {
+  .analizar-anual {
+    .cards-grid .mes-card ion-card-title {
+      font-size: 1.1rem;
+    }
+  }
+}
+
+/* ===============================
+            Imprimir
+   =============================== */
+@media print {
+  .analizar-anual {
+    .filter-card { display: none !important; }
+    .mes-card {
+      box-shadow: none !important;
+      border: 1px solid #ccc !important;
+    }
   }
 }
