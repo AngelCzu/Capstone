@@ -1,11 +1,7 @@
 <div class="analizar-objetivos">
 
   <ng-container *ngIf="!sinObjetivos; else noData">
-    <div
-      class="objetivo-card"
-      *ngFor="let obj of objetivos"
-      [style.--color]="obj.color"
-    >
+    <div class="objetivo-card" *ngFor="let obj of objetivos" [style.--color]="obj.color">
       <div class="objetivo-header">
         <h3>{{ obj.nombre }}</h3>
         <p class="monto">{{ obj.monto | currency: 'CLP':'symbol' }}</p>
@@ -18,19 +14,11 @@
 
       <div class="barra-container">
         <div class="barra-fondo" [class.animar]="animar">
-          <div
-            class="barra-progreso"
-            [class.completo]="obj.progreso === 1"
-            [style.width.%]="obj.progreso * 100"
-            [style.background]="obj.color"
-          ></div>
+          <div class="barra-progreso" [class.completo]="obj.progreso === 1" [style.background]="obj.color"
+            [style.width.%]="animar ? obj.progreso * 100 : 0"></div>
 
-          <div
-            class="icono"
-            [style.left.%]="obj.progreso * 100"
-            [class.balanceo]="animar && obj.progreso < 1"
-            [class.completo]="obj.progreso === 1"
-          >
+          <div class="icono" [style.left.%]="animar ? obj.progreso * 100 : 0"
+            [class.balanceo]="animar && obj.progreso < 1" [class.completo]="obj.progreso === 1">
             {{ obj.icono }}
           </div>
         </div>
