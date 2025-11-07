@@ -244,6 +244,75 @@
     .totales .line.total {
       border-top: 1px solid rgba(255, 255, 255, 0.12);
     }
+
+    /* Barras comparativas */
+    .bars {
+      margin-top: 0px;
+      padding-top: 0;
+      border-top: none;
+
+      .bar-legend {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        font-size: 0.85rem;
+        opacity: 0.9;
+        margin-bottom: 6px;
+
+        .dot {
+          display: inline-block;
+          width: 10px; height: 10px;
+          border-radius: 50%;
+          margin-right: 6px;
+        }
+        .m1 { background: var(--ion-color-primary); }
+        .m2 { background: var(--ion-color-tertiary); }
+      }
+
+      .bar-group { margin-bottom: 14px; }
+
+      .bar-row-header {
+        display: flex;
+        justify-content: space-between;
+        font-weight: 700;
+        margin-bottom: 4px;
+        .metric { opacity: 0.9; }
+      }
+
+      .bar-multi { display: grid; grid-template-columns: 1fr; gap: 6px; }
+      .bar {
+        position: relative;
+        height: 12px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      /* Paleta para hasta 6 meses */
+      .bar.m0, .dot.m0 { background: linear-gradient(90deg, var(--ion-color-primary) 0%, rgba(56,128,255,0.75) 100%); }
+      .bar.m1, .dot.m1 { background: linear-gradient(90deg, var(--ion-color-tertiary) 0%, rgba(45,211,111,0.75) 100%); }
+      .bar.m2, .dot.m2 { background: linear-gradient(90deg, var(--ion-color-warning) 0%, rgba(255,206,0,0.75) 100%); }
+      .bar.m3, .dot.m3 { background: linear-gradient(90deg, var(--ion-color-danger) 0%, rgba(240,65,65,0.75) 100%); }
+      .bar.m4, .dot.m4 { background: linear-gradient(90deg, var(--ion-color-secondary) 0%, rgba(82,96,255,0.75) 100%); }
+      .bar.m5, .dot.m5 { background: linear-gradient(90deg, var(--ion-color-medium) 0%, rgba(146,148,156,0.75) 100%); }
+      .bar .val {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.75rem;
+        color: #0b1f26;
+        text-shadow: 0 1px 1px rgba(255,255,255,0.35);
+        font-weight: 700;
+      }
+    }
+
+    .comparar-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
+    }
   }
 
   /* ---------- Sin datos ---------- */

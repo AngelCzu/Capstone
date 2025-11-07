@@ -1,5 +1,6 @@
 
 import { Component, inject, OnInit } from '@angular/core';
+import { RefresherCustomEvent } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { SharedModule } from 'src/app/shared/shared-module';
 
@@ -16,6 +17,10 @@ export class HomePage implements OnInit {
   ngOnInit() {
 
     
+  }
+
+  onRefresh(event: RefresherCustomEvent) {
+    try { event.target.complete(); } catch {}
   }
 
 

@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, map } from 'rxjs';
+import { BehaviorSubject, map, firstValueFrom } from 'rxjs';
 
 type TipoMov = 'ingreso' | 'gasto' | 'deuda' | 'objetivo' | 'sin-tipo';
 
@@ -59,6 +59,14 @@ export class AnalizarAnualComponent implements OnInit {
   resumenAnualFiltrado: ResumenMes[] = [];
 
   comparacion: { label: string; sub: string; gastos: number; deudas: number; total: number } | null = null;
+  comparacionGrafica: {
+    m1Nombre: string;
+    m2Nombre: string;
+    items: Array<{ key: string; m1: number; m2: number; max: number }>;
+  } | null = null;
+
+  // Series para comparación múltiple (N meses seleccionados)
+  compSeries: Array<{ nombre: string; gastos: number; deudas: number; total: number }> = [];
 
   constructor(
     private fb: FormBuilder,
@@ -76,10 +84,16 @@ export class AnalizarAnualComponent implements OnInit {
         this.form.patchValue({ anio: this.aniosDisponibles[0] });
       }
 
-      this.seleccionarUltimosMeses(2, false);
+      // Por defecto: comparar mes actual y anterior (si existen),
+      // de lo contrario elegir los últimos 2 meses del año seleccionado
+      this.seleccionarMesActualYAnterior(false);
       this.recalcular();
       this.form.valueChanges.subscribe(() => this.recalcular());
     });
+  }
+
+  async reload() {
+    await this.ngOnInit();
   }
 
   toggleFiltros() {
@@ -97,15 +111,39 @@ export class AnalizarAnualComponent implements OnInit {
 
   seleccionarUltimosMeses(n: number, trigger = true) {
     const anio = this.form.value.anio as number;
-    const mesesDisp = Array.from(
+    const mesesDisp = this.obtenerMesesDisponibles(anio);
+    const pick = mesesDisp.slice(0, n);
+    this.form.patchValue({ meses: pick });
+    if (trigger) this.recalcular();
+  }
+
+  private obtenerMesesDisponibles(anio: number): number[] {
+    return Array.from(
       new Set(
         this.movimientos$.value
           .filter(m => new Date(m.fecha).getUTCFullYear() === anio)
           .map(m => new Date(m.fecha).getUTCMonth() + 1)
       )
-    ).sort((a,b) => b-a);
-    const pick = mesesDisp.slice(0, n);
-    this.form.patchValue({ meses: pick });
+    ).sort((a,b) => b-a); // desc
+  }
+
+  // Selecciona m1/m2 = mes actual y anterior si existen en el año seleccionado;
+  // si no, cae a últimos 2 meses disponibles. No dispara recalcular si trigger=false
+  seleccionarMesActualYAnterior(trigger = true) {
+    const anio = this.form.value.anio as number;
+    const mesesDisp = this.obtenerMesesDisponibles(anio);
+    const now = new Date();
+    const currMonth = now.getMonth() + 1;
+    const prevMonth = currMonth === 1 ? 12 : currMonth - 1;
+    const currOk = mesesDisp.includes(currMonth);
+    const prevOk = mesesDisp.includes(prevMonth);
+
+    if (currOk && prevOk && (anio === now.getFullYear())) {
+      this.form.patchValue({ meses: [prevMonth, currMonth] });
+    } else {
+      const pick = mesesDisp.slice(0, 2);
+      this.form.patchValue({ meses: pick });
+    }
     if (trigger) this.recalcular();
   }
 
@@ -206,20 +244,50 @@ export class AnalizarAnualComponent implements OnInit {
 
   private calcularComparacion(lista: ResumenMes[]) {
     this.comparacion = null;
-    const mesesSel = this.form.value.meses as number[];
-    if (mesesSel && mesesSel.length === 2) {
-      const [m1Mes, m2Mes] = [...mesesSel].sort((a,b) => a-b);
-      const m1 = lista.find(x => x.mes === m1Mes);
-      const m2 = lista.find(x => x.mes === m2Mes);
-      if (m1 && m2) {
-        this.comparacion = {
-          label: `${m1.nombre} vs ${m2.nombre}`,
-          sub: `${m1.anio}`,
-          gastos: m2.gastos - m1.gastos,
-          deudas: m2.deudas - m1.deudas,
-          total: (m2.gastos + m2.deudas) - (m1.gastos + m1.deudas)
-        };
-      }
-    }
+    this.comparacionGrafica = null;
+    const mesesSel = (this.form.value.meses as number[] || []).slice().sort((a,b) => a-b);
+    if (!mesesSel || mesesSel.length < 2) return;
+
+    const seleccion = mesesSel
+      .map(mesNum => lista.find(x => x.mes === mesNum))
+      .filter(Boolean) as ResumenMes[];
+    if (seleccion.length < 2) return;
+
+    this.comparacion = {
+      label: seleccion.map(s => s.nombre).join(' · '),
+      sub: `${seleccion[0].anio}`,
+      gastos: 0,
+      deudas: 0,
+      total: 0,
+    };
+
+    const series = seleccion.map(s => ({
+      nombre: s.nombre,
+      gastos: s.gastos || 0,
+      deudas: s.deudas || 0,
+      total: (s.gastos || 0) + (s.deudas || 0),
+    }));
+
+    const maxG = Math.max(...series.map(s => s.gastos), 1);
+    const maxD = Math.max(...series.map(s => s.deudas), 1);
+    const maxT = Math.max(...series.map(s => s.total), 1);
+
+    const items = [
+      { key: 'Gastos', max: maxG, vals: series.map(s => s.gastos) },
+      { key: 'Deudas', max: maxD, vals: series.map(s => s.deudas) },
+      { key: 'Total',  max: maxT, vals: series.map(s => s.total)  },
+    ];
+
+    this.comparacionGrafica = {
+      m1Nombre: '',
+      m2Nombre: '',
+      items: items.map(it => ({ key: it.key, m1: 0, m2: 0, max: it.max })) as any,
+    } as any;
+
+    // Guardamos series públicas para la plantilla múltiple
+    this.compSeries = series;
   }
+
+  // Getter para listar meses disponibles según año seleccionado en el filtro
+  // Compat: ya no se usa selector de comparar explícito
 }

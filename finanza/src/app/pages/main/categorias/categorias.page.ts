@@ -1,4 +1,5 @@
 import { Component, OnInit, ViewEncapsulation, inject } from '@angular/core';
+import { RefresherCustomEvent } from '@ionic/angular';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { ModalController } from '@ionic/angular';
 import { firstValueFrom } from 'rxjs';
@@ -76,6 +77,14 @@ export class CategoriasPage implements OnInit {
     tipo: ['movimiento']
   });
   await this.cargarCategorias();
+  }
+
+  async onRefresh(event: RefresherCustomEvent) {
+    try {
+      await this.cargarCategorias();
+    } finally {
+      try { event.target.complete(); } catch {}
+    }
   }
 
   // ========= Cargar todas las categorías =========

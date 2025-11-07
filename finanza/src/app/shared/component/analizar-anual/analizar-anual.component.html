@@ -1,8 +1,8 @@
-<div class="analizar-anual">
+﻿<div class="analizar-anual">
 
   <h2>Resumen anual</h2>
 
-  <!-- ======= FILTROS: Año, Meses múltiples, Tipos y Categoría ======= -->
+  <!-- ======= FILTROS: Anho, Meses Multiples, Tipos y Categoria ======= -->
   <ion-card class="filter-card">
     <ion-item (click)="toggleFiltros()" lines="none">
       <ion-icon slot="start" [name]="filtrosAbiertos ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
@@ -12,7 +12,7 @@
     <div *ngIf="filtrosAbiertos" class="filters-body">
       <form [formGroup]="form" class="filters-grid">
 
-        <!-- Año -->
+        <!-- ANHO -->
         <ion-item lines="none">
           <ion-label>Año</ion-label>
           <ion-select formControlName="anio" interface="popover">
@@ -20,7 +20,7 @@
           </ion-select>
         </ion-item>
 
-        <!-- Meses múltiples -->
+        <!-- Meses multiples -->
         <ion-item lines="none">
           <ion-label>Meses</ion-label>
           <ion-select formControlName="meses" multiple="true" interface="popover" placeholder="Selecciona meses">
@@ -43,9 +43,9 @@
           </div>
         </ion-item>
 
-        <!-- Categoría (opcional) -->
+        <!-- CategorÃ­a (opcional) -->
         <ion-item lines="none">
-          <ion-label>Categoría</ion-label>
+          <ion-label>Categori­a</ion-label>
           <ion-select formControlName="categoria" interface="popover">
             <ion-select-option value="todas">Todas</ion-select-option>
             <ion-select-option *ngFor="let cat of categorias" [value]="cat">
@@ -56,10 +56,10 @@
 
         <div class="actions">
           <ion-button fill="outline" size="small" (click)="seleccionarUltimosMeses(2)">
-            Últimos 2 meses
+            ultimos 2 meses
           </ion-button>
           <ion-button fill="outline" size="small" (click)="seleccionarUltimosMeses(3)">
-            Últimos 3 meses
+            ultimos 3 meses
           </ion-button>
           <ion-button color="primary" (click)="aplicarFiltrosManual()">
             Aplicar
@@ -69,34 +69,32 @@
     </div>
   </ion-card>
 
-  <!-- ======= CARD DE COMPARACIÓN (solo si hay 2 meses) ======= -->
-  <ion-card *ngIf="comparacion" class="mes-card compare-card">
+  <!-- ======= CARD DE COMPARACION (solo si hay 2 meses) ======= -->
+  <ion-card *ngIf="(form.value.meses?.length || 0) >= 2 && comparacion" class="mes-card compare-card">
     <ion-card-header>
-      <ion-card-title>Comparación: {{ comparacion.label }}</ion-card-title>
+      <ion-card-title>Comparacion: {{ comparacion.label }}</ion-card-title>
       <ion-card-subtitle>{{ comparacion.sub }}</ion-card-subtitle>
     </ion-card-header>
-    <ion-card-content>
-      <div class="totales">
-        <div class="line">
-          <span>Gastos Δ</span>
-          <strong [class.positivo]="comparacion.gastos <= 0" [class.negativo]="comparacion.gastos > 0">
-            {{ comparacion.gastos | currency:'CLP':'symbol':'1.0-0' }}
-          </strong>
+    <ion-card-content>      
+      <div class="bars" *ngIf="comparacionGrafica as cg">
+        <div class="bar-legend">
+          <ng-container *ngFor="let s of compSeries; let idx = index">
+            <span class="dot" [class]="'m'+idx"></span> {{ s.nombre }}
+          </ng-container>
         </div>
-        <div class="line">
-          <span>Deudas Δ</span>
-          <strong [class.positivo]="comparacion.deudas <= 0" [class.negativo]="comparacion.deudas > 0">
-            {{ comparacion.deudas | currency:'CLP':'symbol':'1.0-0' }}
-          </strong>
+        <div class="bar-group" *ngFor="let it of cg.items; let k = index">
+          <div class="bar-row-header">
+            <span class="metric">{{ it.key }}</span>
+          </div>
+          <div class="bar-multi">
+            <ng-container *ngFor="let s of compSeries; let idx = index">
+              <div class="bar" [class]="'m'+idx" [style.width.%]="(((it.key==='Gastos'? s.gastos : (it.key==='Deudas'? s.deudas : s.total)))/ it.max) * 100">
+                <span class="val">{{ (it.key==='Gastos'? s.gastos : (it.key==='Deudas'? s.deudas : s.total)) | currency:'CLP':'symbol':'1.0-0' }}</span>
+              </div>
+            </ng-container>
+          </div>
         </div>
-        <div class="line total">
-          <span>Total (Gasto+Deuda) Δ</span>
-          <strong [class.positivo]="comparacion.total <= 0" [class.negativo]="comparacion.total > 0">
-            {{ comparacion.total | currency:'CLP':'symbol':'1.0-0' }}
-          </strong>
-        </div>
-      </div>
-    </ion-card-content>
+      </div></ion-card-content>
   </ion-card>
 
   <!-- ======= CARDS POR MES ======= -->
@@ -108,7 +106,6 @@
             <ion-card-title>{{ mes.nombre }}</ion-card-title>
             <ion-card-subtitle>{{ mes.anio }}</ion-card-subtitle>
           </ion-card-header>
-
           <ion-card-content>
             <div class="totales">
               <div class="line">
@@ -139,3 +136,5 @@
     </ion-text>
   </ng-template>
 </div>
+
+

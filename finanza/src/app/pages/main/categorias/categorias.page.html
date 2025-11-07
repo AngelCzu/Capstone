@@ -1,6 +1,7 @@
 <app-header title="Categorías" backButton="/main/home"></app-header>
 
 <ion-content class="categorias-page ion-padding">
+  <app-refresh (refresh)="onRefresh($event)"></app-refresh>
 
   <form [formGroup]="formTipo">
     <ion-segment formControlName="tipo" (ionChange)="filtrarPorTipo(formTipo.get('tipo')?.value)">

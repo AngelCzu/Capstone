@@ -1,6 +1,7 @@
 <app-header backButton="/main/home" title="Agregar movimiento"></app-header>
 
 <ion-content class="ion-padding agregar-page">
+  <app-refresh (refresh)="onRefresh($event)"></app-refresh>
   <!-- ===== Selector de tipo ===== -->
   <ion-card class="tipo-card">
     <ion-item lines="none">

@@ -1,6 +1,7 @@
 <app-header profile="profile" title="Inicio" badge="5"></app-header>
 
 <ion-content class="dashboard-page" fullscreen>
+  <app-refresh (refresh)="onRefresh($event)"></app-refresh>
 
 <app-storage-bar></app-storage-bar>
 

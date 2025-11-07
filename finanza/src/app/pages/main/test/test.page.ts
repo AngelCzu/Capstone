@@ -1,14 +1,15 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule, RefresherCustomEvent } from '@ionic/angular';
+import { SharedModule } from 'src/app/shared/shared-module';
 
 @Component({
   selector: 'app-test',
   templateUrl: './test.page.html',
   styleUrls: ['./test.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule]
+  imports: [CommonModule, FormsModule, IonicModule, SharedModule]
 })
 export class TestPage {
   // Selector
@@ -41,6 +42,10 @@ export class TestPage {
 
   constructor() {
     this.currentUserName = this.getCurrentUserName();
+  }
+
+  onRefresh(event: RefresherCustomEvent) {
+    try { event.target.complete(); } catch {}
   }
 
   // Handlers mínimos (reemplazar con lógica real)

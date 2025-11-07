@@ -80,6 +80,10 @@ export class AnalizarObjetivosComponent implements OnInit {
     }
   }
 
+  async reload() {
+    await this.ngOnInit();
+  }
+
   private calcularResumenFinanciero(movimientos: any[]) {
     let ingresos = 0;
     let gastos = 0;

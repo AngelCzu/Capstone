@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { RefresherCustomEvent } from '@ionic/angular';
 import { FormGroup, FormControl, Validators, FormsModule } from '@angular/forms';
 import { Utils } from 'src/app/services/utils';
 import { UserApi } from 'src/app/services/apis/user.api';
@@ -52,6 +53,14 @@ export class ProfilePage implements OnInit {
   ngOnInit() {
     this.loadProfile();
     
+  }
+
+  async onRefresh(event: RefresherCustomEvent) {
+    try {
+      await this.loadProfile();
+    } finally {
+      try { event.target.complete(); } catch {}
+    }
   }
 
 async loadProfile() {
