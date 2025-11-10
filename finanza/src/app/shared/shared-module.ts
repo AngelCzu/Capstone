@@ -18,6 +18,7 @@ import { AnalizarAnualComponent } from './component/analizar-anual/analizar-anua
 
 
 
+
 @NgModule({
   declarations: [
     HeaderComponent,
@@ -30,7 +31,8 @@ import { AnalizarAnualComponent } from './component/analizar-anual/analizar-anua
     VisualCurrencyDirective,
     CustomCurrencyInputComponent,
     AnalizarObjetivosComponent, 
-    AnalizarAnualComponent
+    AnalizarAnualComponent,
+
 
   ],
   exports: [
@@ -48,7 +50,8 @@ import { AnalizarAnualComponent } from './component/analizar-anual/analizar-anua
     EmailPinModalComponent,
     VisualCurrencyDirective,
     AnalizarObjetivosComponent,
-    AnalizarAnualComponent
+    AnalizarAnualComponent,
+
 
 
      
@@ -59,6 +62,7 @@ import { AnalizarAnualComponent } from './component/analizar-anual/analizar-anua
     ReactiveFormsModule,
     FormsModule,
     RouterLink,
+    
     
     
     

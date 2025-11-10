@@ -4,12 +4,38 @@
     <h2>{{ title }}</h2>
     <p *ngIf="message">{{ message }}</p>
 
+     <!-- ✅ Bloque de información adicional opcional -->
+    <div class="extra-info" *ngIf="extraInfo?.length">
+      <div class="info-item" *ngFor="let info of extraInfo">
+        <ion-icon *ngIf="info.icon" [name]="info.icon" [style.color]="info.color || '#2dd4bf'"></ion-icon>
+        <span class="label">{{ info.label }}:</span>
+        <span class="value" [style.color]="info.color || '#2dd4bf'">
+          {{ info.value }}
+        </span>
+      </div>
+    </div>
+
+
+
     <form [formGroup]="form">
       <ion-item *ngFor="let field of fields" lines="none">
         <ion-label position="stacked">{{ field.label }}</ion-label>
 
         <ion-input
-          *ngIf="field.type === 'text' || field.type === 'number'"
+          *ngIf="field.type === 'number'"
+          type="text"
+          inputmode="numeric"
+          [value]="visualValues[field.name]"
+          [formControlName]="field.name"
+          [required]="field.required"
+          (ionInput)="onNumberInput($event, field.name)">
+        </ion-input>
+
+
+
+        
+        <ion-input
+          *ngIf="field.type === 'text'"
           [type]="field.type"
           [formControlName]="field.name"
           [required]="field.required">

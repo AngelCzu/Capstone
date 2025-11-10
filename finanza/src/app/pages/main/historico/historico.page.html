@@ -69,10 +69,14 @@
 
       </ion-label>
 
-      <ion-note slot="end" [color]="mov.tipo === 'ingreso' ? 'success' : 'danger'">
-        {{ mov.tipo === 'ingreso' ? '+' : '-' }}
+      <ion-note
+        slot="end"
+        [color]="mov.tipo === 'ingreso' ? 'success' : (mov.tipo === 'objetivo' ? 'white' : 'danger')"
+      >
+        {{ mov.tipo === 'ingreso' ? '+' : (mov.tipo === 'objetivo' ? '' : '-') }}
         {{ mov.monto | currency:mov.moneda:'symbol':'1.0-0' }}
       </ion-note>
+
 
       <ion-button fill="clear" size="small" color="medium" slot="end" (click)="eliminarMovimiento(mov)">
         <ion-icon slot="icon-only" name="trash-outline"></ion-icon>

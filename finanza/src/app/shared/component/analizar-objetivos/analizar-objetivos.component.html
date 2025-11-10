@@ -1,24 +1,33 @@
 <div class="analizar-objetivos">
-
   <ng-container *ngIf="!sinObjetivos; else noData">
-    <div class="objetivo-card" *ngFor="let obj of objetivos" [style.--color]="obj.color">
+    <div class="objetivo-card" 
+         *ngFor="let obj of objetivos" 
+         [style.--color]="obj.color" 
+         (click)="verDetalleObjetivo(obj)">
       <div class="objetivo-header">
         <h3>{{ obj.nombre }}</h3>
         <p class="monto">{{ obj.monto | currency: 'CLP':'symbol' }}</p>
-        <div class="acciones">
-          <ion-icon name="create-outline" (click)="editarObjetivo(obj)"></ion-icon>
-          <ion-icon name="trash-outline" (click)="eliminarObjetivo(obj)"></ion-icon>
+
+        <div class="acciones" (click)="$event.stopPropagation()">
+          <!-- Solo aportar aquí -->
+          <ion-icon name="cash-outline" class="aportar" (click)="abrirModalAportar(obj)"></ion-icon>
         </div>
       </div>
 
+      <div class="mini-info">
+        <span *ngIf="obj.cuotaRecomendada">💸 {{ obj.cuotaRecomendada | number:'1.0-0' }}/mes</span>
+        <span *ngIf="obj.mesesRestantes">📆 {{ obj.mesesRestantes }} meses</span>
+        <span *ngIf="obj.fechaFinEstimada">🏁 {{ obj.fechaFinEstimada }}</span>
+      </div>
 
+      <!-- Barra de progreso (igual que ya tenías) -->
       <div class="barra-container">
         <div class="barra-fondo" [class.animar]="animar">
           <div class="barra-progreso" [class.completo]="obj.progreso === 1" [style.background]="obj.color"
-            [style.width.%]="animar ? obj.progreso * 100 : 0"></div>
+               [style.width.%]="animar ? obj.progreso * 100 : 0"></div>
 
           <div class="icono" [style.left.%]="animar ? obj.progreso * 100 : 0"
-            [class.balanceo]="animar && obj.progreso < 1" [class.completo]="obj.progreso === 1">
+               [class.balanceo]="animar && obj.progreso < 1" [class.completo]="obj.progreso === 1">
             {{ obj.icono }}
           </div>
         </div>

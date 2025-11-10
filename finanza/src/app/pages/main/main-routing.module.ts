@@ -31,7 +31,8 @@ const routes: Routes = [
   {
     path: 'detalle-categoria',
     loadChildren: () => import('./detalle-categoria/detalle-categoria.module').then( m => m.DetalleCategoriaPageModule)
-  },  {
+  },
+  {
     path: 'historico',
     loadChildren: () => import('./historico/historico.module').then( m => m.HistoricoPageModule)
   },
@@ -42,7 +43,11 @@ const routes: Routes = [
   {
     path: 'settings',
     loadChildren: () => import('./settings/settings.module').then( m => m.SettingsPageModule)
-  }
+  },  {
+    path: 'detalle-objetivo',
+    loadChildren: () => import('./detalle-objetivo/detalle-objetivo.module').then( m => m.DetalleObjetivoPageModule)
+  },
+
 
 
 ];

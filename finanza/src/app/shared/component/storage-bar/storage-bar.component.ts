@@ -40,7 +40,8 @@ async cargarDatosFinancieros() {
     console.log('✅ Sesión activa, obteniendo resumen financiero...');
     // 1️⃣ Traer resumen mensual desde backend Flask
     const resumen: any = await this.http.get('/api/v1/users/me/resumen').toPromise();
-
+    console.log(resumen);
+    
     // 2️⃣ Obtener categorías del usuario (ya guardadas en Firestore)
     const catMovs = await this.userApi.obtenerCategorias('movimiento').toPromise();
     this.categoriasUsuario = catMovs?.categorias || [];

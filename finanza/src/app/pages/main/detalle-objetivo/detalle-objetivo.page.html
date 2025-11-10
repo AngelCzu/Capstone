@@ -1,0 +1,103 @@
+<app-header backButton="/main/analizar" [title]="nombre || 'Detalle del objetivo'"></app-header>
+
+<ion-content [fullscreen]="true" class="detalle-objetivo" [style.--color]="color">
+  <div class="detalle-container">
+
+    <!-- TÍTULO -->
+    <div class="detalle-header">
+      <div class="icono">{{ icono }}</div>
+      <div class="titulos">
+        <h2>{{ nombre }}</h2>
+        <p>Resumen y actividad reciente</p>
+      </div>
+    </div>
+
+    <!-- ACCIONES -->
+    <div class="acciones">
+      <ion-button size="small" color="success" fill="solid" (click)="agregarAporte()">
+        <ion-icon name="cash-outline" slot="start"></ion-icon>
+        Aportar
+      </ion-button>
+      <ion-button size="small" color="primary" (click)="editarObjetivo()">
+        <ion-icon name="create-outline" slot="start"></ion-icon>
+        Editar
+      </ion-button>
+      <ion-button size="small" color="danger" fill="outline" (click)="eliminarObjetivo()">
+        <ion-icon name="trash-outline" slot="start"></ion-icon>
+        Eliminar
+      </ion-button>
+    </div>
+
+    <!-- RESUMEN -->
+    <div class="resumen">
+      <div class="item">
+        <span class="label">Meta total</span>
+        <span class="valor total">{{ monto | currency:'CLP':'symbol' }}</span>
+      </div>
+      <div class="item">
+        <span class="label">Ahorrado</span>
+        <span class="valor ok">{{ ahorrado | currency:'CLP':'symbol' }}</span>
+      </div>
+      <div class="item">
+        <span class="label">Restante</span>
+        <span class="valor restante">{{ restante | currency:'CLP':'symbol' }}</span>
+      </div>
+    </div>
+
+    <!-- PROGRESO -->
+    <div class="barra-container">
+      <div class="barra-fondo" [class.animar]="animar">
+        <div class="barra-progreso" [class.completo]="completo"
+             [style.background]="color"
+             [style.width.%]="animar ? progresoPct : 0"></div>
+
+        <div class="icono-barra" [style.left.%]="animar ? progresoPct : 0"
+             [class.balanceo]="animar && progresoPct < 100"
+             [class.completo]="completo">
+          {{ icono }}
+        </div>
+      </div>
+      <div class="leyenda">
+        <span>Progreso: {{ progresoPct }}%</span>
+        <span *ngIf="cuota && meses">
+          • Recomendado: {{ cuota | number:'1.0-0' }}/mes • {{ meses }} meses
+        </span>
+      </div>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div class="historial">
+      <div class="historial-header">
+        <h3>Historial de aportes</h3>
+        <ion-icon name="add-circle-outline" (click)="agregarAporte()"></ion-icon>
+      </div>
+
+      <ion-list *ngIf="!loading && historial.length > 0">
+        <ion-item *ngFor="let it of historial" lines="none" class="mov-item">
+          <div class="left">
+            <ion-icon name="add-circle-outline" class="ok"></ion-icon>
+            <div class="textos">
+              <div class="monto">+ {{ it.monto | currency:'CLP':'symbol' }}</div>
+              <div class="meta">
+                <span>{{ it.fecha | date:'dd/MM/yyyy' }}</span>
+                <span *ngIf="it.participante">• {{ it.participante }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="acciones">
+            <ion-icon name="create-outline" (click)="editarAporte(it)"></ion-icon>
+            <ion-icon name="trash-outline" (click)="eliminarAporte(it)"></ion-icon>
+          </div>
+        </ion-item>
+      </ion-list>
+
+      <div *ngIf="!loading && historial.length === 0" class="empty">
+        <ion-icon name="sparkles-outline"></ion-icon>
+        <p>No hay aportes registrados</p>
+      </div>
+    </div>
+  </div>
+</ion-content>
+
+<app-navbar></app-navbar>

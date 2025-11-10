@@ -11,6 +11,9 @@ import { SharedModule } from '../../shared-module';
 })
 export class GenericModalComponent implements OnInit {
 
+  visualValues: Record<string, string> = {};
+
+
   @Input() title!: string;
   @Input() message?: string;
   @Input() icon?: string;
@@ -25,6 +28,14 @@ export class GenericModalComponent implements OnInit {
   @Input() confirmText: string = 'Guardar';
   @Input() cancelText: string = 'Cancelar';
   @Input() color: string = 'primary';
+
+  @Input() extraInfo?: Array<{
+    label: string;
+    value: string | number;
+    color?: string;
+    icon?: string;
+  }>;
+
 
   form!: FormGroup;
 
@@ -108,6 +119,24 @@ colorDisabled(colorValue: string, usados: any[] = []): boolean {
   });
 
   return usadosNormalizados.includes(normalize(colorValue));
+}
+
+onNumberInput(event: any, controlName: string) {
+  const input = event.detail?.value?.toString() ?? '';
+
+  // 1️⃣ Limpiar el valor
+  const rawValue = input.replace(/\D/g, '');
+
+  // 2️⃣ Formatear con puntos
+  const formatted = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+  // 3️⃣ Actualizar la vista
+  this.visualValues[controlName] = formatted;
+
+  // 4️⃣ Actualizar el FormControl con el valor limpio
+  if (this.form && this.form.get(controlName)) {
+    this.form.get(controlName)?.setValue(rawValue, { emitEvent: false });
+  }
 }
 
 
