@@ -7,6 +7,7 @@ import { Utils } from 'src/app/services/utils';
 import { GenericModalComponent } from 'src/app/shared/component/modal-generic/modal-generic.component';
 import { SharedModule } from 'src/app/shared/shared-module';
 import { HttpClient } from '@angular/common/http';
+import { lastValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-detalle-objetivo',
@@ -182,9 +183,9 @@ async cargarObjetivo(id: string) {
     try {
       if (decision) {
         // ✅ Redistribuir faltante
-        await this.objetivoApi.reajustarPlan(this.objetivo.id, {
+        await lastValueFrom(this.objetivoApi.reajustarPlan(this.objetivo.id, {
           estrategia: 'mantener_plazo'
-        });
+        }));
 
         this.utilsSvc.presentToast({
           message: 'El plan fue ajustado redistribuyendo el faltante 💡',
@@ -216,11 +217,11 @@ async cargarObjetivo(id: string) {
         await modal.present();
         const { data, role } = await modal.onWillDismiss();
         if (role === 'confirm' && data?.nuevosMeses) {
-          await this.objetivoApi.aportarAObjetivo(this.objetivo.id, {
-            monto: 1,
+          await lastValueFrom(this.objetivoApi.reajustarPlan(this.objetivo.id, {
             estrategia: 'ajustar_plazo',
             recuperarEnMeses: Number(data.nuevosMeses),
-          }).toPromise();
+          }));
+
 
           this.utilsSvc.presentToast({
             message: 'El plazo fue extendido correctamente 🗓️',
@@ -230,9 +231,6 @@ async cargarObjetivo(id: string) {
         }
       }
       console.log(this.objetivo.id);
-      
-      // ✅ Avisar al backend que ya se realizó el reajuste del mes
-      await this.objetivoApi.marcarReajusteProcesado(this.objetivo.id).toPromise();
 
       // 🔄 Recargar objetivo actualizado
       await this.cargarObjetivo(this.objetivo.id);
