@@ -23,9 +23,7 @@ export class ObjetivoApi {
     return this.http.get(`${this.baseUrl}/objetivos/${id}`);
   }
 
-  marcarReajusteProcesado(objetivoId: string) {
-  return this.http.post(`${this.baseUrl}/objetivos/${objetivoId}/marcar_reajuste`, {});
-  }
+
 
   reajustarPlan(id: string, data: any) {
     return this.http.post(`${this.baseUrl}/objetivos/${id}/reajustar_plan`, data);
