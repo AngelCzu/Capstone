@@ -54,9 +54,7 @@ En caso de ser necesario instalar el paquete de Firebase y/o backend se ejecuta 
 ```bash
  npm i firebase @angular/fire@20
 
- pip install Flask flask-cors firebase-admin google-cloud-firestore gunicorn
-
- pip install python-dotenv
+ pip install -r requirements.txt
 
 ```
 
