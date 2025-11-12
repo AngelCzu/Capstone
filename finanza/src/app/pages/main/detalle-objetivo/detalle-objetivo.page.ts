@@ -283,7 +283,10 @@ async cargarObjetivo(id: string) {
     await loading.present();
     try {
       await this.objetivoApi.updateObjetivo(this.objetivo.id, data).toPromise();
-      await this.objetivoApi.recalcularPlanObjetivo(this.objetivo.id).toPromise();
+
+      await lastValueFrom(this.objetivoApi.reajustarPlan(this.objetivo.id, {
+          estrategia: 'mantener_plazo'
+      }));
       await this.cargarObjetivo(this.objetivo.id);
       this.utilsSvc.presentToast({ message: 'Objetivo actualizado', color: 'success', duration: 1600 });
     } catch {
@@ -317,14 +320,14 @@ async cargarObjetivo(id: string) {
     }
   }
 
-  // ==================== ACCIONES APORTES ====================
+  // ==================== APORTAR A OBJETIVO (versión simplificada) ====================
   async agregarAporte() {
-    // 🧩 Validaciones iniciales
+    // 🧩 Validaciones iniciales básicas
     if (this.saldoDisponible <= 0) {
       this.utilsSvc.presentToast({
-        message: 'No tienes saldo disponible para realizar un aporte',
+        message: 'No tienes saldo disponible para realizar un aporte 💸',
         color: 'danger',
-        duration: 2000
+        duration: 2000,
       });
       return;
     }
@@ -333,12 +336,12 @@ async cargarObjetivo(id: string) {
       this.utilsSvc.presentToast({
         message: 'Tu meta ya está completa 🎯',
         color: 'warning',
-        duration: 2000
+        duration: 2000,
       });
       return;
     }
 
-    // === Modal base para ingreso de monto ===
+    // === Modal para ingreso de monto ===
     const modal = await this.modalCtrl.create({
       component: GenericModalComponent,
       cssClass: 'modal-aportar-objetivo',
@@ -382,9 +385,9 @@ async cargarObjetivo(id: string) {
     const monto = Number(data.monto);
     if (!Number.isFinite(monto) || monto <= 0) {
       this.utilsSvc.presentToast({
-        message: 'Monto inválido',
+        message: 'Monto inválido ⚠️',
         color: 'warning',
-        duration: 1600
+        duration: 1600,
       });
       return;
     }
@@ -394,7 +397,7 @@ async cargarObjetivo(id: string) {
       this.utilsSvc.presentToast({
         message: `El monto ingresado supera tu saldo disponible (${new Intl.NumberFormat('es-CL').format(this.saldoDisponible)} CLP).`,
         color: 'danger',
-        duration: 2500
+        duration: 2500,
       });
       return;
     }
@@ -403,164 +406,42 @@ async cargarObjetivo(id: string) {
       this.utilsSvc.presentToast({
         message: `El monto ingresado supera el faltante de tu meta (${new Intl.NumberFormat('es-CL').format(this.restante)} CLP).`,
         color: 'warning',
-        duration: 2500
+        duration: 2500,
       });
       return;
     }
 
-    // === 🔹 Si el monto es menor al recomendado ===
-    if (this.cuota && monto < this.cuota) {
-      const mantenerPlazo = await this.utilsSvc.presentConfirmSheet({
-        title: 'Monto menor al recomendado',
-        message: `Tu aporte es menor al recomendado (${new Intl.NumberFormat('es-CL').format(this.cuota)} CLP/mes). ¿Quieres mantener el plazo actual y redistribuir el faltante?`,
-        confirmText: 'Mantener plazo',
-        cancelText: 'Cambiar plazo',
-        color: 'tertiary',
-        icon: 'calendar-outline'
-      });
+    // === Registrar aporte en backend ===
+    const loading = await this.utilsSvc.loading();
+    await loading.present();
 
-      if (!mantenerPlazo) {
-        // 🔸 Usuario quiere cambiar el plazo → mostrar segundo modal
-        const modalPlazo = await this.modalCtrl.create({
-          component: GenericModalComponent,
-          cssClass: 'modal-ajustar-plazo',
-          componentProps: {
-            title: 'Ajustar plazo',
-            color: 'tertiary',
-            confirmText: 'Guardar',
-            cancelText: 'Cancelar',
-            fields: [
-              {
-                name: 'nuevosMeses',
-                label: 'Nuevo número de meses',
-                type: 'number',
-                required: true,
-                default: this.meses || '',
-              },
-            ],
-          },
-        });
-
-        await modalPlazo.present();
-        const { data: dataPlazo, role: rolePlazo } = await modalPlazo.onWillDismiss();
-        if (rolePlazo !== 'confirm' || !dataPlazo) return;
-
-        const nuevosMeses = Number(dataPlazo.nuevosMeses);
-        if (!nuevosMeses || nuevosMeses <= 0) {
-          this.utilsSvc.presentToast({
-            message: 'Número de meses inválido',
-            color: 'warning',
-            duration: 1500,
-          });
-          return;
-        }
-
-        await this.objetivoApi.aportarAObjetivo(this.objetivo.id, {
-          monto,
-          estrategia: 'ajustar_plazo',
-          recuperarEnMeses: nuevosMeses,
-        }).toPromise();
-      } else {
-        // 🔹 Usuario quiere mantener el plazo → redistribuir faltante
-        const faltanteMes = this.cuota - monto;
-        const nuevosMeses = Math.max(this.meses - 1, 1);
-        const adicionalPorMes = Math.round(faltanteMes / nuevosMeses);
-
-        await this.objetivoApi.aportarAObjetivo(this.objetivo.id, {
-          monto,
-          estrategia: 'mantener_plazo',
-          recuperarEnMeses: nuevosMeses,
-          redistribucion: adicionalPorMes
-        }).toPromise();
-      }
+    try {
+      await this.objetivoApi.aportarAObjetivo(this.objetivo.id, {
+        monto,
+        estrategia: 'mantener_plazo', // se mantiene fijo, el backend decide si recalcula
+      }).toPromise();
 
       await this.cargarHistorial();
       await this.cargarSaldoDisponible();
       await this.cargarObjetivo(this.objetivo.id);
-    }
 
-    // === Aporte normal ===
-    else {
-      const loading = await this.utilsSvc.loading();
-      await loading.present();
-      try {
-        const res: any = await this.objetivoApi.aportarAObjetivo(this.objetivo.id, {
-          monto,
-          estrategia: 'mantener_plazo',
-        }).toPromise();
-
-        // 🧭 Si el backend marca un reajuste pendiente
-        if (res?.plan?.reajustePendiente) {
-          const decision = await this.utilsSvc.presentConfirmSheet({
-            title: 'Revisión del plan',
-            message: `
-              No alcanzaste el aporte recomendado el mes anterior.
-              ¿Quieres redistribuir el faltante en los meses restantes o extender el plazo?
-            `,
-            confirmText: 'Redistribuir',
-            cancelText: 'Extender plazo',
-            color: 'tertiary',
-            icon: 'time-outline',
-          });
-
-          if (decision) {
-            await this.objetivoApi.aportarAObjetivo(this.objetivo.id, {
-              monto: 0,
-              estrategia: 'mantener_plazo'
-            }).toPromise();
-          } else {
-            const modalExt = await this.modalCtrl.create({
-              component: GenericModalComponent,
-              cssClass: 'modal-ajustar-plazo',
-              componentProps: {
-                title: 'Extender plazo',
-                color: 'tertiary',
-                confirmText: 'Guardar',
-                cancelText: 'Cancelar',
-                fields: [
-                  {
-                    name: 'nuevosMeses',
-                    label: 'Nuevo número de meses',
-                    type: 'number',
-                    required: true,
-                    default: this.meses || '',
-                  },
-                ],
-              },
-            });
-            await modalExt.present();
-            const { data: dataExt, role: roleExt } = await modalExt.onWillDismiss();
-            if (roleExt === 'confirm' && dataExt?.nuevosMeses) {
-              await this.objetivoApi.aportarAObjetivo(this.objetivo.id, {
-                monto: 0,
-                estrategia: 'ajustar_plazo',
-                recuperarEnMeses: Number(dataExt.nuevosMeses),
-              }).toPromise();
-            }
-          }
-        }
-
-        await this.cargarHistorial();
-        await this.cargarSaldoDisponible();
-        await this.cargarObjetivo(this.objetivo.id);
-
-        this.utilsSvc.presentToast({
-          message: 'Aporte registrado y descontado del saldo 💰',
-          color: 'success',
-          duration: 1800
-        });
-      } catch (e) {
-        console.error(e);
-        this.utilsSvc.presentToast({
-          message: 'Error al registrar el aporte',
-          color: 'danger',
-          duration: 2000
-        });
-      } finally {
-        loading.dismiss();
-      }
+      this.utilsSvc.presentToast({
+        message: 'Aporte registrado correctamente 💰',
+        color: 'success',
+        duration: 1800,
+      });
+    } catch (e) {
+      console.error(e);
+      this.utilsSvc.presentToast({
+        message: 'Error al registrar el aporte ❌',
+        color: 'danger',
+        duration: 2000,
+      });
+    } finally {
+      loading.dismiss();
     }
   }
+
 
   async editarAporte(item: any) {
     const modal = await this.modalCtrl.create({
@@ -589,7 +470,10 @@ async cargarObjetivo(id: string) {
     try {
       await this.movimientosApi.actualizarMovimiento(item.id, { monto }).toPromise();
       await this.cargarHistorial();
-      await this.objetivoApi.recalcularPlanObjetivo(this.objetivo.id).toPromise();
+      await lastValueFrom(this.objetivoApi.reajustarPlan(this.objetivo.id, {
+          estrategia: 'mantener_plazo'
+      }));
+
       await this.cargarObjetivo(this.objetivo.id); // refresca datos en pantalla
 
       this.utilsSvc.presentToast({ message: 'Aporte actualizado', color: 'success', duration: 1600 });
@@ -616,7 +500,9 @@ async cargarObjetivo(id: string) {
     try {
       await this.movimientosApi.eliminarMovimiento(item.id, 'ahorro').toPromise();
       await this.cargarHistorial();
-      await this.objetivoApi.recalcularPlanObjetivo(this.objetivo.id).toPromise();
+      await lastValueFrom(this.objetivoApi.reajustarPlan(this.objetivo.id, {
+          estrategia: 'mantener_plazo'
+      }));
       await this.cargarObjetivo(this.objetivo.id);
 
       this.utilsSvc.presentToast({ message: 'Aporte eliminado', color: 'success', duration: 1600 });

@@ -1147,19 +1147,21 @@ def get_objetivos():
         print("Error al obtener objetivos:", e)
         return {"ok": False, "error": str(e)}, 500
 
-# ===================== OBTENER DETALLE DEL OBJETIVO (MEJORADO) =====================
+# ===================== OBTENER DETALLE DEL OBJETIVO (MEJORADO FINAL) =====================
 @api.get("/users/me/objetivos/<obj_id>")
 @require_auth
 def get_objetivo_detalle(obj_id):
     """
     Devuelve el detalle completo de un objetivo (tipo 'objetivo'),
-    incluyendo progreso, plan actual y reajustes automáticos:
-      - Detecta cuando el aporte mensual fue menor o mayor al recomendado.
-      - Detecta también cuando no hubo aportes y pasó un mes desde el inicio.
-      - Reajusta la cuota y/o los meses restantes según corresponda.
-      - Calcula meses restantes correctamente (sin restar de más).
+    incluyendo progreso y reajustes automáticos:
+      - Analiza el desempeño del MES ANTERIOR.
+      - Si no hubo o fue menor al recomendado → marca reajuste pendiente.
+      - Si fue mayor → recalcula la cuota sin modificar los meses.
+      - Nunca acorta el plazo automáticamente.
     """
     import math
+    from dateutil.relativedelta import relativedelta
+
     try:
         uid = request.uid
         user_ref = db.collection("users").document(uid)
@@ -1173,15 +1175,36 @@ def get_objetivo_detalle(obj_id):
 
         objetivo = obj_doc.to_dict()
         plan = objetivo.get("plan", {}) or {}
-
-        meta_total = float(objetivo.get("monto", 0))
+        # ===== VALIDACIÓN Y CÁLCULO DE MESES RESTANTES =====
         fecha_inicio = parse_iso(plan.get("fechaInicio")) or now_tz("America/Santiago")
-
-        # ✅ Cambio principal: usar siempre el tiempo total del objetivo como base
-        meses_obj = int(objetivo.get("tiempo") or plan.get("mesesObjetivo") or 1)
-
-        # 🕒 Fecha actual y diferencia de meses reales
         ahora = now_tz("America/Santiago")
+
+        # 🧮 Calcular meses transcurridos y los que deberían quedar
+        meses_trans = meses_entre(fecha_inicio, ahora)
+        meses_obj = int(objetivo.get("tiempo") or plan.get("mesesObjetivo") or 1)
+        meses_rest = max(1, meses_obj - meses_trans)
+
+        print(f"🗓️ Meses totales={meses_obj} | Transcurridos={meses_trans} | Restantes calculados={meses_rest}")
+
+        # ===== Validación para evitar restar meses de más =====
+        meses_guardado = int(plan.get("mesesObjetivo") or objetivo.get("tiempo") or 1)
+        print(f"🧮 Validando meses... guardado={meses_guardado}, calculado={meses_rest}")
+
+        # 🧩 Solo actualiza si realmente cambió el mes calendario
+        if meses_rest != meses_guardado:
+            plan["mesesObjetivo"] = meses_rest
+            obj_ref.update({"plan.mesesObjetivo": meses_rest})
+            print(f"🧭 MesesObjetivo actualizado de {meses_guardado} → {meses_rest}")
+        else:
+            print("⏸️ Se conserva mesesObjetivo anterior (no se modifica)")
+
+        # 🕒 Fecha actual
+        ahora = now_tz("America/Santiago")
+
+        # ✅ Datos base
+        meta_total = float(objetivo.get("monto", 0))
+        fecha_inicio = parse_iso(plan.get("fechaInicio")) or ahora
+        meses_obj = int(objetivo.get("tiempo") or plan.get("mesesObjetivo") or 1)
         meses_trans = meses_entre(fecha_inicio, ahora)
         meses_rest = max(1, meses_obj - meses_trans)
 
@@ -1200,7 +1223,7 @@ def get_objetivo_detalle(obj_id):
         cuota_actual = plan.get("cuotaRecomendada", 0)
         ultimo_reajuste = plan.get("ultimoReajuste")
         año_actual, mes_actual = ahora.year, ahora.month
-        paso_mes = True  # por defecto, siempre podemos recalcular
+        paso_mes = True
 
         # Detectar si ya se procesó reajuste este mes
         if ultimo_reajuste:
@@ -1211,15 +1234,18 @@ def get_objetivo_detalle(obj_id):
             except Exception:
                 paso_mes = True
 
-        # 🔹 Calcular aportes del mes actual
-        inicio_mes, fin_mes = rango_mes_actual_tz("America/Santiago")
-        aport_mes = [
-            a for a in aportes_all
-            if a.get("fecha") and inicio_mes <= parse_iso(a["fecha"]) < fin_mes
-        ]
-        aporte_mes_total = sum(a.get("monto", 0) for a in aport_mes)
+        # 🔹 Calcular aportes del MES ANTERIOR
+        inicio_mes_actual = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        inicio_mes_anterior = inicio_mes_actual - relativedelta(months=1)
+        fin_mes_anterior = inicio_mes_actual
 
-        # 🔸 Caso 1: no hubo aportes y ya transcurrió 1 mes completo
+        aport_mes_anterior = [
+            a for a in aportes_all
+            if a.get("fecha") and inicio_mes_anterior <= parse_iso(a["fecha"]) < fin_mes_anterior
+        ]
+        aporte_mes_total = sum(a.get("monto", 0) for a in aport_mes_anterior)
+
+        # 🔸 Caso 1: no hubo aportes el mes pasado
         if meses_trans >= 1 and aporte_mes_total == 0 and paso_mes:
             plan["reajustePendiente"] = True
             plan["ultimoReajuste"] = f"{año_actual}-{mes_actual:02d}"
@@ -1227,9 +1253,9 @@ def get_objetivo_detalle(obj_id):
                 "plan.reajustePendiente": True,
                 "plan.ultimoReajuste": plan["ultimoReajuste"]
             })
-            print(f"⚠️ Sin aportes detectados desde inicio → reajuste pendiente para {obj_id}")
+            print(f"⚠️ Sin aportes detectados el mes anterior → reajuste pendiente para {obj_id}")
 
-        # 🔸 Caso 2: Aporte menor al recomendado → marcar pendiente
+        # 🔸 Caso 2: Aporte menor al recomendado
         elif meses_trans > 0 and aporte_mes_total < cuota_actual * 0.95 and paso_mes:
             plan["reajustePendiente"] = True
             plan["ultimoReajuste"] = f"{año_actual}-{mes_actual:02d}"
@@ -1237,51 +1263,31 @@ def get_objetivo_detalle(obj_id):
                 "plan.reajustePendiente": True,
                 "plan.ultimoReajuste": plan["ultimoReajuste"]
             })
-            print(f"⚠️ Reajuste pendiente (aporte insuficiente) para {obj_id}")
+            print(f"⚠️ Aporte menor al recomendado el mes pasado → reajuste pendiente para {obj_id}")
 
-        # 🔹 Caso 3: Aporte mayor al recomendado → acortar plazo
+        # 🔸 Caso 3: Aporte mayor al recomendado → recalcular cuota sin tocar meses
         elif aporte_mes_total > cuota_actual * 1.05 and paso_mes:
-            exceso = aporte_mes_total - cuota_actual
-            meses_reducir = min(int(exceso // max(1, cuota_actual)), meses_rest - 1)
+            nueva_cuota = math.ceil(restante_global / max(1, meses_rest))
+            plan["cuotaRecomendada"] = nueva_cuota
+            plan["reajustePendiente"] = False
+            plan["ultimoReajuste"] = f"{año_actual}-{mes_actual:02d}"
+            obj_ref.update({
+                "plan.cuotaRecomendada": nueva_cuota,
+                "plan.reajustePendiente": False,
+                "plan.ultimoReajuste": plan["ultimoReajuste"]
+            })
+            print(f"✅ Aporte superior detectado → nueva cuota {nueva_cuota} (sin cambiar meses)")
 
-            if meses_reducir > 0:
-                meses_rest -= meses_reducir
-                plan["mesesObjetivo"] = meses_rest
-                nueva_cuota = math.ceil(restante_global / max(1, meses_rest))
-                plan["cuotaRecomendada"] = nueva_cuota
-                plan["ultimoReajuste"] = f"{año_actual}-{mes_actual:02d}"
-                plan["reajustePendiente"] = False
-                obj_ref.update({
-                    "plan.mesesObjetivo": meses_rest,
-                    "plan.cuotaRecomendada": nueva_cuota,
-                    "plan.ultimoReajuste": plan["ultimoReajuste"],
-                    "plan.reajustePendiente": False
-                })
-                print(f"✅ Aporte superior detectado → nueva cuota {nueva_cuota}")
-
-        # 🔹 Caso 4: Cuota no calculada o inconsistente
+        # 🔸 Caso 4: Cuota no calculada o inconsistente
         elif cuota_actual <= 0 or "cuotaRecomendada" not in plan:
             nueva_cuota = math.ceil(restante_global / max(1, meses_rest))
             plan["cuotaRecomendada"] = nueva_cuota
             obj_ref.update({"plan.cuotaRecomendada": nueva_cuota})
             print(f"🔄 Cuota inicial calculada: {nueva_cuota}")
 
-        # ==================== AJUSTE DE MESES CON VALIDACIÓN ====================
-        meses_guardado = int(plan.get("mesesObjetivo", meses_obj))
-        reajuste_pendiente = plan.get("reajustePendiente", False)
-
-        print(f"🔎 Validando meses... guardado={meses_guardado}, calculado={meses_rest}, reajustePendiente={reajuste_pendiente}")
-
-        # Solo actualizamos meses si:
-        # 1. El reajuste aún está pendiente, o
-        # 2. El cálculo no reduce más los meses (evita doble resta).
-        if reajuste_pendiente or meses_rest != meses_guardado:
-            plan["mesesObjetivo"] = meses_rest
-            print(f"✅ Actualizado mesesObjetivo a {meses_rest}")
-        else:
-            print("⏸️ Se conserva mesesObjetivo anterior (no se modifica).")
-
         # ==================== ACTUALIZAR PLAN Y RESPUESTA ====================
+        # (No se modifican los meses automáticamente)
+        plan["mesesObjetivo"] = plan.get("mesesObjetivo", meses_obj)
         objetivo["plan"] = plan
 
         return {
@@ -1299,6 +1305,8 @@ def get_objetivo_detalle(obj_id):
         return {"ok": False, "error": str(e)}, 500
 
 
+
+
 # ========= REAJUSTAR PLAN (Redistribuir o Ajustar Plazo) =========
 @api.post("/users/me/objetivos/<obj_id>/reajustar_plan")
 @require_auth
@@ -1306,8 +1314,9 @@ def reajustar_plan(obj_id):
     """
     Aplica el reajuste del objetivo:
       - 'mantener_plazo': redistribuye el faltante entre los meses restantes.
-      - 'ajustar_plazo': cambia el número total de meses.
-    ✅ Además marca reajustePendiente=False y actualiza ultimoReajuste.
+      - 'ajustar_plazo': cambia el número total de meses (recalcula cuota según el nuevo plazo).
+    ✅ Marca reajustePendiente=False y actualiza ultimoReajuste.
+    ✅ Calcula meses reales desde fechaInicio y sincroniza con mesesObjetivo.
     """
     import math
     from google.cloud import firestore
@@ -1346,9 +1355,7 @@ def reajustar_plan(obj_id):
             return {"ok": False, "error": "Objetivo no encontrado"}, 404
 
         objetivo = obj_doc.to_dict()
-        tipo = objetivo.get("tipo")
-        print(f"📘 Tipo del documento: {tipo}")
-        if tipo != "objetivo":
+        if objetivo.get("tipo") != "objetivo":
             print("❌ El documento no es un objetivo, abortando.")
             return {"ok": False, "error": "Tipo inválido"}, 400
 
@@ -1356,7 +1363,26 @@ def reajustar_plan(obj_id):
         meta_total = float(objetivo.get("monto", 0))
         print(f"🎯 Meta total: {meta_total} | Plan actual: {plan}")
 
-        # ===== Aportes =====
+        # ======== 1️⃣ CALCULAR Y VALIDAR MESES RESTANTES =========
+        fecha_inicio = parse_iso(plan.get("fechaInicio")) or now_tz("America/Santiago")
+        ahora = now_tz("America/Santiago")
+
+        meses_trans = meses_entre(fecha_inicio, ahora)
+        meses_totales = int(objetivo.get("tiempo") or plan.get("mesesObjetivo") or 1)
+        meses_calculados = max(1, meses_totales - meses_trans)
+
+        meses_guardado = int(plan.get("mesesObjetivo") or meses_totales)
+        print(f"🗓️ Meses totales={meses_totales} | Transcurridos={meses_trans} | Calculados={meses_calculados} | Guardados={meses_guardado}")
+
+        # ✅ Si el cálculo da diferente al guardado, actualizamos
+        if meses_calculados != meses_guardado:
+            plan["mesesObjetivo"] = meses_calculados
+            obj_ref.update({"plan.mesesObjetivo": meses_calculados})
+            print(f"🧭 MesesObjetivo actualizado de {meses_guardado} → {meses_calculados}")
+        else:
+            print("⏸️ Se conserva mesesObjetivo anterior (no se modifica)")
+
+        # ======== 2️⃣ CALCULAR APORTE RESTANTE Y TOTAL ========
         aportes_docs = list(
             movs_ref.where("tipo", "==", "ahorro")
                     .where("objetivoId", "==", obj_id)
@@ -1366,80 +1392,47 @@ def reajustar_plan(obj_id):
         restante = max(0, meta_total - total_aportado)
         print(f"💰 Total aportado: {total_aportado} | Restante: {restante}")
 
-        # ===== Cálculo de meses =====
-        fecha_inicio = parse_iso(plan.get("fechaInicio")) or now_tz("America/Santiago")
-        ahora = now_tz("America/Santiago")
-        meses_trans = meses_entre(fecha_inicio, ahora)
-        meses_obj = int(objetivo.get("tiempo") or plan.get("mesesObjetivo") or 1)
-        meses_rest = max(1, meses_obj - meses_trans)
-        print(f"🗓️ Meses objetivo={meses_obj} | transcurridos={meses_trans} | restantes={meses_rest}")
-
-        # 🧩 Validación para evitar restar meses de más
-        meses_guardado = int(plan.get("mesesObjetivo") or objetivo.get("tiempo") or 1)
-        print(f"🧮 Validando meses restantes... guardado={meses_guardado}, calculado={meses_rest}")
-
-        # Si el cálculo automático reduce más de 1 mes sin que haya pasado otro mes calendario real,
-        # entonces mantenemos el guardado.
-        if meses_rest < meses_guardado and meses_rest >= meses_guardado - 1:
-            print(f"⏸️ Ajuste limitado: se conserva mesesObjetivo={meses_guardado}")
-            meses_rest = meses_guardado
-        else:
-            print(f"✅ Se mantiene meses_rest={meses_rest} (válido)")
-
+        # ======== 3️⃣ ESTRATEGIAS DE REAJUSTE ========
         plan_nuevo = plan.copy()
 
-        # ===== Estrategia mantener plazo =====
+        # --- Estrategia: mantener plazo (redistribuye el faltante)
         if estrategia == "mantener_plazo":
-            cuota_nueva = math.ceil(restante / max(1, meses_rest))
+            cuota_nueva = math.ceil(restante / max(1, meses_calculados))
             plan_nuevo["cuotaRecomendada"] = cuota_nueva
-            plan_nuevo["mesesObjetivo"] = meses_rest
-            print(f"🔁 Estrategia mantener_plazo → cuota_nueva={cuota_nueva}")
+            print(f"🔁 Estrategia mantener_plazo → nueva cuota={cuota_nueva} CLP ({meses_calculados} meses restantes)")
 
-        # ===== Estrategia ajustar plazo =====
+        # --- Estrategia: ajustar plazo (modifica la duración total)
         elif estrategia == "ajustar_plazo":
-            nuevos_meses = int(recuperar_en or meses_obj)
+            nuevos_meses = int(recuperar_en or meses_totales)
             mrest2 = max(1, nuevos_meses - meses_trans)
-
             plan_nuevo["mesesObjetivo"] = nuevos_meses
-            plan_nuevo["cuotaRecomendada"] = math.ceil(restante / mrest2)
+            cuota_nueva = math.ceil(restante / mrest2)
+            plan_nuevo["cuotaRecomendada"] = cuota_nueva
 
-            print(f"🔁 Estrategia ajustar_plazo → nuevos_meses={nuevos_meses}, cuota={plan_nuevo['cuotaRecomendada']}")
+            print(f"🔁 Estrategia ajustar_plazo → nuevos_meses={nuevos_meses}, nueva cuota={cuota_nueva} CLP")
 
-            # 🧭 Sincronizar el tiempo global del objetivo con el nuevo plazo
+            # 🧭 Actualizar también el campo global "tiempo"
             try:
                 obj_ref.update({"tiempo": nuevos_meses})
-                print(f"🧭 Tiempo global del objetivo actualizado a {nuevos_meses} meses")
+                print(f"🧭 Tiempo global del objetivo sincronizado a {nuevos_meses} meses")
             except Exception as sync_err:
                 print(f"⚠️ No se pudo actualizar el campo 'tiempo': {sync_err}")
 
-
-        # ===== Marcar como reajustado =====
+        # ======== 4️⃣ MARCAR REAJUSTE PROCESADO ========
         plan_nuevo["reajustePendiente"] = False
         plan_nuevo["ultimoReajuste"] = f"{ahora.year}-{ahora.month:02d}"
+
+        # ======== 5️⃣ GUARDAR CAMBIOS EN FIRESTORE ========
+        obj_ref.update({"plan": plan_nuevo})
 
         print("\n🧾 PLAN NUEVO FINAL:")
         for k, v in plan_nuevo.items():
             print(f"   {k}: {v}")
 
-        # ===== Escritura en Firestore =====
-        print("\n🔥 Eliminando plan anterior...")
-        obj_ref.update({"plan": firestore.DELETE_FIELD})
-        print("✅ Plan anterior eliminado.")
-
-        print("💾 Escribiendo nuevo plan...")
-        obj_ref.update({"plan": plan_nuevo})
-        print("✅ Nuevo plan guardado correctamente.")
-
-        # ===== Verificación =====
-        snap_check = obj_ref.get()
-        data_check = snap_check.to_dict().get("plan", {})
-        print("\n🔎 Lectura inmediata post-update:")
-        for k, v in data_check.items():
-            print(f"   {k}: {v}")
-
-        print("\n✅ Reajuste aplicado correctamente.")
+        print("✅ Reajuste aplicado correctamente.")
         print("===============================================================\n")
 
+        # ======== 6️⃣ RESPUESTA FINAL ========
         return {
             "ok": True,
             "plan": plan_nuevo,
@@ -1451,7 +1444,6 @@ def reajustar_plan(obj_id):
         print("\n🔥 Error crítico en reajustar_plan:")
         traceback.print_exc()
         return {"ok": False, "error": str(e)}, 500
-
 
 
 
@@ -1540,164 +1532,105 @@ def update_movimiento(mov_id):
 
 
 
-# ======== APORTAR OBJETIVO ========
+# ======== APORTAR OBJETIVO (versión final limpia y corregida) ========
 @api.post("/users/me/objetivos/<obj_id>/aportar")
 @require_auth
 def aportar_objetivo(obj_id):
-    uid = request.uid
-    body = request.get_json() or {}
-    monto = round(float(body.get("monto", 0)), 0)
-    estrategia = body.get("estrategia", "mantener_plazo")
-    recuperar_en = body.get("recuperarEnMeses")
-    participante = body.get("participante")  # opcional (para compartidos)
-
-    if monto <= 0:
-        return {"ok": False, "error": "Monto inválido"}, 400
-
-    user_ref = db.collection("users").document(uid)
-    movs_ref = user_ref.collection("movimientos")
-    obj_ref = movs_ref.document(obj_id)
-
-    @firestore.transactional
-    def _tx(tx):
-        # 1️⃣ Leer usuario y objetivo
-        user_snap = user_ref.get(transaction=tx)
-        saldo = (user_snap.to_dict() or {}).get("saldoDisponible", 0)
-
-        obj_snap = obj_ref.get(transaction=tx)
-        if not obj_snap.exists or obj_snap.to_dict().get("tipo") != "objetivo":
-            raise ValueError("Objetivo no existe")
-
-        objetivo = obj_snap.to_dict()
-        plan = (objetivo.get("plan") or {}).copy()
-        moneda = objetivo.get("moneda", "CLP")
-        meta_total = round(float(objetivo.get("monto", 0)), 0)
-
-        # 2️⃣ Leer aportes existentes
-        inicio_mes, fin_mes = rango_mes_actual_tz("America/Santiago")
-        q_all = movs_ref.where("tipo", "==", "ahorro").where("objetivoId", "==", obj_id)
-        ahorros_all_docs = tx.get(q_all)
-        ahorros_all = [d.to_dict() for d in ahorros_all_docs]
-
-        # Filtrar manualmente los del mes actual
-        ahorros_mes = [
-            a for a in ahorros_all
-            if a.get("fecha") and inicio_mes <= parse_iso(a["fecha"]) < fin_mes
-        ]
-
-        progreso_total = sum(a.get("monto", 0) for a in ahorros_all) + monto
-        aporte_mes_total = sum(a.get("monto", 0) for a in ahorros_mes) + monto
-
-        # 3️⃣ Calcular nueva planificación
-        fecha_inicio = parse_iso(plan.get("fechaInicio")) or datetime.now(datetime.UTC)
-        meses_trans = meses_entre(fecha_inicio, now_tz("America/Santiago"))
-        meses_obj = plan.get("mesesObjetivo") or objetivo.get("tiempo") or 1
-        meses_rest = max(1, int(meses_obj) - meses_trans)
-
-        restante = max(0, meta_total - progreso_total)
-        cuota_base = math.ceil(restante / meses_rest) if restante > 0 else 0
-        cuota_actual = plan.get("cuotaRecomendada", cuota_base)
-        delta = aporte_mes_total - (cuota_actual or 0)
-
-        plan_nuevo = plan.copy()
-        # ⚠️ Si ha pasado al menos un mes y el aporte del mes fue menor al recomendado
-        if meses_trans > 0 and aporte_mes_total < (plan.get("cuotaRecomendada") or 0):
-            plan_nuevo["reajustePendiente"] = True
-        else:
-            plan_nuevo["reajustePendiente"] = False
-
-        # 🔹 Ajuste del plan según desempeño del aporte
-        if delta < 0:
-            deficit = -delta
-            if estrategia == "mantener_plazo":
-                divisor = max(1, meses_rest - 1)
-                plan_nuevo["cuotaRecomendada"] = math.ceil(cuota_base + (deficit / divisor))
-            elif estrategia == "ajustar_plazo":
-                nuevos_meses = int(recuperar_en or 0)
-                if nuevos_meses > 0:
-                    # El usuario eligió manualmente el nuevo plazo
-                    plan_nuevo["mesesObjetivo"] = nuevos_meses
-                    mrest2 = max(1, nuevos_meses - meses_trans)
-                    plan_nuevo["cuotaRecomendada"] = math.ceil(restante / mrest2) if restante > 0 else 0
-                else:
-                    # Caso automático (por déficit)
-                    if cuota_base <= 0:
-                        plan_nuevo["cuotaRecomendada"] = 0
-                    else:
-                        meses_extra = math.ceil(deficit / cuota_base)
-                        plan_nuevo["mesesObjetivo"] = int(meses_obj) + max(1, meses_extra)
-                        mrest2 = max(1, plan_nuevo["mesesObjetivo"] - meses_trans)
-                        plan_nuevo["cuotaRecomendada"] = math.ceil(restante / mrest2) if restante > 0 else 0
-
-            elif estrategia == "recuperar_en_x_meses":
-                R = int(recuperar_en or 1)
-                extra = math.ceil(deficit / max(1, R))
-                plan_nuevo["recuperarEnMeses"] = R
-                plan_nuevo["cuotaRecomendada"] = math.ceil(cuota_base + extra)
-            else:
-                plan_nuevo["cuotaRecomendada"] = cuota_base
-        else:
-            # 🔸 Usuario va adelantado → acorta plazo si puede
-            if restante > 0 and cuota_base > 0:
-                meses_ganados = delta // max(1, cuota_base)
-                if meses_ganados > 0:
-                    plan_nuevo["mesesObjetivo"] = max(1, int(meses_obj) - meses_ganados)
-            mrest2 = max(1, (plan_nuevo.get("mesesObjetivo", meses_obj)) - meses_trans)
-            plan_nuevo["cuotaRecomendada"] = math.ceil(restante / mrest2) if restante > 0 else 0
-
-        # 4️⃣ Registrar movimiento con formato estándar
-        ahora_cl = now_tz("America/Santiago")
-        año, mes, semestre = ahora_cl.year, ahora_cl.month, (1 if ahora_cl.month <= 6 else 2)
-
-        data_ahorro = {
-            "tipo": "ahorro",
-            "origen": objetivo.get("nombre", "Sin origen"),
-            "monto": monto,
-            "montoUF": None,
-            "valorUF": None,
-            "moneda": moneda,
-            "categoria": "Ahorros",
-            "frecuencia": "unica",
-            "compartido": False,
-            "modoDivision": None,
-            "participantes": [],
-            "fecha": ahora_cl.isoformat(),
-            "año": año,
-            "mes": mes,
-            "semestre": semestre,
-            "createdAt": firestore.SERVER_TIMESTAMP,
-            "objetivoId": obj_id,
-        }
-
-        if participante:
-            data_ahorro["participante"] = participante
-
-        ah_ref = movs_ref.document()
-        tx.set(ah_ref, data_ahorro)
-
-        # Actualizar objetivo y saldo
-        tx.update(obj_ref, {"plan": plan_nuevo})
-        nuevo_saldo = (saldo or 0) - monto
-        tx.update(user_ref, {"saldoDisponible": nuevo_saldo})
-
-        return {
-            "aporteEsperadoMes": int(cuota_actual or 0),
-            "aporteMes": int(aporte_mes_total),
-            "delta": int(delta),
-            "plan": plan_nuevo,
-            "restante": int(restante),
-            "saldoDisponible": int(nuevo_saldo),
-        }
+    """
+    Registra un aporte al objetivo sin modificar el plan.
+    - Crea un movimiento tipo 'ahorro' (visible en el Home).
+    - Descuenta del saldo disponible.
+    - No recalcula cuotas, meses ni reajustes.
+    """
+    from google.cloud import firestore
+    import traceback
 
     try:
+        uid = request.uid
+        body = request.get_json() or {}
+        monto = round(float(body.get("monto", 0)), 0)
+        participante = body.get("participante")
+
+        if monto <= 0:
+            return {"ok": False, "error": "Monto inválido"}, 400
+
+        # ===== Referencias principales =====
+        user_ref = db.collection("users").document(uid)
+        movs_ref = user_ref.collection("movimientos")
+        obj_ref = movs_ref.document(obj_id)
+
+        @firestore.transactional
+        def _tx(tx):
+            # 1️⃣ Leer usuario y objetivo
+            user_snap = user_ref.get(transaction=tx)
+            saldo = (user_snap.to_dict() or {}).get("saldoDisponible", 0)
+
+            obj_snap = obj_ref.get(transaction=tx)
+            if not obj_snap.exists or obj_snap.to_dict().get("tipo") != "objetivo":
+                raise ValueError("Objetivo no existe")
+
+            objetivo = obj_snap.to_dict()
+            moneda = objetivo.get("moneda", "CLP")
+            nombre_objetivo = objetivo.get("nombre", "Sin nombre")
+            meta_total = float(objetivo.get("monto", 0))
+
+            # 2️⃣ Registrar movimiento (aporte)
+            ahora_cl = now_tz("America/Santiago")
+            año = ahora_cl.year
+            mes = ahora_cl.month
+            semestre = 1 if mes <= 6 else 2
+
+            data_ahorro = {
+                "tipo": "ahorro",
+                "origen": nombre_objetivo,
+                "monto": monto,
+                "moneda": moneda,
+                "categoria": "Ahorros",
+                "frecuencia": "unica",
+                "compartido": False,
+                "modoDivision": None,
+                "participantes": [],
+                "fecha": ahora_cl.isoformat(),
+                "año": año,
+                "mes": mes,
+                "semestre": semestre,
+                "createdAt": firestore.SERVER_TIMESTAMP,
+                "objetivoId": obj_id,
+            }
+
+            if participante:
+                data_ahorro["participante"] = participante
+
+            ah_ref = movs_ref.document()
+            tx.set(ah_ref, data_ahorro)
+
+            # 3️⃣ Actualizar saldo disponible
+            nuevo_saldo = (saldo or 0) - monto
+            tx.update(user_ref, {"saldoDisponible": nuevo_saldo})
+
+            # (No modificamos el plan ni tocamos reajuste)
+            return {
+                "ok": True,
+                "montoAportado": monto,
+                "saldoDisponible": int(nuevo_saldo),
+                "moneda": moneda,
+                "categoria": "Ahorros",
+                "objetivo": {
+                    "id": obj_id,
+                    "nombre": nombre_objetivo,
+                    "meta": meta_total,
+                },
+            }
+
+        # Ejecutar la transacción
         res = _tx(db.transaction())
 
-        # 🟢 Asegurar categoría 'Ahorros' para usuarios existentes
+        # 4️⃣ Asegurar que exista la categoría "Ahorros" para el Home
         try:
-            cats_ref = db.collection("users").document(uid).collection("categorias")
+            cats_ref = user_ref.collection("categorias")
             cats = list(cats_ref.stream())
             nombres = {(c.to_dict() or {}).get("nombre") for c in cats}
-            if "Ahorro" not in nombres and "Ahorros" not in nombres:
+            if "Ahorros" not in nombres:
                 cats_ref.document().set({
                     "tipo": "movimiento",
                     "nombre": "Ahorros",
@@ -1708,13 +1641,12 @@ def aportar_objetivo(obj_id):
         except Exception:
             pass
 
-        return {"ok": True, **res}, 201
+        return res, 201
 
     except Exception as e:
         print("🔥 Error en aportar_objetivo:", e)
+        traceback.print_exc()
         return {"ok": False, "error": str(e)}, 400
-
-
 
 
 # ======== ELIMINAR OBJETIVO ========
@@ -2069,83 +2001,6 @@ def parse_iso(s: str | None) -> datetime | None:
     except Exception:
         return None
 
-
-# ======== RECALCULAR PLAN DEL OBJETIVO ========
-@api.post("/users/me/objetivos/<obj_id>/recalcular")
-@require_auth
-def recalcular_plan_objetivo(obj_id):
-    """
-    🔄 Recalcula la cuota mensual recomendada (cuotaRecomendada)
-    del objetivo según los aportes realizados, la meta total
-    y los meses restantes reales.
-    También actualiza el último reajuste y desmarca el pendiente.
-    """
-    import math
-    from datetime import datetime
-
-    try:
-        uid = request.uid
-        user_ref = db.collection("users").document(uid)
-        movs_ref = user_ref.collection("movimientos")
-        obj_ref = movs_ref.document(obj_id)
-
-        # 🟢 Obtener el objetivo
-        obj_doc = obj_ref.get()
-        if not obj_doc.exists or obj_doc.to_dict().get("tipo") != "objetivo":
-            return {"ok": False, "error": "Objetivo no encontrado"}, 404
-
-        objetivo = obj_doc.to_dict()
-        plan = objetivo.get("plan", {})
-        meta_total = float(objetivo.get("monto", 0))
-
-        # Fecha de inicio y tiempo total del plan
-        fecha_inicio = parse_iso(plan.get("fechaInicio"))
-        meses_obj = int(plan.get("mesesObjetivo", objetivo.get("tiempo", 1)) or 1)
-
-        # 🕒 Calcular meses transcurridos y restantes
-        ahora = now_tz("America/Santiago")
-        meses_trans = meses_entre(fecha_inicio, ahora)
-        meses_rest = max(1, meses_obj - meses_trans)
-
-        # 🔍 Obtener aportes de este objetivo
-        aportes_docs = list(
-            movs_ref.where("tipo", "==", "ahorro")
-                    .where("objetivoId", "==", obj_id)
-                    .stream()
-        )
-        aportes = [d.to_dict() for d in aportes_docs]
-
-        total_aportado = sum(float(a.get("monto", 0)) for a in aportes)
-        restante_global = max(0, meta_total - total_aportado)
-
-        # 🧮 Recalcular cuota recomendada según meses restantes
-        nueva_cuota = math.ceil(restante_global / max(1, meses_rest))
-
-        # 🔄 Actualizar plan
-        plan["cuotaRecomendada"] = nueva_cuota
-        plan["mesesObjetivo"] = meses_rest
-        plan["reajustePendiente"] = False
-        plan["ultimoReajuste"] = f"{ahora.year}-{ahora.month:02d}"
-
-        # Guardar cambios en Firestore
-        obj_ref.update({"plan": plan})
-
-        print(f"✅ Objetivo {obj_id} recalculado → {nueva_cuota} CLP/mes (restante {restante_global}, meses {meses_rest})")
-
-        # 🧾 Devolver respuesta actualizada
-        return {
-            "ok": True,
-            "objetivo": {
-                **objetivo,
-                "plan": plan,
-                "progresoGlobal": total_aportado,
-                "restanteGlobal": restante_global,
-            }
-        }, 200
-
-    except Exception as e:
-        print("🔥 Error al recalcular plan:", e)
-        return {"ok": False, "error": str(e)}, 500
 
 
 # --- Registrar blueprint ---

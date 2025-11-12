@@ -24,7 +24,6 @@ export class ObjetivoApi {
   }
 
 
-
   reajustarPlan(id: string, data: any) {
     return this.http.post(`${this.baseUrl}/objetivos/${id}/reajustar_plan`, data);
   }
