@@ -270,7 +270,13 @@ async cargarObjetivo(id: string) {
               .filter((c: any) => c?.tipo === 'objetivo')
               .map((c: any) => ({ value: c?.nombre, label: `${c?.icono || '💠'} ${c?.nombre}` })),
           },
-          { name: 'tiempo', label: 'Tiempo (meses)', type: 'number', required: false, default: this.meses || '' },
+          { name: 'tiempo', 
+            label: 'Tiempo (meses)', 
+            type: 'number', 
+            required: false, 
+            default: this.meses || '',
+            helper: this.getMensajeTiempo(), 
+          },
         ],
       },
     });
@@ -520,4 +526,26 @@ async cargarObjetivo(id: string) {
     if (profile?.email) return String(profile.email).split('@')[0];
     return '';
   }
+
+  getMensajeTiempo(): string {
+    try {
+      if (!this.objetivo?.plan?.fechaInicio) return '';
+      const fechaInicio = new Date(this.objetivo.plan.fechaInicio);
+      const fechaActual = new Date();
+      
+      // Calcular meses transcurridos
+      const diffAños = fechaActual.getFullYear() - fechaInicio.getFullYear();
+      const diffMeses = fechaActual.getMonth() - fechaInicio.getMonth();
+      const mesesTranscurridos = diffAños * 12 + diffMeses;
+
+      if (mesesTranscurridos <= 0) return `El cálculo parte desde ${fechaInicio.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' })}.`;
+
+      return `Creado en ${fechaInicio.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' })}. 
+  Ya ha pasado ${mesesTranscurridos} mes${mesesTranscurridos > 1 ? 'es' : ''}, 
+  por lo que al guardar, el plazo se ajustará automáticamente.`;
+    } catch {
+      return '';
+    }
+  }
+
 }

@@ -24,6 +24,7 @@ export class GenericModalComponent implements OnInit {
     required?: boolean;
     default?: any;
     options?: Array<{ label: string; value: any }>;
+    helper?: string;
   }> = [];
   @Input() confirmText: string = 'Guardar';
   @Input() cancelText: string = 'Cancelar';
@@ -35,6 +36,7 @@ export class GenericModalComponent implements OnInit {
     color?: string;
     icon?: string;
   }>;
+  
 
 
   form!: FormGroup;

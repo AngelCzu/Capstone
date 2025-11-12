@@ -72,6 +72,11 @@
           </div>
         </ng-container>
 
+        <!-- 💡 Mensaje informativo (helper) opcional -->
+        <ion-note *ngIf="field.helper" color="medium" class="field-helper">
+          {{ field.helper }}
+        </ion-note>
+
 
         <ion-note color="danger" *ngIf="form.get(field.name)?.invalid && form.get(field.name)?.touched">
           Campo obligatorio o inválido

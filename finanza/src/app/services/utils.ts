@@ -171,7 +171,15 @@ export class Utils {
 // ================================ Modal Genérico ================================
 async presentGenericModal(opts: {
   title: string;
-  fields: Array<{ name: string; label: string; type: string; required?: boolean; default?: any; options?: any[] }>;
+  fields: Array<{ 
+    name: string; 
+    label: string; 
+    type: string; 
+    required?: boolean; 
+    default?: any; 
+    options?: any[];
+    helper?: string;
+ }>;
   confirmText?: string;
   cancelText?: string;
   color?: string;
