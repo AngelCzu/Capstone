@@ -60,13 +60,14 @@ export class AnalizarAnualComponent implements OnInit {
 
   comparacion: { label: string; sub: string; gastos: number; deudas: number; total: number } | null = null;
   comparacionGrafica: {
-    m1Nombre: string;
-    m2Nombre: string;
-    items: Array<{ key: string; m1: number; m2: number; max: number }>;
+    items: Array<{ key: string; max: number; topName?: string; topVal?: number }>;
   } | null = null;
 
   // Series para comparación múltiple (N meses seleccionados)
   compSeries: Array<{ nombre: string; gastos: number; deudas: number; total: number }> = [];
+
+  // Colores por categoría
+  private categoriaColorMap: Record<string, string> = {};
 
   constructor(
     private fb: FormBuilder,
@@ -91,6 +92,170 @@ export class AnalizarAnualComponent implements OnInit {
       this.form.valueChanges.subscribe(() => this.recalcular());
     });
   }
+
+  // Exportar un dashboard descargable (nueva ventana con layout dedicado)
+  exportarPdf() {
+    try { this.aplicarFiltrosManual(); } catch {}
+
+    // Tomar datos actuales
+    const year = this.form.value.anio as number;
+    const mesesSel = (this.form.value.meses as number[] || []).slice().sort((a,b)=>a-b);
+    const mesesNombres = mesesSel.map(m => this.MESES[m-1]).join(' · ');
+
+    const series = this.compSeries?.length ? this.compSeries : [];
+    const comp = this.comparacionGrafica;
+    const listaMeses = this.resumenAnualFiltrado || [];
+
+    const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(Math.round(n||0));
+
+    // Construir seccion comparacion (si existe)
+    const comparacionHTML = comp ? `
+      <section class="card">
+        <h2>Comparación: ${mesesNombres || 'Meses'}</h2>
+        <h3 class="sub">${year}</h3>
+        ${comp.items.map(it => {
+          const filas = series.map((s, idx) => {
+            const val = (it.key === 'Gastos' ? s.gastos : (it.key === 'Deudas' ? s.deudas : s.total));
+            const pct = Math.max(0, Math.min(100, (val / (it.max || 1)) * 100));
+            const color = this.colorDeSerie(s.nombre, idx);
+            return `
+              <div class="row">
+                <div class="label"><span class="dot" style="background:${color}"></span>${s.nombre}</div>
+                <div class="track">
+                  <div class="bar" style="width:${pct}%; background:${color}"></div>
+                </div>
+                <div class="val">${fmt(val)}</div>
+              </div>`;}).join('')
+          return `
+            <div class="group">
+              <div class="group-title">${it.key}</div>
+                ${filas}
+                <div class=\"top-msg\">Tu gasto fue mayor en: ${it.topName || ''} — ${fmt(it.topVal || 0)}</div>
+              <div class="axis"><span>${fmt(it.max)}</span></div>
+            </div>`;
+        }).join('')}
+      </section>
+    ` : '';
+
+    // Cards por mes seleccionado
+    const mesesHTML = listaMeses.map(m => `
+      <section class="card">
+        <div class="card-header">
+          <div class="title">${m.nombre}</div>
+          <div class="sub">${m.anio}</div>
+        </div>
+        <div class="totales">
+          <div class="line"><span>Gastos</span><strong class="gasto">${fmt(m.gastos)}</strong></div>
+          <div class="line"><span>Deudas</span><strong class="deuda">${fmt(m.deudas)}</strong></div>
+          <div class="line total"><span>Total</span><strong>${fmt((m.gastos||0)+(m.deudas||0))}</strong></div>
+        </div>
+        ${(m.topCategorias && m.topCategorias.length) ? `
+        <div class="cats">
+          ${m.topCategorias.map(c => {
+            const ancho = ((c.monto)/(m.topCategorias?.[0]?.monto || 1))*100;
+            const color = this.colorDeCategoria(c.nombre);
+            return `
+              <div class="cat">
+                <div class="cat-name">${c.nombre}</div>
+                <div class="cat-row">
+                  <div class="cat-bar" style="width:${ancho}%; background:${color}"></div>
+                  <div class="cat-val">${fmt(c.monto)}</div>
+                </div>
+              </div>`;}).join('')}
+        </div>` : ''}
+      </section>
+    `).join('');
+
+    const html = `<!doctype html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>Dashboard anual ${year}${mesesNombres ? ' — '+mesesNombres : ''}</title>
+      <style>
+        :root { color-scheme: dark; }
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial; margin: 0; padding: 24px; background: #071a21; color: #e8f5f7; }
+        .container { max-width: 1024px; margin: 0 auto; }
+        header { display:flex; justify-content: space-between; align-items:center; margin-bottom: 16px; }
+        header .title { font-weight: 800; font-size: 20px; letter-spacing: -0.2px; }
+        header .meta { opacity: .85; font-size: 14px; }
+        .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
+
+        .card { background: rgba(4,43,55,.85); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 14px; }
+        .card-header { margin-bottom: 8px; }
+        .card-header .title { font-weight: 800; }
+        .card-header .sub { opacity: .7; font-size: 12px; }
+
+        .totales .line { display:flex; justify-content: space-between; padding: 4px 0; }
+        .gasto{ color: #ff4d4d; } .deuda{ color: #ffd166; }
+
+        .group { margin-top: 8px; }
+        .group-title { font-weight: 700; margin-bottom: 8px; }
+        .row { display:grid; grid-template-columns: 120px 1fr auto; align-items:center; gap:10px; margin: 4px 0; }
+        .label { display:inline-flex; align-items:center; gap:8px; }
+        .dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+        .track { position:relative; height:14px; border-radius:7px; background: rgba(255,255,255,.06); overflow:hidden;
+                background-image: linear-gradient(to right, rgba(255,255,255,0.10) 1px, transparent 1px); background-size: 25% 100%; }
+        .bar { height:100%; border-radius:7px; }
+        .val { font-weight: 700; font-size: 12px; }
+        .top-msg { display:flex; justify-content:flex-start; opacity:.85; font-size:12px; margin-top:6px; }
+        .axis { display:none; }
+
+        .cats .cat { margin: 6px 0; }
+        .cat-name { font-size: 12px; opacity: .9; }
+        .cat-row { display:grid; grid-template-columns: 1fr auto; align-items:center; gap:10px; }
+        .cat-bar { height: 10px; border-radius: 6px; background: #3880ff; }
+        .cat-val { font-weight: 700; font-size: 12px; }
+
+        @media print { body { padding: 0; } .container { max-width: none; padding: 14mm; }
+          header .actions { display:none; } }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <header>
+          <div class="title">Dashboard anual ${year}</div>
+          <div class="meta">${mesesNombres || 'Todos los meses filtrados'}</div>
+          <div class="actions"><button onclick="window.print()">Imprimir / PDF</button></div>
+        </header>
+        ${comparacionHTML}
+        <div class="grid">${mesesHTML}</div>
+      </div>
+    </body>
+    </html>`;
+
+    // Render en iframe oculto y abrir vista de impresión (PDF) sin nueva pestaña
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const idoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!idoc) return;
+    idoc.open();
+    idoc.write(html);
+    idoc.close();
+
+    const cleanup = () => {
+      try { document.body.removeChild(iframe); } catch {}
+    };
+    try { iframe.contentWindow?.addEventListener('afterprint', cleanup); } catch {}
+
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (e) {
+        console.error('No se pudo iniciar impresión', e);
+        cleanup();
+      }
+    }, 200);
+    }
 
   async reload() {
     await this.ngOnInit();
@@ -278,14 +443,79 @@ export class AnalizarAnualComponent implements OnInit {
       { key: 'Total',  max: maxT, vals: series.map(s => s.total)  },
     ];
 
+    // Construcción de items con el nombre/valor del mayor
     this.comparacionGrafica = {
-      m1Nombre: '',
-      m2Nombre: '',
-      items: items.map(it => ({ key: it.key, m1: 0, m2: 0, max: it.max })) as any,
+      items: items.map(it => {
+        let bestIdx = 0;
+        for (let i = 1; i < it.vals.length; i++) {
+          if ((it.vals[i] || 0) > (it.vals[bestIdx] || 0)) bestIdx = i;
+        }
+        return {
+          key: it.key,
+          max: it.max,
+          topName: series[bestIdx]?.nombre || '',
+          topVal: it.vals[bestIdx] || 0,
+        };
+      })
     } as any;
 
     // Guardamos series públicas para la plantilla múltiple
     this.compSeries = series;
+  }
+
+  // Color por categoría con fallback determinístico
+  private buildCategoriaColorMap() {
+    try {
+      const cats = JSON.parse(localStorage.getItem('userCategorias') || '[]') || [];
+      for (const c of cats) {
+        const nombre = c?.nombre || c?.id;
+        const color = c?.color;
+        if (nombre && color) this.categoriaColorMap[nombre] = color;
+      }
+    } catch {}
+  }
+
+  colorDeCategoria(nombre: string): string {
+    if (!Object.keys(this.categoriaColorMap).length) this.buildCategoriaColorMap();
+    if (this.categoriaColorMap[nombre]) return this.categoriaColorMap[nombre];
+    // Fallback: hash -> HSL
+    let hash = 0;
+    for (let i = 0; i < (nombre || '').length; i++) hash = (hash * 31 + nombre.charCodeAt(i)) | 0;
+    const hue = Math.abs(hash) % 360;
+    const color = `hsl(${hue}, 72%, 55%)`;
+    this.categoriaColorMap[nombre] = color;
+    return color;
+  }
+
+  // Paleta para meses seleccionados: consistente por índice o nombre
+  private mesPalette = [
+    'var(--ion-color-primary)',
+    'var(--ion-color-tertiary)',
+    'var(--ion-color-warning)',
+    'var(--ion-color-success)',
+    'var(--ion-color-danger)',
+    'var(--ion-color-secondary)',
+    'var(--ion-color-medium)'
+  ];
+
+  colorDeMes(nombre: string, idx?: number): string {
+    if (typeof idx === 'number') {
+      return this.mesPalette[idx % this.mesPalette.length];
+    }
+    // Fallback determinístico por nombre
+    let hash = 0;
+    for (let i = 0; i < (nombre || '').length; i++) hash = (hash * 31 + nombre.charCodeAt(i)) | 0;
+    const base = Math.abs(hash) % this.mesPalette.length;
+    return this.mesPalette[base];
+  }
+
+  // Color para series de comparación
+  colorDeSerie(nombre: string, idx: number): string {
+    const categoria = (this.form.value.categoria || 'todas') as string;
+    if (categoria && categoria !== 'todas') {
+      return this.colorDeCategoria(categoria);
+    }
+    return this.colorDeMes(nombre, idx);
   }
 
   // Getter para listar meses disponibles según año seleccionado en el filtro

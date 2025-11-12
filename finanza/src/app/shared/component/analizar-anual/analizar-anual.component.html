@@ -1,6 +1,12 @@
 ﻿<div class="analizar-anual">
 
-  <h2>Resumen anual</h2>
+  <div class="header-row">
+    <h2>Resumen anual</h2>
+    <ion-button size="small" fill="outline" class="export-btn" (click)="exportarPdf()">
+      <ion-icon name="download-outline" slot="start"></ion-icon>
+      Exportar PDF
+    </ion-button>
+  </div>
 
   <!-- ======= FILTROS: Anho, Meses Multiples, Tipos y Categoria ======= -->
   <ion-card class="filter-card">
@@ -79,7 +85,7 @@
       <div class="bars" *ngIf="comparacionGrafica as cg">
         <div class="bar-legend">
           <ng-container *ngFor="let s of compSeries; let idx = index">
-            <span class="dot" [class]="'m'+idx"></span> {{ s.nombre }}
+            <span class="dot" [style.background]="colorDeSerie(s.nombre, idx)"></span> {{ s.nombre }}
           </ng-container>
         </div>
         <div class="bar-group" *ngFor="let it of cg.items; let k = index">
@@ -88,16 +94,26 @@
           </div>
           <div class="bar-multi">
             <ng-container *ngFor="let s of compSeries; let idx = index">
-              <div class="bar" [class]="'m'+idx" [style.width.%]="(((it.key==='Gastos'? s.gastos : (it.key==='Deudas'? s.deudas : s.total)))/ it.max) * 100">
-                <span class="val">{{ (it.key==='Gastos'? s.gastos : (it.key==='Deudas'? s.deudas : s.total)) | currency:'CLP':'symbol':'1.0-0' }}</span>
+              <div class="bar-wrap">
+                <div class="bar-label">
+                  <span class="dot" [style.background]="colorDeSerie(s.nombre, idx)"></span>
+                  <span class="name">{{ s.nombre }}</span>
+                </div>
+                <div class="bar-track">
+                  <div class="bar" [style.background]="colorDeSerie(s.nombre, idx)" [style.width.%]="(((it.key==='Gastos'? s.gastos : (it.key==='Deudas'? s.deudas : s.total)))/ it.max) * 100"></div>
+                </div>
+                <div class="val-below">{{ (it.key==='Gastos'? s.gastos : (it.key==='Deudas'? s.deudas : s.total)) | currency:'CLP':'symbol':'1.0-0' }}</div>
               </div>
             </ng-container>
+          </div>
+          <div class="axis">
+            <span class="top">Tu gasto fue mayor en: {{ it.topName }} — {{ it.topVal | currency:'CLP':'symbol':'1.0-0' }}</span>
           </div>
         </div>
       </div></ion-card-content>
   </ion-card>
 
-  <!-- ======= CARDS POR MES ======= -->
+  <!-- ======= CARDS POR MES (Grid) ======= -->
   <ion-grid class="cards-grid" *ngIf="resumenAnualFiltrado?.length; else sinDatos">
     <ion-row>
       <ion-col size="12" sizeMd="6" sizeLg="4" *ngFor="let mes of resumenAnualFiltrado">
@@ -118,11 +134,14 @@
               </div>
             </div>
 
-            <div class="chips" *ngIf="mes.topCategorias?.length">
-              <ion-chip *ngFor="let c of mes.topCategorias" outline="true">
-                <ion-label>{{ c.nombre }}</ion-label>
-                <ion-badge>{{ c.monto | currency:'CLP':'symbol':'1.0-0' }}</ion-badge>
-              </ion-chip>
+            <div class="cat-bars" *ngIf="mes.topCategorias?.length">
+              <div class="cat-item" *ngFor="let c of mes.topCategorias">
+                <span class="cat-name">{{ c.nombre }}</span>
+                <div class="cat-bar-row">
+                  <div class="cat-bar" [style.background]="colorDeCategoria(c.nombre)" [style.width.%]="(c.monto / (mes.topCategorias[0]?.monto || 1)) * 100"></div>
+                  <span class="cat-val">{{ c.monto | currency:'CLP':'symbol':'1.0-0' }}</span>
+                </div>
+              </div>
             </div>
           </ion-card-content>
         </ion-card>
