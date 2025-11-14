@@ -20,25 +20,30 @@
     position: relative;
     transition: transform 0.3s ease;
 
-    &:hover {
-      transform: translateY(-2px);
-    }
+    &:hover { transform: translateY(-2px); }
 
     .objetivo-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.8rem;
+      margin-bottom: 0.45rem;
 
-      h3 {
-        color: #e9f5f5;
-        font-size: 1.05rem;
-        font-weight: 600;
-      }
+      h3 { color: #e9f5f5; font-size: 1.05rem; font-weight: 600; }
+      .monto { color: #00bcd4; font-size: 0.95rem; }
+    }
 
-      .monto {
-        color: #00bcd4;
-        font-size: 0.95rem;
+    /* Info compacta */
+    .mini-info {
+      display: flex;
+      gap: .6rem;
+      margin: 0 0 .6rem 0;
+      font-size: .78rem;
+      span {
+        color: #b7d8d8;
+        background: rgba(255, 255, 255, .06);
+        padding: .18rem .5rem;
+        border-radius: 10px;
+        white-space: nowrap;
       }
     }
 
@@ -68,11 +73,7 @@
           z-index: 2;
         }
 
-        &.animar .barra-progreso {
-          /* Se llena suavemente */
-        }
-
-        /* 💡 BRILLO FIJO Y SUTIL CUANDO COMPLETO */
+        /* Brillo sutil cuando completa */
         .barra-progreso.completo {
           position: relative;
           box-shadow:
@@ -82,7 +83,7 @@
           z-index: 3;
         }
 
-        /* ======== ICONO ======== */
+        /* ICONO */
         .icono {
           position: absolute;
           top: -18px;
@@ -93,55 +94,51 @@
           filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.6));
           z-index: 5;
 
-          &.balanceo {
-            animation: balancear 0.8s ease-in-out infinite alternate;
-          }
+          &.balanceo { animation: balancear 0.8s ease-in-out infinite alternate; }
+          &.completo { animation: celebrar 3.6s ease-in-out 2.5s infinite; }
 
-          &.completo {
-            animation: celebrar 3.6s ease-in-out 2.5s infinite;
-          }
-
-          img {
-            width: 30px;
-            height: 30px;
-            object-fit: contain;
-          }
+          img { width: 30px; height: 30px; object-fit: contain; }
         }
       }
     }
   }
 }
 
-/* ======== ANIMACIONES ======== */
-
-/* 🔸 Movimiento suave del icono (mientras progresa) */
+/* ANIMACIONES */
 @keyframes balancear {
-  0% {
-    transform: translate(-50%, 0) rotate(-5deg);
-  }
-  100% {
-    transform: translate(-50%, 0) rotate(5deg);
+  0%   { transform: translate(-50%, 0) rotate(-5deg); }
+  100% { transform: translate(-50%, 0) rotate(5deg); }
+}
+
+@keyframes celebrar {
+  0%   { transform: translate(-50%, 0) scale(1); }
+  5%   { transform: translate(-50%, -10px) scale(1.15); }
+  10%  { transform: translate(-50%, 0) scale(1); }
+  15%  { transform: translate(-50%, -5px) scale(1.08); }
+  20%  { transform: translate(-50%, 0) scale(1); }
+  100% { transform: translate(-50%, 0) scale(1); }
+}
+
+.acciones {
+  display: flex;
+  gap: 12px;
+  ion-icon {
+    font-size: 1.4rem;
+    color: #b7d8d8;
+    transition: 0.2s ease;
+    &:hover  { color: #00bcd4; transform: scale(1.1); }
+    &:active { opacity: 0.6; }
+    &.aportar { color: #7fe1b5; }           /* pista visual */
+    &.aportar:hover { color: #2dd4bf; }     /* hover suave para aportar */
   }
 }
 
-/* 🔸 Rebote del icono cuando completa la barra */
-@keyframes celebrar {
-  0% {
-    transform: translate(-50%, 0) scale(1);
-  }
-  5% {
-    transform: translate(-50%, -10px) scale(1.15);
-  }
-  10% {
-    transform: translate(-50%, 0) scale(1);
-  }
-  15% {
-    transform: translate(-50%, -5px) scale(1.08);
-  }
-  20% {
-    transform: translate(-50%, 0) scale(1);
-  }
-  100% {
-    transform: translate(-50%, 0) scale(1);
-  }
+/* Estado vacío */
+.no-objetivos {
+  display: grid;
+  place-items: center;
+  gap: .5rem;
+  color: #b7d8d8;
+  opacity: .8;
+  ion-icon { font-size: 1.8rem; }
 }

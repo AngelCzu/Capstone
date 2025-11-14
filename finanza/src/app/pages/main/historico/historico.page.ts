@@ -82,14 +82,16 @@ export class HistoricoPage implements OnInit {
   }
 
   getIconoTipo(tipo: string): string {
-    switch (tipo) {
-      case 'ingreso': return 'cash-outline';
-      case 'gasto': return 'cart-outline';
-      case 'deuda': return 'card-outline';
-      case 'objetivo': return 'trophy-outline';
-      default: return 'help-outline';
-    }
+  switch (tipo) {
+    case 'ingreso': return 'cash-outline';
+    case 'gasto': return 'cart-outline';
+    case 'deuda': return 'card-outline';
+    case 'objetivo': return 'trophy-outline';
+    case 'ahorro': return 'wallet-outline'; 
+    default: return 'help-outline';
   }
+}
+
 
   async eliminarMovimiento(mov: any) {
     const confirmed = await this.utilsSvc.presentConfirmSheet({

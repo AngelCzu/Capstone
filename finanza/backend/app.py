@@ -937,6 +937,7 @@ def add_deuda():
 @api.post("/users/me/objetivos")
 @require_auth
 def add_objetivo():
+    import math
     body = request.get_json() or {}
     now = datetime.utcnow()
     año, mes, semestre = now.year, now.month, obtener_semestre(now.month)
@@ -949,24 +950,45 @@ def add_objetivo():
         except Exception:
             valorUF = None
 
+    # Parseo y saneo de monto/tiempo
+    monto = round(float(body.get("monto", 0)), 0)
+    tiempo = body.get("tiempo")
+    try:
+        tiempo = int(tiempo) if tiempo is not None else None
+        if tiempo is not None and tiempo < 1:
+            tiempo = 1
+    except Exception:
+        tiempo = None
+
+    cuota_inicial = None
+    if tiempo and monto > 0:
+        cuota_inicial = math.ceil(monto / max(1, tiempo))
 
     data = {
         "tipo": "objetivo",
         "nombre": body.get("nombre"),
-        "monto": round(float(body.get("monto", 0)), 0),          # Valor en CLP calculado por el front
-        "montoUF": body.get("montoUF") or None,                # Solo si se ingresó en UF
-        "valorUF": valorUF or None,                # Valor de la UF usada
-        "moneda": body.get("moneda", "CLP"),           # "CLP" o "UF"
+        "monto": monto,
+        "montoUF": body.get("montoUF") or None,
+        "valorUF": valorUF or None,
+        "moneda": body.get("moneda", "CLP"),
         "categoria": body.get("categoria"),
-        "tiempo": body.get("tiempo") or None,                  # Plazo del objetivo
+        "tiempo": tiempo,  # meses propuestos
         "compartido": body.get("compartido", False),
-        "modoDivision": body.get("modoDivision") or None,  # agregado
-        "participantes": body.get("participantes", []),
+        "modoDivision": body.get("modoDivision") or None,
+        "participantes": body.get("participantes", []),  # [{nombre, porcentaje|monto}]
         "fecha": now.isoformat(),
         "año": año,
         "mes": mes,
         "semestre": semestre,
         "createdAt": firestore.SERVER_TIMESTAMP,
+        # 👇 nuevo: estado de planificación
+        "plan": {
+            "fechaInicio": now.isoformat(),
+            "mesesObjetivo": tiempo,            # espejo de 'tiempo'
+            "cuotaRecomendada": cuota_inicial,  # recalculable
+            "estrategia": "mantener_plazo",
+            "recuperarEnMeses": None
+        }
     }
 
     mov_ref = (
@@ -976,48 +998,89 @@ def add_objetivo():
         .document()
     )
     mov_ref.set(data)
-
     return {"ok": True, "id": mov_ref.id}, 201
 
 
 
-# ========= OBTENER OBJETIVOS (con datos de categoría) ========= #
+# ========= OBTENER OBJETIVOS (enriquecidos + categoría) ========= #
 @api.get("/users/me/objetivos")
 @require_auth
 def get_objetivos():
     """
-    Obtiene todos los objetivos (tipo='objetivo') desde movimientos
-    y los enriquece con los datos de su categoría (icono, color)
+    - Mantiene compatibilidad: mismos campos + agrega derivados.
+    - Derivados: progresoGlobal, restanteGlobal, mesesRestantes,
+                 plan.cuotaRecomendada (recalculada si falta),
+                 fechaFinEstimada, aportesPorParticipante (dict).
     """
+    from datetime import datetime, timezone
+
+    def months_between(d1: datetime, d2: datetime) -> int:
+        # meses completos entre d1 y d2
+        y = d2.year - d1.year
+        m = d2.month - d1.month
+        r = y * 12 + m
+        if d2.day < d1.day:
+            r -= 1
+        return max(0, r)
+
+    def add_months(d: datetime, months: int) -> datetime:
+        # suma meses sin dependencias externas
+        y = d.year + (d.month - 1 + months) // 12
+        m = (d.month - 1 + months) % 12 + 1
+        day = min(d.day, [31,
+                          29 if (y % 4 == 0 and (y % 100 != 0 or y % 400 == 0)) else 28,
+                          31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m-1])
+        return datetime(y, m, day, d.hour, d.minute, d.second, d.microsecond, tzinfo=d.tzinfo)
+
+    def parse_iso_or_now(s: str | None) -> datetime:
+        if not s:
+            return datetime.now(timezone.utc)
+        try:
+            # admite 'Z'
+            if s.endswith('Z'):
+                s = s.replace('Z', '+00:00')
+            dt = datetime.fromisoformat(s)
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+        except Exception:
+            return datetime.now(timezone.utc)
+
     try:
-        # 1️⃣ Obtener todas las categorías del usuario
+        uid = request.uid
+        user_ref = db.collection("users").document(uid)
+        movs_ref = user_ref.collection("movimientos")
+
+        # 1) Categorías de objetivo
         categorias_ref = (
             db.collection("users")
-            .document(request.uid)
+            .document(uid)
             .collection("categorias")
             .where("tipo", "==", "objetivo")
             .stream()
         )
         categorias = {c.id: c.to_dict() for c in categorias_ref}
 
-        # 2️⃣ Obtener todos los movimientos de tipo objetivo
-        objetivos_ref = (
-            db.collection("users")
-            .document(request.uid)
-            .collection("movimientos")
-            .where("tipo", "==", "objetivo")
-            .stream()
+        # 2) Objetivos (en movimientos)
+        objetivos_docs = list(
+            movs_ref.where("tipo", "==", "objetivo").stream()
         )
 
-        objetivos = []
-        for doc in objetivos_ref:
-            data = doc.to_dict()
-            data["id"] = doc.id
+        # 3) Todos los ahorros para poder agrupar por objetivo
+        ahorros_docs = list(
+            movs_ref.where("tipo", "==", "ahorro").stream()
+        )
+        ahorros = [d.to_dict() | {"_id": d.id} for d in ahorros_docs]
 
-            # Buscar categoría asociada
+        objetivos = []
+        now_utc = datetime.now(timezone.utc)
+
+        for doc in objetivos_docs:
+            data = doc.to_dict()
+            oid = doc.id
+            data["id"] = oid
+
+            # Categoría asociada (tu lógica actual, intacta)
             categoria_id = data.get("categoria")
             cat_data = categorias.get(categoria_id)
-
             if cat_data:
                 data["color"] = cat_data.get("color")
                 data["icono"] = cat_data.get("icono")
@@ -1027,6 +1090,55 @@ def get_objetivos():
                 data["icono"] = "🎯"
                 data["categoriaNombre"] = "Sin categoría"
 
+            # ===== Derivados =====
+            total = round(float(data.get("monto", 0)) or 0, 0)
+
+            # Ahorros de ESTE objetivo
+            ah_este = [a for a in ahorros if a.get("objetivoId") == oid]
+
+            # Progreso global
+            progreso_global = sum(int(round(float(a.get("monto", 0)) or 0)) for a in ah_este)
+            restante_global = max(0, int(total) - int(progreso_global))
+
+            # Plan (tolerante a objetivos antiguos sin plan)
+            plan = (data.get("plan") or {}).copy()
+            fecha_inicio = parse_iso_or_now(plan.get("fechaInicio") or data.get("fecha"))
+            meses_obj = plan.get("mesesObjetivo") or data.get("tiempo") or 1
+            try:
+                meses_obj = int(meses_obj)
+            except Exception:
+                meses_obj = 1
+
+            meses_trans = months_between(fecha_inicio, now_utc)
+            meses_rest = max(1, meses_obj - meses_trans)
+
+            # Cuota recomendada (si no viene, la calculamos)
+            cuota = plan.get("cuotaRecomendada")
+            if cuota is None:
+                cuota = (int((restante_global + meses_rest - 1) // meses_rest)  # ceil sin math
+                         if restante_global > 0 else 0)
+
+            # Fecha fin estimada
+            fin_est = add_months(now_utc, meses_rest).date().isoformat()
+
+            # Resumen por participante (para “mi parte” en el front)
+            aportes_por_participante = {}
+            for a in ah_este:
+                p = a.get("participante") or "_sin_participante_"
+                aportes_por_participante[p] = aportes_por_participante.get(p, 0) + int(a.get("monto", 0) or 0)
+
+            # Ensamblar respuesta (manteniendo compatibilidad)
+            data["plan"] = {
+                **plan,
+                "mesesObjetivo": meses_obj,
+                "cuotaRecomendada": int(cuota)
+            }
+            data["progresoGlobal"] = int(progreso_global)
+            data["restanteGlobal"] = int(restante_global)
+            data["mesesObjetivo"] = int(meses_rest)
+            data["fechaFinEstimada"] = fin_est
+            data["aportesPorParticipante"] = aportes_por_participante  # <- útil para “mi parte”
+
             objetivos.append(data)
 
         return {"ok": True, "objetivos": objetivos}, 200
@@ -1034,6 +1146,517 @@ def get_objetivos():
     except Exception as e:
         print("Error al obtener objetivos:", e)
         return {"ok": False, "error": str(e)}, 500
+
+# ===================== OBTENER DETALLE DEL OBJETIVO (MEJORADO FINAL) =====================
+@api.get("/users/me/objetivos/<obj_id>")
+@require_auth
+def get_objetivo_detalle(obj_id):
+    """
+    Devuelve el detalle completo de un objetivo (tipo 'objetivo'),
+    incluyendo progreso y reajustes automáticos:
+      - Analiza el desempeño del MES ANTERIOR.
+      - Si no hubo o fue menor al recomendado → marca reajuste pendiente.
+      - Si fue mayor → recalcula la cuota sin modificar los meses.
+      - Nunca acorta el plazo automáticamente.
+    """
+    import math
+    from dateutil.relativedelta import relativedelta
+
+    try:
+        uid = request.uid
+        user_ref = db.collection("users").document(uid)
+        movs_ref = user_ref.collection("movimientos")
+        obj_ref = movs_ref.document(obj_id)
+
+        # 🟢 Obtener el documento del objetivo
+        obj_doc = obj_ref.get()
+        if not obj_doc.exists or obj_doc.to_dict().get("tipo") != "objetivo":
+            return {"ok": False, "error": "Objetivo no encontrado"}, 404
+
+        objetivo = obj_doc.to_dict()
+        plan = objetivo.get("plan", {}) or {}
+        # ===== VALIDACIÓN Y CÁLCULO DE MESES RESTANTES =====
+        fecha_inicio = parse_iso(plan.get("fechaInicio")) or now_tz("America/Santiago")
+        ahora = now_tz("America/Santiago")
+
+        # 🧮 Calcular meses transcurridos y los que deberían quedar
+        meses_trans = meses_entre(fecha_inicio, ahora)
+        meses_obj = int(objetivo.get("tiempo") or plan.get("mesesObjetivo") or 1)
+        meses_rest = max(1, meses_obj - meses_trans)
+
+        print(f"🗓️ Meses totales={meses_obj} | Transcurridos={meses_trans} | Restantes calculados={meses_rest}")
+
+        # ===== Validación para evitar restar meses de más =====
+        meses_guardado = int(plan.get("mesesObjetivo") or objetivo.get("tiempo") or 1)
+        print(f"🧮 Validando meses... guardado={meses_guardado}, calculado={meses_rest}")
+
+        # 🧩 Solo actualiza si realmente cambió el mes calendario
+        if meses_rest != meses_guardado:
+            plan["mesesObjetivo"] = meses_rest
+            obj_ref.update({"plan.mesesObjetivo": meses_rest})
+            print(f"🧭 MesesObjetivo actualizado de {meses_guardado} → {meses_rest}")
+        else:
+            print("⏸️ Se conserva mesesObjetivo anterior (no se modifica)")
+
+        # 🕒 Fecha actual
+        ahora = now_tz("America/Santiago")
+
+        # ✅ Datos base
+        meta_total = float(objetivo.get("monto", 0))
+        fecha_inicio = parse_iso(plan.get("fechaInicio")) or ahora
+        meses_obj = int(objetivo.get("tiempo") or plan.get("mesesObjetivo") or 1)
+        meses_trans = meses_entre(fecha_inicio, ahora)
+        meses_rest = max(1, meses_obj - meses_trans)
+
+        # 🔍 Obtener aportes del objetivo
+        aportes_docs = list(
+            movs_ref.where("tipo", "==", "ahorro")
+                    .where("objetivoId", "==", obj_id)
+                    .stream()
+        )
+        aportes_all = [d.to_dict() for d in aportes_docs]
+        total_aportado = sum(a.get("monto", 0) for a in aportes_all)
+        restante_global = max(0, meta_total - total_aportado)
+        progreso_global = total_aportado
+
+        # ==================== DETECCIÓN AUTOMÁTICA DE REAJUSTE ====================
+        cuota_actual = plan.get("cuotaRecomendada", 0)
+        ultimo_reajuste = plan.get("ultimoReajuste")
+        año_actual, mes_actual = ahora.year, ahora.month
+        paso_mes = True
+
+        # Detectar si ya se procesó reajuste este mes
+        if ultimo_reajuste:
+            try:
+                a_u, m_u = map(int, str(ultimo_reajuste).split("-"))
+                if a_u == año_actual and m_u == mes_actual:
+                    paso_mes = False
+            except Exception:
+                paso_mes = True
+
+        # 🔹 Calcular aportes del MES ANTERIOR
+        inicio_mes_actual = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        inicio_mes_anterior = inicio_mes_actual - relativedelta(months=1)
+        fin_mes_anterior = inicio_mes_actual
+
+        aport_mes_anterior = [
+            a for a in aportes_all
+            if a.get("fecha") and inicio_mes_anterior <= parse_iso(a["fecha"]) < fin_mes_anterior
+        ]
+        aporte_mes_total = sum(a.get("monto", 0) for a in aport_mes_anterior)
+
+        # 🔸 Caso 1: no hubo aportes el mes pasado
+        if meses_trans >= 1 and aporte_mes_total == 0 and paso_mes:
+            plan["reajustePendiente"] = True
+            plan["ultimoReajuste"] = f"{año_actual}-{mes_actual:02d}"
+            obj_ref.update({
+                "plan.reajustePendiente": True,
+                "plan.ultimoReajuste": plan["ultimoReajuste"]
+            })
+            print(f"⚠️ Sin aportes detectados el mes anterior → reajuste pendiente para {obj_id}")
+
+        # 🔸 Caso 2: Aporte menor al recomendado
+        elif meses_trans > 0 and aporte_mes_total < cuota_actual * 0.95 and paso_mes:
+            plan["reajustePendiente"] = True
+            plan["ultimoReajuste"] = f"{año_actual}-{mes_actual:02d}"
+            obj_ref.update({
+                "plan.reajustePendiente": True,
+                "plan.ultimoReajuste": plan["ultimoReajuste"]
+            })
+            print(f"⚠️ Aporte menor al recomendado el mes pasado → reajuste pendiente para {obj_id}")
+
+        # 🔸 Caso 3: Aporte mayor al recomendado → recalcular cuota sin tocar meses
+        elif aporte_mes_total > cuota_actual * 1.05 and paso_mes:
+            nueva_cuota = math.ceil(restante_global / max(1, meses_rest))
+            plan["cuotaRecomendada"] = nueva_cuota
+            plan["reajustePendiente"] = False
+            plan["ultimoReajuste"] = f"{año_actual}-{mes_actual:02d}"
+            obj_ref.update({
+                "plan.cuotaRecomendada": nueva_cuota,
+                "plan.reajustePendiente": False,
+                "plan.ultimoReajuste": plan["ultimoReajuste"]
+            })
+            print(f"✅ Aporte superior detectado → nueva cuota {nueva_cuota} (sin cambiar meses)")
+
+        # 🔸 Caso 4: Cuota no calculada o inconsistente
+        elif cuota_actual <= 0 or "cuotaRecomendada" not in plan:
+            nueva_cuota = math.ceil(restante_global / max(1, meses_rest))
+            plan["cuotaRecomendada"] = nueva_cuota
+            obj_ref.update({"plan.cuotaRecomendada": nueva_cuota})
+            print(f"🔄 Cuota inicial calculada: {nueva_cuota}")
+
+        # ==================== ACTUALIZAR PLAN Y RESPUESTA ====================
+        # (No se modifican los meses automáticamente)
+        plan["mesesObjetivo"] = plan.get("mesesObjetivo", meses_obj)
+        objetivo["plan"] = plan
+
+        return {
+            "ok": True,
+            "objetivo": {
+                **objetivo,
+                "id": obj_id,
+                "progresoGlobal": progreso_global,
+                "restanteGlobal": restante_global,
+            },
+        }, 200
+
+    except Exception as e:
+        print("🔥 Error al obtener detalle del objetivo:", e)
+        return {"ok": False, "error": str(e)}, 500
+
+
+
+
+# ========= REAJUSTAR PLAN (Redistribuir o Ajustar Plazo) =========
+@api.post("/users/me/objetivos/<obj_id>/reajustar_plan")
+@require_auth
+def reajustar_plan(obj_id):
+    """
+    Aplica el reajuste del objetivo:
+      - 'mantener_plazo': redistribuye el faltante entre los meses restantes.
+      - 'ajustar_plazo': cambia el número total de meses (recalcula cuota según el nuevo plazo).
+    ✅ Marca reajustePendiente=False y actualiza ultimoReajuste.
+    ✅ Calcula meses reales desde fechaInicio y sincroniza con mesesObjetivo.
+    """
+    import math
+    from google.cloud import firestore
+    import traceback
+
+    print("\n🚀 [reajustar_plan] — Entró al endpoint correctamente")
+    print(f"📦 obj_id recibido: {obj_id}")
+
+    uid = getattr(request, "uid", None)
+    print(f"👤 UID detectado: {uid}")
+    if not uid:
+        return {"ok": False, "error": "UID no presente en request"}, 400
+
+    try:
+        # Leer body con seguridad
+        try:
+            body = request.get_json(force=True, silent=False)
+        except Exception as e:
+            print("⚠️ Error al parsear JSON del body:", e)
+            traceback.print_exc()
+            body = {}
+
+        estrategia = (body or {}).get("estrategia", "mantener_plazo")
+        recuperar_en = (body or {}).get("recuperarEnMeses")
+        print(f"📨 Body recibido: {body}")
+        print(f"⚙️ Estrategia={estrategia} | recuperarEn={recuperar_en}")
+
+        # ===== Acceso a Firestore =====
+        user_ref = db.collection("users").document(uid)
+        movs_ref = user_ref.collection("movimientos")
+        obj_ref = movs_ref.document(obj_id)
+        obj_doc = obj_ref.get()
+
+        if not obj_doc.exists:
+            print("❌ El objetivo no existe.")
+            return {"ok": False, "error": "Objetivo no encontrado"}, 404
+
+        objetivo = obj_doc.to_dict()
+        if objetivo.get("tipo") != "objetivo":
+            print("❌ El documento no es un objetivo, abortando.")
+            return {"ok": False, "error": "Tipo inválido"}, 400
+
+        plan = objetivo.get("plan", {}) or {}
+        meta_total = float(objetivo.get("monto", 0))
+        print(f"🎯 Meta total: {meta_total} | Plan actual: {plan}")
+
+        # ======== 1️⃣ CALCULAR Y VALIDAR MESES RESTANTES =========
+        fecha_inicio = parse_iso(plan.get("fechaInicio")) or now_tz("America/Santiago")
+        ahora = now_tz("America/Santiago")
+
+        meses_trans = meses_entre(fecha_inicio, ahora)
+        meses_totales = int(objetivo.get("tiempo") or plan.get("mesesObjetivo") or 1)
+        meses_calculados = max(1, meses_totales - meses_trans)
+
+        meses_guardado = int(plan.get("mesesObjetivo") or meses_totales)
+        print(f"🗓️ Meses totales={meses_totales} | Transcurridos={meses_trans} | Calculados={meses_calculados} | Guardados={meses_guardado}")
+
+        # ✅ Si el cálculo da diferente al guardado, actualizamos
+        if meses_calculados != meses_guardado:
+            plan["mesesObjetivo"] = meses_calculados
+            obj_ref.update({"plan.mesesObjetivo": meses_calculados})
+            print(f"🧭 MesesObjetivo actualizado de {meses_guardado} → {meses_calculados}")
+        else:
+            print("⏸️ Se conserva mesesObjetivo anterior (no se modifica)")
+
+        # ======== 2️⃣ CALCULAR APORTE RESTANTE Y TOTAL ========
+        aportes_docs = list(
+            movs_ref.where("tipo", "==", "ahorro")
+                    .where("objetivoId", "==", obj_id)
+                    .stream()
+        )
+        total_aportado = sum(a.to_dict().get("monto", 0) for a in aportes_docs)
+        restante = max(0, meta_total - total_aportado)
+        print(f"💰 Total aportado: {total_aportado} | Restante: {restante}")
+
+        # ======== 3️⃣ ESTRATEGIAS DE REAJUSTE ========
+        plan_nuevo = plan.copy()
+
+        # --- Estrategia: mantener plazo (redistribuye el faltante)
+        if estrategia == "mantener_plazo":
+            cuota_nueva = math.ceil(restante / max(1, meses_calculados))
+            plan_nuevo["cuotaRecomendada"] = cuota_nueva
+            print(f"🔁 Estrategia mantener_plazo → nueva cuota={cuota_nueva} CLP ({meses_calculados} meses restantes)")
+
+        # --- Estrategia: ajustar plazo (modifica la duración total)
+        elif estrategia == "ajustar_plazo":
+            nuevos_meses = int(recuperar_en or meses_totales)
+            mrest2 = max(1, nuevos_meses - meses_trans)
+            plan_nuevo["mesesObjetivo"] = nuevos_meses
+            cuota_nueva = math.ceil(restante / mrest2)
+            plan_nuevo["cuotaRecomendada"] = cuota_nueva
+
+            print(f"🔁 Estrategia ajustar_plazo → nuevos_meses={nuevos_meses}, nueva cuota={cuota_nueva} CLP")
+
+            # 🧭 Actualizar también el campo global "tiempo"
+            try:
+                obj_ref.update({"tiempo": nuevos_meses})
+                print(f"🧭 Tiempo global del objetivo sincronizado a {nuevos_meses} meses")
+            except Exception as sync_err:
+                print(f"⚠️ No se pudo actualizar el campo 'tiempo': {sync_err}")
+
+        # ======== 4️⃣ MARCAR REAJUSTE PROCESADO ========
+        plan_nuevo["reajustePendiente"] = False
+        plan_nuevo["ultimoReajuste"] = f"{ahora.year}-{ahora.month:02d}"
+
+        # ======== 5️⃣ GUARDAR CAMBIOS EN FIRESTORE ========
+        obj_ref.update({"plan": plan_nuevo})
+
+        print("\n🧾 PLAN NUEVO FINAL:")
+        for k, v in plan_nuevo.items():
+            print(f"   {k}: {v}")
+
+        print("✅ Reajuste aplicado correctamente.")
+        print("===============================================================\n")
+
+        # ======== 6️⃣ RESPUESTA FINAL ========
+        return {
+            "ok": True,
+            "plan": plan_nuevo,
+            "restante": restante,
+            "progresoGlobal": total_aportado
+        }, 200
+
+    except Exception as e:
+        print("\n🔥 Error crítico en reajustar_plan:")
+        traceback.print_exc()
+        return {"ok": False, "error": str(e)}, 500
+
+
+
+
+
+# ===================== Obtener aportes del objetivo =====================
+@api.get("/users/me/objetivos/<obj_id>/ahorros")
+@require_auth
+def get_ahorros_objetivo(obj_id):
+    """
+    Devuelve la lista de aportes registrados para un objetivo específico.
+    """
+    try:
+        uid = request.uid
+        movs_ref = db.collection("users").document(uid).collection("movimientos")
+        # legacy: objetivos/<id>/aportes eliminado; ahora leemos desde 'movimientos'
+
+        try:
+            q = (movs_ref
+                 .where("tipo", "==", "ahorro")
+                 .where("objetivoId", "==", obj_id)
+                 .order_by("fecha", direction=firestore.Query.DESCENDING))
+            docs = list(q.stream())
+        except Exception:
+            q = (movs_ref
+                 .where("tipo", "==", "ahorro")
+                 .where("objetivoId", "==", obj_id))
+            docs = list(q.stream())
+        items = []
+
+        for doc in docs:
+            data = doc.to_dict()
+            data["id"] = doc.id
+            # 🔹 Convertir fecha a string ISO
+            fecha = data.get("fecha")
+            if fecha:
+                try:
+                    data["fecha"] = fecha.isoformat()
+                except Exception:
+                    data["fecha"] = str(fecha)
+            items.append(data)
+
+        # ordenar por fecha si no se pudo usar order_by en Firestore
+        items.sort(key=lambda x: x.get("fecha") or "", reverse=True)
+        return jsonify({"ok": True, "items": items}), 200
+
+    except Exception as e:
+        print("❌ Error en /objetivos/<id>/ahorros:", e)
+        return jsonify({"error": str(e)}), 500
+
+
+# ======== ACTUALIZAR MOVIMIENTO (objetivo, ahorro, gasto, etc.) ========
+@api.patch("/users/me/movimientos/<mov_id>")
+@require_auth
+def update_movimiento(mov_id):
+    uid = request.uid
+    body = request.get_json() or {}
+    ref = db.collection("users").document(uid).collection("movimientos").document(mov_id)
+
+    doc = ref.get()
+    if not doc.exists:
+        return jsonify({"ok": False, "message": "Movimiento no encontrado"}), 404
+
+    data = doc.to_dict()
+    tipo = data.get("tipo")
+
+    # Solo permitir campos seguros para cada tipo
+    campos_permitidos = {}
+
+    if tipo == "objetivo":
+        campos_permitidos = {"nombre", "monto", "tiempo", "categoria", "plan"}
+    elif tipo == "ahorro":
+        campos_permitidos = {"monto"}  # solo monto editable
+    elif tipo in {"gasto", "ingreso", "deuda"}:
+        campos_permitidos = {"monto", "origen", "categoria", "frecuencia"}
+    else:
+        return jsonify({"ok": False, "message": f"Tipo '{tipo}' no editable"}), 400
+
+    # Filtrar los campos no permitidos
+    update_data = {k: v for k, v in body.items() if k in campos_permitidos}
+    if not update_data:
+        return jsonify({"ok": False, "message": "Sin campos válidos para actualizar"}), 400
+
+    ref.update(update_data)
+    return jsonify({"ok": True, "message": "Movimiento actualizado"}), 200
+
+
+
+# ======== APORTAR OBJETIVO (versión final limpia y corregida) ========
+@api.post("/users/me/objetivos/<obj_id>/aportar")
+@require_auth
+def aportar_objetivo(obj_id):
+    """
+    Registra un aporte al objetivo sin modificar el plan.
+    - Crea un movimiento tipo 'ahorro' (visible en el Home).
+    - Descuenta del saldo disponible.
+    - No recalcula cuotas, meses ni reajustes.
+    """
+    from google.cloud import firestore
+    import traceback
+
+    try:
+        uid = request.uid
+        body = request.get_json() or {}
+        monto = round(float(body.get("monto", 0)), 0)
+        participante = body.get("participante")
+
+        if monto <= 0:
+            return {"ok": False, "error": "Monto inválido"}, 400
+
+        # ===== Referencias principales =====
+        user_ref = db.collection("users").document(uid)
+        movs_ref = user_ref.collection("movimientos")
+        obj_ref = movs_ref.document(obj_id)
+
+        @firestore.transactional
+        def _tx(tx):
+            # 1️⃣ Leer usuario y objetivo
+            user_snap = user_ref.get(transaction=tx)
+            saldo = (user_snap.to_dict() or {}).get("saldoDisponible", 0)
+
+            obj_snap = obj_ref.get(transaction=tx)
+            if not obj_snap.exists or obj_snap.to_dict().get("tipo") != "objetivo":
+                raise ValueError("Objetivo no existe")
+
+            objetivo = obj_snap.to_dict()
+            moneda = objetivo.get("moneda", "CLP")
+            nombre_objetivo = objetivo.get("nombre", "Sin nombre")
+            meta_total = float(objetivo.get("monto", 0))
+
+            # 2️⃣ Registrar movimiento (aporte)
+            ahora_cl = now_tz("America/Santiago")
+            año = ahora_cl.year
+            mes = ahora_cl.month
+            semestre = 1 if mes <= 6 else 2
+
+            data_ahorro = {
+                "tipo": "ahorro",
+                "origen": nombre_objetivo,
+                "monto": monto,
+                "moneda": moneda,
+                "categoria": "Ahorros",
+                "frecuencia": "unica",
+                "compartido": False,
+                "modoDivision": None,
+                "participantes": [],
+                "fecha": ahora_cl.isoformat(),
+                "año": año,
+                "mes": mes,
+                "semestre": semestre,
+                "createdAt": firestore.SERVER_TIMESTAMP,
+                "objetivoId": obj_id,
+            }
+
+            if participante:
+                data_ahorro["participante"] = participante
+
+            ah_ref = movs_ref.document()
+            tx.set(ah_ref, data_ahorro)
+
+            # 3️⃣ Actualizar saldo disponible
+            nuevo_saldo = (saldo or 0) - monto
+            tx.update(user_ref, {"saldoDisponible": nuevo_saldo})
+
+            # (No modificamos el plan ni tocamos reajuste)
+            return {
+                "ok": True,
+                "montoAportado": monto,
+                "saldoDisponible": int(nuevo_saldo),
+                "moneda": moneda,
+                "categoria": "Ahorros",
+                "objetivo": {
+                    "id": obj_id,
+                    "nombre": nombre_objetivo,
+                    "meta": meta_total,
+                },
+            }
+
+        # Ejecutar la transacción
+        res = _tx(db.transaction())
+
+        # 4️⃣ Asegurar que exista la categoría "Ahorros" para el Home
+        try:
+            cats_ref = user_ref.collection("categorias")
+            cats = list(cats_ref.stream())
+            nombres = {(c.to_dict() or {}).get("nombre") for c in cats}
+            if "Ahorros" not in nombres:
+                cats_ref.document().set({
+                    "tipo": "movimiento",
+                    "nombre": "Ahorros",
+                    "icono": "wallet-outline",
+                    "color": "#1abc9c",
+                    "createdAt": firestore.SERVER_TIMESTAMP,
+                })
+        except Exception:
+            pass
+
+        return res, 201
+
+    except Exception as e:
+        print("🔥 Error en aportar_objetivo:", e)
+        traceback.print_exc()
+        return {"ok": False, "error": str(e)}, 400
+
+
+# ======== ELIMINAR OBJETIVO ========
+@api.delete("/users/me/objetivos/<obj_id>")
+@require_auth
+def delete_objetivo(obj_id):
+    uid = request.uid
+    ref = db.collection("users").document(uid).collection("movimientos").document(obj_id)
+    ref.delete()
+    return jsonify({"ok": True, "message": "Objetivo eliminado"}), 200
 
 
 # ========== OBTENER RESUMEN MENSUAL ==========
@@ -1060,6 +1683,7 @@ def get_resumen_mensual():
                     .where("mes", "==", mes)
         )
 
+
         docs = list(query_ref.stream())
 
         if not docs:
@@ -1078,6 +1702,7 @@ def get_resumen_mensual():
             "ingresos": 0,
             "gastos": 0,
             "deudas": 0,          # cuotas mensuales calculadas
+            "ahorros": 0,
             "restante": 0,
             "porCategoria": {},
         }
@@ -1100,6 +1725,13 @@ def get_resumen_mensual():
                     resumen["porCategoria"].setdefault(categoria, 0)
                     resumen["porCategoria"][categoria] += monto
 
+            elif tipo == "ahorro":
+                # Tratar ahorros como salida de dinero para el disponible y mostrarlos en Home
+                resumen["ahorros"] += monto
+                resumen["gastos"] += monto
+                resumen["porCategoria"].setdefault("Ahorros", 0)
+                resumen["porCategoria"]["Ahorros"] += monto
+
             # 🧾 Deudas (solo cuota mensual)
             elif tipo == "deuda":
                 cuotas = int(data.get("cuotas") or 1)
@@ -1113,7 +1745,8 @@ def get_resumen_mensual():
         # ========= Calcular restante =========
         resumen["restante"] = resumen["ingresos"] - (resumen["gastos"] + resumen["deudas"])
 
-        print(f"📊 Resumen generado → Ingresos: {resumen['ingresos']}, Gastos: {resumen['gastos']}, Deudas: {resumen['deudas']}, Restante: {resumen['restante']}")
+        print("🧾 Resumen final:", resumen)
+
 
         return {"ok": True, **resumen}, 200
 
@@ -1142,6 +1775,19 @@ def obtener_movimientos_por_categoria():
 
         movs_ref = db.collection("users").document(uid).collection("movimientos")
         movimientos = []
+
+        # Manejo directo para Ahorros
+        if categoria.lower() in ("ahorro", "ahorros"):
+            query_ref = (
+                movs_ref
+                .where("tipo", "==", "ahorro")
+                .where("`año`", "==", año)
+                .where("mes", "==", mes)
+            )
+            docs = list(query_ref.stream())
+            movimientos = [doc.to_dict() for doc in docs]
+            movimientos.sort(key=lambda x: x.get("fecha"), reverse=True)
+            return movimientos, 200
 
         # 🟥 Caso especial: deudas → tipo == "deuda"
         if categoria.lower() == "deudas":
@@ -1219,10 +1865,24 @@ def get_movimientos_historico():
             mov["origen"] = mov.get("origen", "Sin origen")
             mov["monto"] = mov.get("monto", 0)
             mov["moneda"] = mov.get("moneda", "CLP")
-            mov["fecha"] = mov.get("fecha")
+
+            # ✅ Convertir fecha correctamente
+            fecha = mov.get("fecha")
+            if fecha:
+                try:
+                    # Firestore DatetimeWithNanoseconds → ISO string UTC
+                    mov["fecha"] = fecha.isoformat()
+                except Exception:
+                    # Si ya viene como string, la dejamos
+                    mov["fecha"] = str(fecha)
+            else:
+                mov["fecha"] = None
+
             movimientos.append(mov)
 
+        # ✅ Ordenar usando string ISO (seguro y consistente)
         movimientos.sort(key=lambda x: x.get("fecha") or "", reverse=True)
+
         return jsonify(movimientos), 200
 
     except Exception as e:
@@ -1273,6 +1933,8 @@ def eliminar_movimiento(mov_id):
                 resumen_data["deudas"] = resumen_data.get("deudas", 0) - monto
             elif tipo == "objetivo":
                 resumen_data["gastos"] = resumen_data.get("gastos", 0) - monto  # opcional: metas pueden ir como gasto
+            elif tipo == "ahorro":
+                resumen_data["gastos"] = resumen_data.get("gastos", 0) - monto
 
             # Recalcular ahorro (ingresos - gastos - deudas)
             ingresos = resumen_data.get("ingresos", 0)
@@ -1287,6 +1949,57 @@ def eliminar_movimiento(mov_id):
     except Exception as e:
         print("❌ Error en eliminar_movimiento:", e)
         return {"error": str(e)}, 500
+
+
+
+
+
+
+
+
+
+#============================================= HELPER =============================================#
+
+#================= HELPER OBJETIVO ======================#
+import math
+import pytz
+from datetime import datetime, timezone
+from dateutil.relativedelta import relativedelta
+
+def now_tz(tzname: str = "America/Santiago"):
+    return datetime.now(pytz.timezone(tzname))
+
+def rango_mes_actual_tz(tzname: str = "America/Santiago"):
+    tz = pytz.timezone(tzname)
+    now = now_tz(tzname)
+    inicio = tz.localize(datetime(now.year, now.month, 1, 0, 0, 0))
+    fin = inicio + relativedelta(months=1)
+    return inicio, fin
+
+def meses_entre(d1: datetime, d2: datetime) -> int:
+    """Calcula los meses transcurridos entre dos fechas sin restar de más."""
+    if d1.tzinfo is None: 
+        d1 = d1.replace(tzinfo=timezone.utc)
+    if d2.tzinfo is None: 
+        d2 = d2.replace(tzinfo=timezone.utc)
+
+    y = d2.year - d1.year
+    m = d2.month - d1.month
+    total = y * 12 + m
+
+    # ✅ Solo restar si aún no pasó al menos un día del mes siguiente
+    if d2.day < d1.day and total > 0:
+        total -= 1
+
+    return max(0, total)
+
+
+def parse_iso(s: str | None) -> datetime | None:
+    if not s: return None
+    try:
+        return datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except Exception:
+        return None
 
 
 

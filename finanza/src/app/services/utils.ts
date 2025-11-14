@@ -61,7 +61,7 @@ export class Utils {
     });
   }
 
-  // ================================ Confirm Sheet ================================
+// ================================ Confirm Sheet ================================
   async presentConfirmSheet(opts: {
     title: string;
     message: string;
@@ -69,21 +69,46 @@ export class Utils {
     cancelText?: string;
     color?: string;
     icon?: string;
-  }): Promise<boolean> {
+    breakpoints?: number[];
+    initialBreakpoint?: number;
+    cssClass?: string;
+    onBackdropRedirect?: string;  // ruta opcional
+    utils?: any;                  // 🆕 se puede pasar el servicio Utils
+  }): Promise<boolean | 'redirected'> { // 👈 devuelve un flag especial si redirige
     const modal = await this.modalCtrl.create({
       component: ConfirmSheetComponent,
       componentProps: opts,
-      breakpoints: [0, 0.45],
-      initialBreakpoint: 0.45,
+      breakpoints: opts.breakpoints ?? [0, 0.45],
+      initialBreakpoint: opts.initialBreakpoint ?? 0.45,
       handle: true,
       backdropDismiss: true,
-      cssClass: 'confirm-sheet-modal'
+      cssClass: opts.cssClass ?? 'confirm-sheet-modal',
     });
 
     await modal.present();
-    const { data } = await modal.onDidDismiss();
+    const { data, role } = await modal.onDidDismiss();
+
+    // ✅ si toca fuera y hay ruta definida → redirigir
+    if (role === 'backdrop' && opts.onBackdropRedirect) {
+      try {
+        const utils = opts.utils ?? this;
+        if (typeof utils.routerLink === 'function') {
+          utils.routerLink(opts.onBackdropRedirect);
+        } else {
+          console.warn('Utils no tiene routerLink disponible.');
+        }
+      } catch (e) {
+        console.warn('No se pudo redirigir tras cerrar modal:', e);
+      }
+      return 'redirected'; // 👈 señal especial
+    }
+
     return data ?? false;
   }
+
+
+
+
 
   // ================================ PIN Modal ================================
   async presentPinSheet(opts: {
@@ -146,7 +171,15 @@ export class Utils {
 // ================================ Modal Genérico ================================
 async presentGenericModal(opts: {
   title: string;
-  fields: Array<{ name: string; label: string; type: string; required?: boolean; default?: any; options?: any[] }>;
+  fields: Array<{ 
+    name: string; 
+    label: string; 
+    type: string; 
+    required?: boolean; 
+    default?: any; 
+    options?: any[];
+    helper?: string;
+ }>;
   confirmText?: string;
   cancelText?: string;
   color?: string;
