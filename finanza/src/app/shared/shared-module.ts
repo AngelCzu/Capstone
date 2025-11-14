@@ -14,6 +14,7 @@ import { VisualCurrencyDirective } from '../directives/visual-currency.directive
 import { CustomCurrencyInputComponent } from './component/custom-currency-input/custom-currency-input.component';
 import { AnalizarObjetivosComponent } from './component/analizar-objetivos/analizar-objetivos.component';
 import { AnalizarAnualComponent } from './component/analizar-anual/analizar-anual.component';
+import { RefreshComponent } from './component/refresh/refresh.component';
 
 
 
@@ -32,7 +33,7 @@ import { AnalizarAnualComponent } from './component/analizar-anual/analizar-anua
     CustomCurrencyInputComponent,
     AnalizarObjetivosComponent, 
     AnalizarAnualComponent,
-
+    RefreshComponent
 
   ],
   exports: [
@@ -51,6 +52,7 @@ import { AnalizarAnualComponent } from './component/analizar-anual/analizar-anua
     VisualCurrencyDirective,
     AnalizarObjetivosComponent,
     AnalizarAnualComponent,
+    RefreshComponent
 
 
 

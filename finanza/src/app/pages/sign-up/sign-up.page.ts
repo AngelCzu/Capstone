@@ -1,5 +1,6 @@
 
 import { Component, inject, OnInit } from '@angular/core';
+import { RefresherCustomEvent } from '@ionic/angular';
 import { FormControl, FormGroup, FormsModule, Validators } from '@angular/forms';
 import { User } from 'src/app/models/user.model';
 import { Firebase } from 'src/app/services/firebase';
@@ -43,6 +44,10 @@ export class SignUpPage implements OnInit {
   utilsSvc = inject(Utils);
 
   ngOnInit() {
+  }
+
+  onRefresh(event: RefresherCustomEvent) {
+    try { event.target.complete(); } catch {}
   }
 
 

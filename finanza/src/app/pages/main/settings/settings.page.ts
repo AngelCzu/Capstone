@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { RefresherCustomEvent } from '@ionic/angular';
 import { FormGroup, FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { SharedModule } from 'src/app/shared/shared-module';
 import { Utils } from 'src/app/services/utils';
@@ -93,6 +94,14 @@ export class SettingsPage implements OnInit {
         duration: 1500,
         position: 'bottom',
       });
+    }
+  }
+
+  onRefresh(event: RefresherCustomEvent) {
+    try {
+      this.loadSettings();
+    } finally {
+      try { event.target.complete(); } catch {}
     }
   }
 }

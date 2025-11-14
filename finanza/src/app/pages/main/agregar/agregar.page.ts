@@ -1,5 +1,6 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
+import { RefresherCustomEvent } from '@ionic/angular';
 import { FormArray, FormControl, FormGroup, FormsModule, Validators } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 import { SharedModule } from 'src/app/shared/shared-module';
@@ -98,10 +99,10 @@ export class AgregarPage {
   currentUser: User | null = null;
   public currentUserName: string = 'Usuario';
 
-  // Imagen asignada al objetivo según categoría
+  // Imagen asignada al objetivo segÃºn categorÃ­a
   imagenAsignada: string | null = null;
 
-  // Listado de categorías de gasto
+  // Listado de categorÃ­as de gasto
   categoriasGasto: any[] = [];
   categoriasObjetivo: any[] = [];
 
@@ -149,12 +150,12 @@ getUserProfile() {
       });
     }
   } catch (err) {
-    console.error('❌ Error al cargar perfil local:', err);
+    console.error('âŒ Error al cargar perfil local:', err);
     this.currentUser = null;
   }
 }
 
-// Cargar categorías de gasto
+// Cargar categorÃ­as de gasto
 async cargarCategorias() {
   try {
     const storedCats = localStorage.getItem('userCategorias');
@@ -162,17 +163,17 @@ async cargarCategorias() {
     if (storedCats) {
       const categorias = JSON.parse(storedCats);
 
-      // ✅ Separar automáticamente según tipo
+      // âœ… Separar automÃ¡ticamente segÃºn tipo
       this.categoriasGasto = categorias.filter((cat: any) => cat.tipo === 'movimiento');
       this.categoriasObjetivo = categorias.filter((cat: any) => cat.tipo === 'objetivo');
 
-      console.log('📦 Categorías cargadas desde localStorage:');
-      console.log('➡️ Gastos:', this.categoriasGasto);
-      console.log('➡️ Objetivos:', this.categoriasObjetivo);
+      console.log('ðŸ“¦ CategorÃ­as cargadas desde localStorage:');
+      console.log('âž¡ï¸ Gastos:', this.categoriasGasto);
+      console.log('âž¡ï¸ Objetivos:', this.categoriasObjetivo);
       return;
     }
 
-    // 🔁 Si no hay categorías guardadas localmente, obtener ambas del backend
+    // ðŸ” Si no hay categorÃ­as guardadas localmente, obtener ambas del backend
     const movRes: any = await firstValueFrom(this.userApi.obtenerCategorias('movimiento'));
     const objRes: any = await firstValueFrom(this.userApi.obtenerCategorias('objetivo'));
 
@@ -180,15 +181,15 @@ async cargarCategorias() {
       this.categoriasGasto = movRes.categorias;
       this.categoriasObjetivo = objRes.categorias;
 
-      // 🔹 Guardar todas las categorías combinadas en localStorage
+      // ðŸ”¹ Guardar todas las categorÃ­as combinadas en localStorage
       const todas = [...movRes.categorias, ...objRes.categorias];
       localStorage.setItem('userCategorias', JSON.stringify(todas));
 
-      console.log('🌐 Categorías cargadas desde backend y guardadas localmente');
+      console.log('ðŸŒ CategorÃ­as cargadas desde backend y guardadas localmente');
     }
 
   } catch (err) {
-    console.error('❌ Error cargando categorías:', err);
+    console.error('âŒ Error cargando categorÃ­as:', err);
   }
 }
 
@@ -203,19 +204,19 @@ async obtenerValorUF() {
     const parsed = JSON.parse(cached);
     const hoy = new Date().toISOString().split('T')[0]; // yyyy-mm-dd
 
-    // Si el valor es del mismo día, usar cache
+    // Si el valor es del mismo dÃ­a, usar cache
     if (parsed.fecha === hoy) {
       return parsed.valor;
     }
   }
 
-  // Si no hay cache o está desactualizado, consultamos la API
+  // Si no hay cache o estÃ¡ desactualizado, consultamos la API
   try {
     const response = await fetch('https://mindicador.cl/api/uf');
     const data = await response.json();
     const valorUF = data.serie[0].valor;
 
-    // Guardar cache del día
+    // Guardar cache del dÃ­a
     localStorage.setItem(cacheKey, JSON.stringify({
       valor: valorUF,
       fecha: new Date().toISOString().split('T')[0]
@@ -228,7 +229,7 @@ async obtenerValorUF() {
   }
 }
 
-// ======================================================    (no hacen cálculos ni guardan datos, sino que
+// ======================================================    (no hacen cÃ¡lculos ni guardan datos, sino que
 // ==================== FUNCIONES UI =====================    reaccionan a interacciones visuales del usuario
 // ======================================================     o actualizan el estado de los formularios.)
 
@@ -240,7 +241,7 @@ if (moneda === 'UF') {
   const valorUF = await this.obtenerValorUF();
   form.patchValue({ valorUF });
 
-  // Si el usuario ya llenó montoUF, calcular previsualización CLP
+  // Si el usuario ya llenÃ³ montoUF, calcular previsualizaciÃ³n CLP
   const montoUF = form.get('montoUF')?.value;
   if (montoUF) {
     const montoCLP = Math.round(valorUF * montoUF);
@@ -337,7 +338,7 @@ eliminarParticipante(formArray: FormArray, index: number) {
   this.actualizarMontosParticipantes(formArray);
 }
 
-// ACTUALIZAR PORCENTAJE (genérico)
+// ACTUALIZAR PORCENTAJE (genÃ©rico)
 actualizarPorcentaje(index: number, value: any, formArray: FormArray) {
   const val = parseFloat(value);
   if (isNaN(val) || val < 0 || val > 100) return;
@@ -361,7 +362,7 @@ actualizarMonto(index: number, value: any, formArray: FormArray) {
   this.actualizarMontosParticipantes(formArray);
 }
 
-// ACTUALIZAR MONTOS DE TODOS (genérico)
+// ACTUALIZAR MONTOS DE TODOS (genÃ©rico)
 actualizarMontosParticipantes(formArray: FormArray) {
   const form = this.obtenerFormularioPorFormArray(formArray);
   if (!form) return;
@@ -389,7 +390,7 @@ actualizarMontosParticipantes(formArray: FormArray) {
     );
     if (totalAsignado > total) {
       this.utilsSvc.presentToast({
-        message: '⚠️ El total asignado supera el monto total.',
+        message: 'âš ï¸ El total asignado supera el monto total.',
         color: 'warning',
         duration: 2000
       });
@@ -397,7 +398,7 @@ actualizarMontosParticipantes(formArray: FormArray) {
   }
 }
 
-// MAPEAR FORMARRAY → FORMULARIO PADRE
+// MAPEAR FORMARRAY â†’ FORMULARIO PADRE
 obtenerFormularioPorFormArray(formArray: FormArray): FormGroup | null {
   if (formArray === this.participantesGasto) return this.formGasto;
   if (formArray === this.participantesDeuda) return this.formDeuda;
@@ -453,10 +454,10 @@ async guardarGasto() {
   try {
     const data = this.formGasto.value;
 
-    // ✅ Validación UF
+    // âœ… ValidaciÃ³n UF
     if (data.moneda === 'UF') {
       if (!data.montoUF || !data.valorUF) {
-        throw new Error('Debe ingresar el monto en UF y tener valor UF válido.');
+        throw new Error('Debe ingresar el monto en UF y tener valor UF vÃ¡lido.');
       }
       data.monto = Math.round(data.montoUF * data.valorUF);
     } else {
@@ -464,7 +465,7 @@ async guardarGasto() {
       data.valorUF = null;
     }
 
-    // ===== Actualizamos montos CLP según modo antes de enviar =====
+    // ===== Actualizamos montos CLP segÃºn modo antes de enviar =====
     this.actualizarMontosParticipantes(this.participantesGasto);
     await firstValueFrom(this.movApi.agregarGasto(data));
 
@@ -499,18 +500,18 @@ async guardarDeuda() {
   try {
     const data = this.formDeuda.value;
 
-    // ===== Validación UF =====
+    // ===== ValidaciÃ³n UF =====
     if (data.moneda === 'UF') {
       if (!data.montoUF || !data.valorUF) {
-        throw new Error('Debe ingresar el monto en UF y tener valor UF válido.');
+        throw new Error('Debe ingresar el monto en UF y tener valor UF vÃ¡lido.');
       }
       data.monto = Math.round(data.montoUF * data.valorUF);
     }
 
-    // ===== Actualizamos montos CLP según modo antes de enviar =====
+    // ===== Actualizamos montos CLP segÃºn modo antes de enviar =====
     this.actualizarMontosParticipantes(this.participantesDeuda);
 
-    // ===== Conversión de porcentajes a CLP (por seguridad) =====
+    // ===== ConversiÃ³n de porcentajes a CLP (por seguridad) =====
     if (data.modoDivision === 'porcentaje' && data.participantes?.length) {
       const total = data.monto;
       data.participantes = data.participantes.map((p: any) => {
@@ -555,10 +556,10 @@ async guardarObjetivo() {
   try {
     const data = this.formObjetivo.value;
 
-    // ✅ Validación UF
+    // âœ… ValidaciÃ³n UF
     if (data.moneda === 'UF') {
       if (!data.montoUF || !data.valorUF) {
-        throw new Error('Debe ingresar el monto en UF y tener valor UF válido.');
+        throw new Error('Debe ingresar el monto en UF y tener valor UF vÃ¡lido.');
       }
       data.monto = data.montoUF * data.valorUF;
     } else {
@@ -692,7 +693,7 @@ recalcularPorcentajes(formArray: FormArray) {
 validarTotalParticipantes() {
   const data = this.formDeuda.value;
 
-  // Solo aplica si está compartido y en modo CLP
+  // Solo aplica si estÃ¡ compartido y en modo CLP
   if (!data.compartido || data.modoDivision !== 'clp') return null;
 
   const total = data.monto || 0;
@@ -710,7 +711,7 @@ validarTotalParticipantes() {
       duration: 2000,
     });
   } else {
-    // limpiar error si vuelve a ser válido
+    // limpiar error si vuelve a ser vÃ¡lido
     this.formDeuda.setErrors(null);
   }
 }
@@ -737,5 +738,9 @@ distribuirMontosIguales() {
   });
 }
 
+
+  onRefresh(event: RefresherCustomEvent) {
+    try { event.target.complete(); } catch {}
+  }
 
 }

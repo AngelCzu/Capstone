@@ -5,6 +5,7 @@
 </ion-header>
 
 <ion-content [fullscreen]="true">
+  <app-refresh (refresh)="onRefresh($event)"></app-refresh>
   <ion-header collapse="condense">
     <ion-toolbar>
       <ion-title size="large">main</ion-title>

@@ -4,6 +4,7 @@
 </app-header>
 
 <ion-content class="detalle-categoria-page">
+  <app-refresh (refresh)="onRefresh($event)"></app-refresh>
    <!-- 🔍 Barra de búsqueda -->
   <form [formGroup]="form">
     <ion-item lines="none" class="search-item">

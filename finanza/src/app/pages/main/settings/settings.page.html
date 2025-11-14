@@ -1,6 +1,7 @@
 <app-header title="Ajustes" backButton="/main/home"></app-header>
 
 <ion-content class="settings-page ion-padding">
+  <app-refresh (refresh)="onRefresh($event)"></app-refresh>
 
   <ion-card class="settings-card">
     <ion-card-header>

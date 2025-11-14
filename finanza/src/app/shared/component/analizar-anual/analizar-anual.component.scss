@@ -3,6 +3,12 @@
    =============================== */
 
 .analizar-anual {
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
   /* ---------- Título ---------- */
   h2 {
     margin: 8px 0 14px;
@@ -208,24 +214,159 @@
       }
 
       /* Chips */
-      .chips {
-        margin-top: 10px;
+      .cat-bars {
+        margin-top: 12px;
+        .cat-item { margin-bottom: 8px; }
+        .cat-name { font-size: 0.85rem; opacity: 0.9; }
+        .cat-bar-row { display: flex; align-items: center; gap: 8px; }
+        .cat-bar {
+          height: 10px;
+          border-radius: 6px;
+          background: var(--ion-color-primary);
+          min-width: 4%;
+          transition: width 220ms ease;
+        }
+        .cat-val { font-size: 0.8rem; opacity: 0.9; white-space: nowrap; }
+      }
+    }
+  }
 
-        ion-chip {
-          margin-right: 6px;
-          margin-bottom: 6px;
-          border-radius: 12px;
-          --background: var(--ion-color-light);
-          --color: var(--ion-text-color);
+  /* ---------- Carrusel de cards ---------- */
+  .carousel-wrapper {
+    position: relative;
+    background: rgba(4, 43, 55, 0.85);
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    padding: 8px 0 28px;
+  }
 
-          ion-badge {
-            margin-left: 6px;
-            border-radius: 10px;
-            font-weight: 700;
-          }
+  .carousel {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px 12px 10px;
+
+    /* Hide visual scrollbars */
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+  }
+
+  .carousel .slide {
+    scroll-snap-align: start;
+    flex: 0 0 auto;
+    min-width: calc(100% - 48px);
+    /* Responsive: show more on large screens */
+    @media (min-width: 640px) { min-width: 70%; }
+    @media (min-width: 992px) { min-width: 48%; }
+    @media (min-width: 1200px) { min-width: 38%; }
+  }
+
+  .carousel .slide .mes-card {
+    width: 100%;
+  }
+
+  /* Replicar estilos de mes-card para carrusel */
+  .carousel .mes-card {
+    position: relative;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    transition: transform 160ms ease, box-shadow 160ms ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.10);
+    }
+
+    ion-card-header,
+    ion-card-title,
+    ion-card-subtitle,
+    ion-card-content {
+      background: rgba(4, 43, 55, 0.85);
+      color: #e8f5f7;
+    }
+
+    ion-card-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+    }
+
+    ion-card-subtitle {
+      opacity: 0.65;
+      margin-top: 2px;
+    }
+
+    .totales {
+      .line {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 7px 0;
+        font-size: 0.95rem;
+
+        span { opacity: 0.8; }
+        strong { font-variation-settings: "wght" 700; }
+        &.total { padding-top: 10px; }
+        .gasto { color: var(--ion-color-danger); }
+        .deuda { color: var(--ion-color-warning-shade); }
+        .positivo { color: var(--ion-color-success); }
+        .negativo { color: var(--ion-color-danger); }
+      }
+    }
+
+    .chips {
+      margin-top: 10px;
+      ion-chip {
+        margin-right: 6px;
+        margin-bottom: 6px;
+        border-radius: 12px;
+        --background: var(--ion-color-light);
+        --color: var(--ion-text-color);
+        ion-badge {
+          margin-left: 6px;
+          border-radius: 10px;
+          font-weight: 700;
         }
       }
     }
+  }
+
+  .nav-buttons {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .nav-buttons .nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: auto;
+    --background: rgba(232, 245, 247, 0.16);
+    --color: #e8f5f7;
+    backdrop-filter: blur(2px);
+    border-radius: 999px;
+  }
+  .nav-buttons .prev { left: 2px; }
+  .nav-buttons .next { right: 2px; }
+
+  .dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .dots .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .dots .dot.active {
+    background: var(--ion-color-primary);
   }
 
   /* ---------- Card de comparación ---------- */
@@ -243,6 +384,82 @@
 
     .totales .line.total {
       border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    /* Barras comparativas */
+    .bars {
+      margin-top: 0px;
+      padding-top: 0;
+      border-top: none;
+
+      .bar-legend {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        font-size: 0.85rem;
+        opacity: 0.9;
+        margin-bottom: 6px;
+
+        .dot {
+          display: inline-block;
+          width: 10px; height: 10px;
+          border-radius: 50%;
+          margin-right: 6px;
+        }
+        .m1 { background: var(--ion-color-primary); }
+        .m2 { background: var(--ion-color-tertiary); }
+      }
+
+      .bar-group { margin-bottom: 14px; }
+
+      .bar-row-header {
+        display: flex;
+        justify-content: space-between;
+        font-weight: 700;
+        margin-bottom: 4px;
+        .metric { opacity: 0.9; }
+      }
+
+      .bar-multi { display: grid; grid-template-columns: 1fr; gap: 12px; }
+      .bar-wrap {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        grid-template-rows: 14px auto;
+        column-gap: 10px;
+        align-items: center;
+      }
+      .bar-label { grid-column: 1 / 2; grid-row: 1 / span 2; display: inline-flex; align-items: center; gap: 8px; opacity: 0.9; }
+      .bar-label .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+      .bar-label .name { font-weight: 600; font-size: 0.85rem; }
+
+      .bar-track { grid-column: 2 / -1; grid-row: 1 / 2; position: relative; height: 14px; border-radius: 7px; background: rgba(255,255,255,0.06); overflow: hidden; }
+      /* líneas guía 25/50/75/100 */
+      .bar-track { background-image: linear-gradient(to right, rgba(255,255,255,0.10) 1px, transparent 1px); background-size: 25% 100%; background-repeat: repeat-x; }
+
+      .bar {
+        position: relative;
+        height: 100%;
+        background: rgba(255,255,255,0.2);
+        border-radius: 7px;
+        overflow: hidden;
+      }
+      /* Paleta para hasta 6 meses */
+      .bar.m0, .dot.m0 { background: linear-gradient(90deg, var(--ion-color-primary) 0%, rgba(56,128,255,0.75) 100%); }
+      .bar.m1, .dot.m1 { background: linear-gradient(90deg, var(--ion-color-tertiary) 0%, rgba(45,211,111,0.75) 100%); }
+      .bar.m2, .dot.m2 { background: linear-gradient(90deg, var(--ion-color-warning) 0%, rgba(255,206,0,0.75) 100%); }
+      .bar.m3, .dot.m3 { background: linear-gradient(90deg, var(--ion-color-danger) 0%, rgba(240,65,65,0.75) 100%); }
+      .bar.m4, .dot.m4 { background: linear-gradient(90deg, var(--ion-color-secondary) 0%, rgba(82,96,255,0.75) 100%); }
+      .bar.m5, .dot.m5 { background: linear-gradient(90deg, var(--ion-color-medium) 0%, rgba(146,148,156,0.75) 100%); }
+      .val-below { grid-column: 2 / -1; grid-row: 2 / 3; margin-top: 4px; font-size: 0.8rem; color: #e8f5f7; font-weight: 700; }
+      .axis { margin-top: 8px; display: flex; justify-content: space-between; opacity: 0.65; font-size: 0.75rem; }
+    }
+
+    .comparar-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
     }
   }
 
@@ -336,5 +553,17 @@
       box-shadow: none !important;
       border: 1px solid #ccc !important;
     }
+    .export-btn { display: none !important; }
+  }
+}
+
+/* Ocultar elementos globales al imprimir (desde este componente) */
+@media print {
+  :host ::ng-deep app-navbar,
+  :host ::ng-deep app-header,
+  :host ::ng-deep ion-refresher,
+  :host ::ng-deep ion-segment,
+  :host ::ng-deep ion-tab-bar {
+    display: none !important;
   }
 }

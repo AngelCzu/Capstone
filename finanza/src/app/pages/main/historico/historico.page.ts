@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { RefresherCustomEvent } from '@ionic/angular';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MovimientosApi } from 'src/app/services/apis/movimientos.api';
 
@@ -128,6 +129,14 @@ export class HistoricoPage implements OnInit {
       });
     } finally {
       loading.dismiss();
+    }
+  }
+
+  async onRefresh(event: RefresherCustomEvent) {
+    try {
+      await this.cargarMovimientos();
+    } finally {
+      try { event.target.complete(); } catch {}
     }
   }
 }

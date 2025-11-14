@@ -1,6 +1,7 @@
 <app-header backButton="/main/home" title="Histórico de Movimientos"></app-header>
 
 <ion-content class="historico-page">
+  <app-refresh (refresh)="onRefresh($event)"></app-refresh>
 
   <!-- ======= FILTROS EXPANDIBLES ======= -->
   <ion-card class="filter-card">

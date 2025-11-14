@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { RefresherCustomEvent } from '@ionic/angular';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { UserApi } from 'src/app/services/apis/user.api';
@@ -35,6 +36,14 @@ export class DetalleCategoriaPage implements OnInit {
     this.form.valueChanges.subscribe(() => this.aplicarFiltrosManual());
 
     await this.cargarMovimientos();
+  }
+
+  async onRefresh(event: RefresherCustomEvent) {
+    try {
+      await this.cargarMovimientos();
+    } finally {
+      try { event.target.complete(); } catch {}
+    }
   }
 
   async cargarMovimientos() {

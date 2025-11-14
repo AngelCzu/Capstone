@@ -1,5 +1,6 @@
 
 import { Component, inject, OnInit } from '@angular/core';
+import { RefresherCustomEvent } from '@ionic/angular';
 import { FormControl, FormGroup, FormsModule, Validators } from '@angular/forms';
 import { firstValueFrom, last } from 'rxjs';
 import { User } from 'src/app/models/user.model';
@@ -32,6 +33,10 @@ export class LoginPage implements OnInit {
   userApi = inject(UserApi);
 
   ngOnInit() {
+  }
+
+  onRefresh(event: RefresherCustomEvent) {
+    try { event.target.complete(); } catch {}
   }
 
 
