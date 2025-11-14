@@ -2,8 +2,8 @@
   <ng-container *ngIf="!sinObjetivos; else noData">
     <div class="objetivo-card" 
          *ngFor="let obj of objetivos" 
-         [style.--color]="obj.color" 
-         (click)="verDetalleObjetivo(obj)">
+        [style.--color]="obj.color" 
+        (click)="verDetalleObjetivo(obj)">
       <div class="objetivo-header">
         <h3>{{ obj.nombre }}</h3>
         <p class="monto">{{ obj.monto | currency: 'CLP':'symbol' }}</p>
@@ -27,7 +27,7 @@
                [style.width.%]="animar ? obj.progreso * 100 : 0"></div>
 
           <div class="icono" [style.left.%]="animar ? obj.progreso * 100 : 0"
-               [class.balanceo]="animar && obj.progreso < 1" [class.completo]="obj.progreso === 1">
+              [class.balanceo]="animar && obj.progreso < 1" [class.completo]="obj.progreso === 1">
             {{ obj.icono }}
           </div>
         </div>

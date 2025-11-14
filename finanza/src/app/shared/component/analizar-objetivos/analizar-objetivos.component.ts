@@ -107,26 +107,6 @@ export class AnalizarObjetivosComponent implements OnInit {
     }
   }
 
-  async reload() {
-    await this.ngOnInit();
-  }
-
-  private calcularResumenFinanciero(movimientos: any[]) {
-    let ingresos = 0;
-    let gastos = 0;
-    let deudas = 0;
-
-    for (const mov of movimientos) {
-      switch (mov.tipo) {
-        case 'ingreso':
-          ingresos += Number(mov.monto || 0);
-          break;
-        case 'gasto':
-          gastos += Number(mov.monto || 0);
-          break;
-        case 'deuda':
-          deudas += Number(mov.monto || 0);
-          break;
   // ==================== HELPERS ====================
   private obtenerNombreUsuario(): string {
     const profile = JSON.parse(localStorage.getItem('userProfile') || 'null');
@@ -346,5 +326,7 @@ verDetalleObjetivo(obj: any) {
   const url = `/main/detalle-objetivo?id=${encodeURIComponent(obj.id)}`;
   this.utilsSvc.routerLink(url);
 }
-
-}
+async reload() {
+    await this.ngOnInit();
+  }
+}  
