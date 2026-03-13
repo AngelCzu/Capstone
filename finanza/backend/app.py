@@ -41,9 +41,19 @@ db = firestore.Client(credentials=creds_sa, project=creds_sa.project_id)
 
 # --- Flask + CORS ---
 app = Flask(__name__)
-CORS(app, resources={
-    r"/api/*": {"origins": ["http://localhost", "http://localhost:8100", "capacitor://localhost", "https://capstone-finance.netlify.app"]}
-})
+ALLOWED_ORIGINS = [
+    "http://localhost",
+    "http://localhost:8100",
+    "capacitor://localhost",
+    "https://capstone-finance.netlify.app",
+]
+
+CORS(
+    app,
+    resources={r"/api/*": {"origins": ALLOWED_ORIGINS}},
+    methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
+)
 
 # --- Auth helper ---
 def require_auth(fn):
