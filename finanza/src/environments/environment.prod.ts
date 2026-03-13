@@ -1,5 +1,6 @@
 export const environment = {
   production: true,
+  apiUrl: 'https://capstone-api-8225.onrender.com/api/v1',
   
   firebaseConfig:{
     apiKey: "AIzaSyALwH5asTa2GD9u8XbOfabIVhAi2VPVTY8",

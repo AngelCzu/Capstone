@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, map, firstValueFrom } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 type TipoMov = 'ingreso' | 'gasto' | 'deuda' | 'objetivo' | 'sin-tipo';
 
@@ -39,6 +40,7 @@ const MESES = [
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AnalizarAnualComponent implements OnInit {
+  private readonly usersMeUrl = `${environment.apiUrl}/users/me`;
 
   filtrosAbiertos = true;
   MESES = MESES;
@@ -313,7 +315,7 @@ export class AnalizarAnualComponent implements OnInit {
   }
 
   private cargarHistorico() {
-    return this.http.get<Movimiento[]>('/api/v1/users/me/movimientos/historico').pipe(
+    return this.http.get<Movimiento[]>(`${this.usersMeUrl}/movimientos/historico`).pipe(
       map(arr => arr || [])
     );
   }

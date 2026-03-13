@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 
 @Injectable({
@@ -11,7 +12,7 @@ export class ObjetivoApi {
 
   http      = inject(HttpClient)
 
-  private baseUrl = '/api/v1/users/me';
+  private baseUrl = `${environment.apiUrl}/users/me`;
   constructor() {}
 
   // Obtener Objetivos
@@ -45,7 +46,7 @@ export class ObjetivoApi {
     participante?: string;
     redistribucion?: number; // 🆕 agregado
   }) {
-    return this.http.post(`/api/v1/users/me/objetivos/${id}/aportar`, data);
+    return this.http.post(`${this.baseUrl}/objetivos/${id}/aportar`, data);
 
   }
 

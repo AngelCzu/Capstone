@@ -6,11 +6,13 @@ import { EmailPinModalComponent } from '../shared/component/email-pin-modal/emai
 import { firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { GenericModalComponent } from '../shared/component/modal-generic/modal-generic.component';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class Utils {
+  private readonly usersMeUrl = `${environment.apiUrl}/users/me`;
   loandinCtrl = inject(LoadingController);
   toastCtrl = inject(ToastController);
   alertCtrl = inject(AlertController);
@@ -142,7 +144,7 @@ export class Utils {
     if (role === 'backdrop') {
       try {
         await firstValueFrom(
-          this.http.post('/api/v1/users/me/pin/cancel', { action: opts.action })
+          this.http.post(`${this.usersMeUrl}/pin/cancel`, { action: opts.action })
         );
         await this.presentToast({
           message: 'Operación cancelada',

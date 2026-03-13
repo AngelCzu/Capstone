@@ -3,6 +3,7 @@ import { Auth } from '@angular/fire/auth';
 import { Utils } from 'src/app/services/utils';
 import { HttpClient } from '@angular/common/http';
 import { UserApi } from 'src/app/services/apis/user.api';
+import { environment } from 'src/environments/environment';
 
 
 @Component({
@@ -12,6 +13,7 @@ import { UserApi } from 'src/app/services/apis/user.api';
   standalone: false
 })
 export class StorageBarComponent implements OnInit {
+  private readonly usersMeUrl = `${environment.apiUrl}/users/me`;
   auth = inject(Auth);
   utilsSvc = inject(Utils);
   http = inject(HttpClient);
@@ -39,7 +41,7 @@ async cargarDatosFinancieros() {
   try {
     console.log('✅ Sesión activa, obteniendo resumen financiero...');
     // 1️⃣ Traer resumen mensual desde backend Flask
-    const resumen: any = await this.http.get('/api/v1/users/me/resumen').toPromise();
+    const resumen: any = await this.http.get(`${this.usersMeUrl}/resumen`).toPromise();
     console.log(resumen);
     
     // 2️⃣ Obtener categorías del usuario (ya guardadas en Firestore)

@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { Utils } from 'src/app/services/utils';
 import { Firebase } from 'src/app/services/firebase';
 import { getAuth } from 'firebase/auth';
+import { environment } from 'src/environments/environment';
 
 @Component({
   standalone: false,
@@ -13,6 +14,7 @@ import { getAuth } from 'firebase/auth';
   styleUrls: ['./email-pin-modal.component.scss'],
 })
 export class EmailPinModalComponent {
+  private readonly usersMeUrl = `${environment.apiUrl}/users/me`;
   @Input() email = '';
   @Input() title = '';
   @Input() ttlSec = 300;
@@ -113,7 +115,7 @@ export class EmailPinModalComponent {
 
     try {
       const res: any = await firstValueFrom(
-        this.http.post('/api/v1/users/me/pin/confirm', {
+        this.http.post(`${this.usersMeUrl}/pin/confirm`, {
           pin: this.pin,
           action: this.action,
         })
@@ -189,7 +191,7 @@ export class EmailPinModalComponent {
   async cancel() {
     try {
       await firstValueFrom(
-        this.http.post('/api/v1/users/me/pin/cancel', { action: this.action })
+        this.http.post(`${this.usersMeUrl}/pin/cancel`, { action: this.action })
       );
 
       await this.utilsSvc.presentToast({

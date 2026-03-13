@@ -9,6 +9,7 @@ import { Firebase } from 'src/app/services/firebase';
 import { firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { User } from 'src/app/models/user.model';
+import { environment } from 'src/environments/environment';
 
 
 
@@ -20,6 +21,7 @@ import { User } from 'src/app/models/user.model';
   imports: [SharedModule, FormsModule] // <-- Agrega esto
 })
 export class ProfilePage implements OnInit {
+  private readonly usersMeUrl = `${environment.apiUrl}/users/me`;
   
   private userApi = inject(UserApi);
   utilsSvc = inject(Utils);
@@ -152,7 +154,7 @@ async onSubmit() {
     // 2️⃣ Si cambió el correo → flujo de PIN
     if (cambios.email) {
       await firstValueFrom(
-        this.http.post('/api/v1/users/me/pin/request', {
+        this.http.post(`${this.usersMeUrl}/pin/request`, {
           action: 'email-change',
           target: cambios.email,
         })
@@ -293,7 +295,7 @@ async deleteAccountConfirm(): Promise<void> {
    loading.present();
   try {
     
-      await firstValueFrom(this.http.post('/api/v1/users/me/pin/request', {
+      await firstValueFrom(this.http.post(`${this.usersMeUrl}/pin/request`, {
         action: 'delete-account'
       }));
       loading.dismiss();

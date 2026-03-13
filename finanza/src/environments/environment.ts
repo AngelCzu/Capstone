@@ -7,6 +7,7 @@ import { initializeApp } from "firebase/app";
 
 export const environment = {
   production: false,
+  apiUrl: 'https://capstone-api-8225.onrender.com/api/v1',
   firebaseConfig:{
     apiKey: "AIzaSyALwH5asTa2GD9u8XbOfabIVhAi2VPVTY8",
     authDomain: "finanzasduoc-bdd46.firebaseapp.com",

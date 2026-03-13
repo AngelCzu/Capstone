@@ -10,6 +10,7 @@ import { User } from './models/user.model';
 import { Firebase } from './services/firebase';
 import { firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { environment } from 'src/environments/environment';
 
 
 @Component({
@@ -19,6 +20,7 @@ import { HttpClient } from '@angular/common/http';
   standalone: false,
 })
 export class AppComponent {
+  private readonly usersMeUrl = `${environment.apiUrl}/users/me`;
   // 🔹 Inyección de dependencias (como ya lo tienes)
   private auth      = inject(Auth);
   private injector  = inject(Injector);
@@ -208,7 +210,7 @@ async deleteAccountConfirm(): Promise<void> {
    
   try {
     
-      await firstValueFrom(this.http.post('/api/v1/users/me/pin/request', {
+      await firstValueFrom(this.http.post(`${this.usersMeUrl}/pin/request`, {
         action: 'delete-account'
       }));
       loading.dismiss();

@@ -1,12 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MovimientosApi {
   constructor(private http: HttpClient) {}
-  private baseUrl = '/api/v1/users/me';
+  private baseUrl = `${environment.apiUrl}/users/me`;
 
 
   agregarIngreso(data: any) {

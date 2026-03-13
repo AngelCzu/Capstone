@@ -8,6 +8,7 @@ import { GenericModalComponent } from 'src/app/shared/component/modal-generic/mo
 import { SharedModule } from 'src/app/shared/shared-module';
 import { HttpClient } from '@angular/common/http';
 import { lastValueFrom } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-detalle-objetivo',
@@ -16,6 +17,7 @@ import { lastValueFrom } from 'rxjs';
   imports: [SharedModule],
 })
 export class DetalleObjetivoPage implements OnInit {
+  private readonly usersMeUrl = `${environment.apiUrl}/users/me`;
 
   // ==================== PROPIEDADES ====================
   objetivo: any = null;
@@ -131,7 +133,7 @@ async cargarObjetivo(id: string) {
 
   async cargarSaldoDisponible() {
     try {
-      const res: any = await this.http.get('/api/v1/users/me/resumen').toPromise();
+      const res: any = await this.http.get(`${this.usersMeUrl}/resumen`).toPromise();
 
       const total = res.ingresos || 1;
       const ocupados = res.gastos + res.deudas;
