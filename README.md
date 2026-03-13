@@ -1,3 +1,8 @@
+![Angular](https://img.shields.io/badge/Angular-17-red)
+![Ionic](https://img.shields.io/badge/Ionic-Framework-blue)
+![Firebase](https://img.shields.io/badge/Firebase-Firestore-orange)
+![Flask](https://img.shields.io/badge/Flask-API-black)
+
 # Asistente Financiero Personal
 
 Aplicación híbrida de **asistente financiero personal** desarrollada con Angular e Ionic.
@@ -7,16 +12,22 @@ Permite a los usuarios registrar ingresos, gastos, deudas y objetivos de ahorro,
 El proyecto fue desarrollado como Capstone de Ingeniería en Informática con el objetivo de practicar arquitectura frontend moderna, autenticación con Firebase y persistencia de datos en Firestore.
 
 ---
+## Demo
+
+API Backend  
+https://capstone-api-8225.onrender.com/api/v1/health
+
 ## Mobile Preview
 
-Esta aplicación fue diseñada principalmente como **app móvil usando Ionic**.
+Esta aplicación fue diseñada principalmente como **app móvil utilizando Ionic Framework**.
 
-Puedes probar la versión web aquí:
+La versión web permite probar la aplicación desde el navegador, pero la interfaz está optimizada para pantallas móviles.
+
+Demo:
 
 https://capstone-finance.netlify.app/
 
-La interfaz está optimizada para pantallas móviles.
-Para una mejor experiencia se recomienda abrir la demo en modo móvil del navegador.
+Para una mejor experiencia se recomienda activar el **modo móvil en el navegador**.
 
 
 ## Credenciales de prueba
@@ -127,16 +138,4 @@ python backend/app.py
 Desarrollador de Software Junior  
 Ingeniería en Informática – Duoc UC
 
-GitHub: https://github.com/AngelCzuterminal 
-
-```bash
-
-Invoke-RestMethod -Uri http://localhost:8080/api/v1/health
-
-```terminal 
-
-```bash
-
-Invoke-RestMethod -Uri http://localhost:8080/api/v1/health
-
-```
+GitHub: https://github.com/AngelCzu
