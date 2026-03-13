@@ -7,8 +7,19 @@ Permite a los usuarios registrar ingresos, gastos, deudas y objetivos de ahorro,
 El proyecto fue desarrollado como Capstone de Ingeniería en Informática con el objetivo de practicar arquitectura frontend moderna, autenticación con Firebase y persistencia de datos en Firestore.
 
 ---
+## Demo
+
+**Aplicación en vivo:**  
+https://capstone-finance.netlify.app/
+
+### Credenciales de prueba
+
+Usuario
+correo: no5so1ja21@illubd.com  
+password: 123456  
 
 
+---
 
 ## Screenshots
 
@@ -109,4 +120,16 @@ python backend/app.py
 Desarrollador de Software Junior  
 Ingeniería en Informática – Duoc UC
 
-GitHub: https://github.com/AngelCzu
+GitHub: https://github.com/AngelCzuterminal 
+
+```bash
+
+Invoke-RestMethod -Uri http://localhost:8080/api/v1/health
+
+```terminal 
+
+```bash
+
+Invoke-RestMethod -Uri http://localhost:8080/api/v1/health
+
+```
