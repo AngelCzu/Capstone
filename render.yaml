@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: capstone-api
+    env: python
+    buildCommand: "pip install -r finanza/requirements.txt"
+    startCommand: "gunicorn finanza.backend.app:app"
