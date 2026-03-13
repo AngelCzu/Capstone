@@ -1,9 +1,9 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { Auth, onAuthStateChanged } from '@angular/fire/auth';
 
 export const authGuard: CanActivateFn = async () => {
-  const auth = getAuth();
+  const auth = inject(Auth);
   const router = inject(Router);
 
   // Esperamos el estado real de Firebase
