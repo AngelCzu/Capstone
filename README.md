@@ -102,7 +102,6 @@ python backend/app.py
 - Exportacion de reportes y presupuestos personalizados.
 
 
-```md
 ## Autor
 
 **Angel Gabriel Cea Zúñiga**
