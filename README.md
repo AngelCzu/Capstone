@@ -7,12 +7,19 @@ Permite a los usuarios registrar ingresos, gastos, deudas y objetivos de ahorro,
 El proyecto fue desarrollado como Capstone de Ingeniería en Informática con el objetivo de practicar arquitectura frontend moderna, autenticación con Firebase y persistencia de datos en Firestore.
 
 ---
-## Demo
+## Mobile Preview
 
-**Aplicación en vivo:**  
+Esta aplicación fue diseñada principalmente como **app móvil usando Ionic**.
+
+Puedes probar la versión web aquí:
+
 https://capstone-finance.netlify.app/
 
-### Credenciales de prueba
+La interfaz está optimizada para pantallas móviles.
+Para una mejor experiencia se recomienda abrir la demo en modo móvil del navegador.
+
+
+## Credenciales de prueba
 
 Usuario
 correo: no5so1ja21@illubd.com  
