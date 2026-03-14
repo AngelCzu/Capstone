@@ -67,6 +67,20 @@ password: 123456
 
 ---
 
+## Arquitectura
+
+Cliente Ionic
+     ↓
+Servicios Angular
+     ↓
+Firebase Auth
+     ↓
+Firestore
+     ↓
+Flask API (integraciones)
+
+---
+
 ## Funcionalidades Principales
 
 - Registro e inicio de sesion con Firebase.
